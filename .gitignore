@@ -1,0 +1,15 @@
+/target
+/dist
+
+debug
+target
+
+Cargo.lock
+
+**/*.rs.bk
+*.pdb
+**/mutants.out*/
+rustc-ice-*.txt
+#.idea/
+
+.DS_Store
