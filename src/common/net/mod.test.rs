@@ -58,7 +58,7 @@ fn auth_headers_carry_bearer_and_sdk_identity() {
         development_mode: false,
     };
     let cfg = SdkConfig::new("TEST");
-    let headers = auth_headers(&env, &cfg);
+    let headers = with_headers(&env, &cfg);
     assert!(headers.contains(&("Api-Key".to_string(), "Bearer k".to_string())));
     assert!(headers.contains(&("SDK-Platform".to_string(), "TEST".to_string())));
 }

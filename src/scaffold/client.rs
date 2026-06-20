@@ -6,11 +6,12 @@ use async_trait::async_trait;
 use crate::common::config::{NativeblocksEnvironment, ProjectConfigGateway, SdkConfig};
 use crate::common::logger::{self, LoggerEventLevel, NativeLoggerProvider, keys};
 use crate::common::net::{
-    GraphQlRequest, HttpClient, auth_headers, decode_envelope, execute_graphql,
+    GATEWAY_TYPE_REST, GraphQlRequest, HttpClient, INSTALL_ID_HEADER, with_headers, decode_envelope,
+    execute_graphql,
 };
 use crate::common::result::NbResult;
 use crate::scaffold::data::dto::NativeScaffoldDataDto;
-use crate::scaffold::key;
+use crate::scaffold::graphql;
 use crate::scaffold::model::NativeScaffoldModel;
 
 #[derive(Debug, Clone)]
@@ -49,20 +50,17 @@ pub fn new_client(
 #[async_trait]
 impl Client for ClientImpl {
     async fn get_scaffold(&self, request: ScaffoldRequest) -> NbResult<NativeScaffoldModel> {
-        let mut headers = auth_headers(&self.environment, &self.config);
-        headers.push((
-            key::INSTALL_ID_HEADER.to_string(),
-            request.install_id.clone(),
-        ));
+        let mut headers = with_headers(&self.environment, &self.config);
+        headers.push((INSTALL_ID_HEADER.to_string(), request.install_id.clone()));
 
         let fetched: NbResult<NativeScaffoldDataDto> =
-            if request.gateway.gateway_type == key::GATEWAY_TYPE_REST {
+            if request.gateway.gateway_type == GATEWAY_TYPE_REST {
                 self.http
                     .get(&request.gateway.value, &headers)
                     .await
                     .and_then(|body| decode_envelope::<NativeScaffoldDataDto>(&body))
             } else {
-                let gql = GraphQlRequest::new(key::SCAFFOLD_QUERY);
+                let gql = GraphQlRequest::new(graphql::SCAFFOLD_QUERY);
                 execute_graphql::<NativeScaffoldDataDto>(
                     self.http.as_ref(),
                     &request.graphql_endpoint,

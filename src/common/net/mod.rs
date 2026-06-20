@@ -12,6 +12,9 @@ use crate::common::result::{ErrorModel, NbResult};
 
 pub const DEFAULT_TIMEOUT_SECS: u64 = 10;
 
+pub const INSTALL_ID_HEADER: &str = "Install-Id";
+pub const GATEWAY_TYPE_REST: &str = "rest";
+
 pub type Header = (String, String);
 
 #[async_trait]
@@ -45,7 +48,7 @@ impl GraphQlRequest {
     }
 }
 
-pub fn operation_name_from_query(query: &str) -> String {
+fn operation_name_from_query(query: &str) -> String {
     let mut tokens = query.split_whitespace();
     while let Some(token) = tokens.next() {
         if matches!(token, "query" | "mutation" | "subscription") {
@@ -60,7 +63,7 @@ pub fn operation_name_from_query(query: &str) -> String {
     String::new()
 }
 
-pub fn auth_headers(environment: &NativeblocksEnvironment, config: &SdkConfig) -> Vec<Header> {
+pub fn with_headers(environment: &NativeblocksEnvironment, config: &SdkConfig) -> Vec<Header> {
     vec![
         ("Api-Key".to_string(),format!("Bearer {}", environment.api_key())),
         ("SDK-Version".to_string(), config.version.clone()),

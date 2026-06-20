@@ -47,7 +47,7 @@ fn cloud_env() -> NativeblocksEnvironment {
 fn request(gateway_type: &str, value: &str) -> ScaffoldRequest {
     ScaffoldRequest {
         gateway: ProjectConfigGateway {
-            operation: key::GATEWAY_OPERATION.into(),
+            operation: graphql::GATEWAY_OPERATION.into(),
             gateway_type: gateway_type.into(),
             value: value.into(),
         },
