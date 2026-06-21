@@ -1,18 +1,15 @@
 mod client;
-pub mod graphql;
-pub mod key;
-
 mod data;
+mod di;
+mod domain;
+mod graphql;
+mod key;
 mod model;
 
 #[cfg(all(feature = "net-reqwest", feature = "cache-sqlite"))]
 mod ffi;
 
-pub use client::{Client, LocalizationSyncRequest, new_client};
-pub use data::source::LocalizationLocalSource;
+pub(crate) use client::Client;
 
 #[cfg(all(feature = "net-reqwest", feature = "cache-sqlite"))]
 pub use ffi::LocalizationClient;
-
-#[cfg(feature = "cache-sqlite")]
-pub use client::open_client;

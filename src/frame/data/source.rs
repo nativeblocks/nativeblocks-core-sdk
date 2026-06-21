@@ -1,16 +1,24 @@
-use crate::common::result::NbResult;
+use std::sync::Arc;
 
-pub trait FrameLocalSource: Send + Sync {
-    fn dev_find_by_route(&self, route: &str) -> NbResult<Option<String>>;
-    fn dev_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NbResult<()>;
+use crate::common::result::NBResult;
 
-    fn prod_find_by_route(&self, route: &str) -> NbResult<Option<String>>;
-    fn prod_exists(&self, route: &str) -> NbResult<bool>;
-    fn prod_find_checksum(&self, route: &str, checksum: &str) -> NbResult<Option<String>>;
-    fn prod_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NbResult<()>;
+pub(crate) trait FrameLocalSource: Send + Sync {
+    fn dev_find_by_route(&self, route: &str) -> NBResult<Option<String>>;
+    fn dev_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NBResult<()>;
 
-    fn clear_all(&self) -> NbResult<()>;
-    fn clear(&self, route: &str) -> NbResult<()>;
+    fn prod_find_by_route(&self, route: &str) -> NBResult<Option<String>>;
+    fn prod_exists(&self, route: &str) -> NBResult<bool>;
+    fn prod_find_checksum(&self, route: &str, checksum: &str) -> NBResult<Option<String>>;
+    fn prod_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NBResult<()>;
+
+    fn clear_all(&self) -> NBResult<()>;
+    fn clear(&self, route: &str) -> NBResult<()>;
+}
+
+#[cfg(feature = "cache-sqlite")]
+pub(crate) fn new_frame_local_source(db_path: &str) -> NBResult<Arc<dyn FrameLocalSource>> {
+    let source: Arc<dyn FrameLocalSource> = sqlite::SqliteFrameDatabase::open(db_path)?;
+    return Ok(source);
 }
 
 #[cfg(feature = "cache-sqlite")]
@@ -20,25 +28,19 @@ pub(crate) mod sqlite {
     use rusqlite::{Connection, OptionalExtension, params};
 
     use super::FrameLocalSource;
-    use crate::common::result::{ErrorModel, NbResult};
+    use crate::common::result::{ErrorModel, NBResult};
 
     pub(crate) struct SqliteFrameDatabase {
         conn: Mutex<Connection>,
     }
 
     impl SqliteFrameDatabase {
-        pub(crate) fn open(path: &str) -> NbResult<Arc<Self>> {
+        pub(crate) fn open(path: &str) -> NBResult<Arc<Self>> {
             let conn = Connection::open(path).map_err(map_error)?;
             Self::init(conn)
         }
 
-        #[cfg(test)]
-        pub(crate) fn in_memory() -> NbResult<Arc<Self>> {
-            let conn = Connection::open_in_memory().map_err(map_error)?;
-            Self::init(conn)
-        }
-
-        fn init(conn: Connection) -> NbResult<Arc<Self>> {
+        fn init(conn: Connection) -> NBResult<Arc<Self>> {
             // The two frame Room tables, verbatim. `IF NOT EXISTS` keeps existing
             // on-device databases untouched, so no schema migration is needed.
             conn.execute_batch(
@@ -63,13 +65,13 @@ pub(crate) mod sqlite {
             }))
         }
 
-        fn lock(&self) -> NbResult<std::sync::MutexGuard<'_, Connection>> {
+        fn lock(&self) -> NBResult<std::sync::MutexGuard<'_, Connection>> {
             self.conn
                 .lock()
                 .map_err(|_| ErrorModel::cache("Frame database connection poisoned"))
         }
 
-        fn query_text(&self, sql: &str, key: &str) -> NbResult<Option<String>> {
+        fn query_text(&self, sql: &str, key: &str) -> NBResult<Option<String>> {
             let conn = self.lock()?;
             conn.query_row(sql, params![key], |r| r.get::<_, String>(0))
                 .optional()
@@ -78,11 +80,11 @@ pub(crate) mod sqlite {
     }
 
     impl FrameLocalSource for SqliteFrameDatabase {
-        fn dev_find_by_route(&self, route: &str) -> NbResult<Option<String>> {
+        fn dev_find_by_route(&self, route: &str) -> NBResult<Option<String>> {
             self.query_text("SELECT frameJson FROM frame WHERE route = ?1 LIMIT 1", route)
         }
 
-        fn dev_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NbResult<()> {
+        fn dev_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NBResult<()> {
             self.lock()?
                 .execute(
                     "INSERT OR REPLACE INTO frame (route, checksum, frameJson) VALUES (?1, ?2, ?3)",
@@ -92,14 +94,14 @@ pub(crate) mod sqlite {
             Ok(())
         }
 
-        fn prod_find_by_route(&self, route: &str) -> NbResult<Option<String>> {
+        fn prod_find_by_route(&self, route: &str) -> NBResult<Option<String>> {
             self.query_text(
                 "SELECT frameJson FROM frame_production WHERE route = ?1 LIMIT 1",
                 route,
             )
         }
 
-        fn prod_exists(&self, route: &str) -> NbResult<bool> {
+        fn prod_exists(&self, route: &str) -> NBResult<bool> {
             let conn = self.lock()?;
             conn.query_row(
                 "SELECT EXISTS(SELECT 1 FROM frame_production WHERE route = ?1)",
@@ -109,7 +111,7 @@ pub(crate) mod sqlite {
             .map_err(map_error)
         }
 
-        fn prod_find_checksum(&self, route: &str, checksum: &str) -> NbResult<Option<String>> {
+        fn prod_find_checksum(&self, route: &str, checksum: &str) -> NBResult<Option<String>> {
             let conn = self.lock()?;
             conn.query_row(
                 "SELECT checksum FROM frame_production WHERE route = ?1 AND checksum = ?2 LIMIT 1",
@@ -120,7 +122,7 @@ pub(crate) mod sqlite {
             .map_err(map_error)
         }
 
-        fn prod_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NbResult<()> {
+        fn prod_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NBResult<()> {
             self.lock()?
                 .execute(
                     "INSERT OR REPLACE INTO frame_production (route, checksum, frameJson) VALUES (?1, ?2, ?3)",
@@ -130,7 +132,7 @@ pub(crate) mod sqlite {
             Ok(())
         }
 
-        fn clear_all(&self) -> NbResult<()> {
+        fn clear_all(&self) -> NBResult<()> {
             let conn = self.lock()?;
             conn.execute("DELETE FROM frame", []).map_err(map_error)?;
             conn.execute("DELETE FROM frame_production", [])
@@ -138,7 +140,7 @@ pub(crate) mod sqlite {
             Ok(())
         }
 
-        fn clear(&self, route: &str) -> NbResult<()> {
+        fn clear(&self, route: &str) -> NBResult<()> {
             let conn = self.lock()?;
             conn.execute("DELETE FROM frame WHERE route = ?1", params![route])
                 .map_err(map_error)?;

@@ -51,6 +51,9 @@ async-trait = "0.1"
 # Only the `sync` primitives are pulled in here; the runtime arrives with
 # `net-reqwest`.
 tokio = { version = "1", default-features = false, features = ["sync"] }
+# Generated install id (time-ordered UUID v7). Small crate; v7 reuses the
+# already-present `getrandom` for its random bits.
+uuid = { version = "1", features = ["v7"] }
 
 # --- net-reqwest feature ---
 # default-features off => no OpenSSL. rustls-tls is our only TLS. No `json`

@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct BaseDto<D> {
+pub(crate) struct BaseDto<D> {
     #[serde(default = "none")]
     pub data: Option<D>,
     #[serde(default)]
@@ -9,13 +9,13 @@ pub struct BaseDto<D> {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct BaseErrorDto {
+pub(crate) struct BaseErrorDto {
     pub message: String,
     pub extensions: BaseErrorClassificationDto,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct BaseErrorClassificationDto {
+pub(crate) struct BaseErrorClassificationDto {
     pub classification: String,
 }
 

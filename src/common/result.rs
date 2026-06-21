@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::common::logger::keys::parameter as param_key;
 
-pub type NbResult<T> = Result<T, ErrorModel>;
+pub type NBResult<T> = Result<T, ErrorModel>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
 pub enum ErrorType {

@@ -1,4 +1,5 @@
 pub(crate) mod dto;
-pub(crate) mod frame_repository;
 pub(crate) mod mapper;
+pub(crate) mod remote;
+pub(crate) mod repository;
 pub(crate) mod source;

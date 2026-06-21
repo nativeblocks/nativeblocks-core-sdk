@@ -1,5 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+use crate::common::config::ProjectConfigGateway;
+
+#[derive(Debug, Clone)]
+pub(crate) struct ScaffoldRequest {
+    pub gateway: ProjectConfigGateway,
+    pub graphql_endpoint: String,
+    pub install_id: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeScaffoldModel {
     pub frames: Vec<NativeFrameRouteModel>,

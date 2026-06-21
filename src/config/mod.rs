@@ -1,7 +1,9 @@
 mod client;
 mod data;
-pub mod key;
-pub mod model;
+mod di;
+mod domain;
+mod key;
+mod model;
 
-pub use client::{Client, gateway_for, get_or_create, new_client};
-pub use model::NativeProjectConfigModel;
+pub(crate) use client::Client;
+pub(crate) use di::get_or_create;

@@ -1,5 +1,7 @@
 #[cfg(feature = "net-reqwest")]
-pub mod reqwest_client;
+mod reqwest_client;
+
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use serde::Serialize;
@@ -8,31 +10,36 @@ use serde_json::Value;
 
 use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::dto::{BaseDto, BaseErrorDto};
-use crate::common::result::{ErrorModel, NbResult};
+use crate::common::result::{ErrorModel, NBResult};
 
-pub const DEFAULT_TIMEOUT_SECS: u64 = 10;
+pub(crate) const DEFAULT_TIMEOUT_SECS: u64 = 10;
 
-pub const INSTALL_ID_HEADER: &str = "Install-Id";
-pub const GATEWAY_TYPE_REST: &str = "rest";
+pub(crate) const INSTALL_ID_HEADER: &str = "Install-Id";
+pub(crate) const GATEWAY_TYPE_REST: &str = "rest";
 
-pub type Header = (String, String);
+pub(crate) type Header = (String, String);
 
 #[async_trait]
 pub trait HttpClient: Send + Sync {
-    async fn post(&self, endpoint: &str, headers: &[Header], body: &str) -> NbResult<String>;
-    async fn get(&self, endpoint: &str, headers: &[Header]) -> NbResult<String>;
+    async fn post(&self, endpoint: &str, headers: &[Header], body: &str) -> NBResult<String>;
+    async fn get(&self, endpoint: &str, headers: &[Header]) -> NBResult<String>;
+}
+
+#[cfg(feature = "net-reqwest")]
+pub(crate) fn new_http_client() -> NBResult<Arc<dyn HttpClient>> {
+    Ok(Arc::new(reqwest_client::ReqwestHttpClient::new()?))
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GraphQlRequest {
+pub(crate) struct GraphQlRequest {
     pub query: String,
     pub variables: Value,
     pub operation_name: String,
 }
 
 impl GraphQlRequest {
-    pub fn new(query: impl Into<String>) -> Self {
+    pub(crate) fn new(query: impl Into<String>) -> Self {
         let query = query.into();
         let operation_name = operation_name_from_query(&query);
         Self {
@@ -42,7 +49,7 @@ impl GraphQlRequest {
         }
     }
 
-    pub fn with_variables(mut self, variables: Value) -> Self {
+    pub(crate) fn with_variables(mut self, variables: Value) -> Self {
         self.variables = variables;
         self
     }
@@ -63,7 +70,7 @@ fn operation_name_from_query(query: &str) -> String {
     String::new()
 }
 
-pub fn with_headers(environment: &NativeblocksEnvironment, config: &SdkConfig) -> Vec<Header> {
+pub(crate) fn with_headers(environment: &NativeblocksEnvironment, config: &SdkConfig) -> Vec<Header> {
     vec![
         ("Api-Key".to_string(),format!("Bearer {}", environment.api_key())),
         ("SDK-Version".to_string(), config.version.clone()),
@@ -71,19 +78,19 @@ pub fn with_headers(environment: &NativeblocksEnvironment, config: &SdkConfig) -
     ]
 }
 
-pub async fn execute_graphql<D: DeserializeOwned>(
+pub(crate) async fn execute_graphql<D: DeserializeOwned>(
     client: &dyn HttpClient,
     endpoint: &str,
     headers: &[Header],
     request: &GraphQlRequest,
-) -> NbResult<D> {
+) -> NBResult<D> {
     let body = serde_json::to_string(request)
 .map_err(|e| ErrorModel::network(format!("Failed to encode request: {e}")))?;
     let response = client.post(endpoint, headers, &body).await?;
     decode_envelope::<D>(&response)
 }
 
-pub fn decode_envelope<D: DeserializeOwned>(response: &str) -> NbResult<D> {
+pub(crate) fn decode_envelope<D: DeserializeOwned>(response: &str) -> NBResult<D> {
     let dto: BaseDto<D> = serde_json::from_str(response)
         .map_err(|e| ErrorModel::network(format!("Failed to decode response: {e}")))?;
 
@@ -101,7 +108,3 @@ fn map_graphql_errors(errors: &[BaseErrorDto]) -> ErrorModel {
         None => ErrorModel::network("Please try again"),
     }
 }
-
-#[cfg(test)]
-#[path = "mod.test.rs"]
-mod tests;

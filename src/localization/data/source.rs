@@ -1,18 +1,27 @@
-use crate::common::result::NbResult;
+use std::sync::Arc;
 
-pub trait LocalizationLocalSource: Send + Sync {
-    fn dev_find_by_language_code(&self, language_code: &str) -> NbResult<Option<String>>;
+use crate::common::result::NBResult;
+
+pub(crate) trait LocalizationLocalSource: Send + Sync {
+    fn dev_find_by_language_code(&self, language_code: &str) -> NBResult<Option<String>>;
     fn dev_upsert(&self, language_code: &str, checksum: &str, localization_json: &str)
-    -> NbResult<()>;
+    -> NBResult<()>;
 
-    fn prod_find_by_language_code(&self, language_code: &str) -> NbResult<Option<String>>;
-    fn prod_find_checksum(&self, language_code: &str, checksum: &str) -> NbResult<Option<String>>;
+    fn prod_find_by_language_code(&self, language_code: &str) -> NBResult<Option<String>>;
+    fn prod_find_checksum(&self, language_code: &str, checksum: &str) -> NBResult<Option<String>>;
     fn prod_upsert(
         &self,
         language_code: &str,
         checksum: &str,
         localization_json: &str,
-    ) -> NbResult<()>;
+    ) -> NBResult<()>;
+}
+
+#[cfg(feature = "cache-sqlite")]
+pub(crate) fn new_local_source(db_path: &str) -> NBResult<Arc<dyn LocalizationLocalSource>> {
+    let source: Arc<dyn LocalizationLocalSource> =
+        sqlite::SqliteLocalizationDatabase::open(db_path)?;
+    return Ok(source);
 }
 
 #[cfg(feature = "cache-sqlite")]
@@ -22,25 +31,19 @@ pub(crate) mod sqlite {
     use rusqlite::{Connection, OptionalExtension, params};
 
     use super::LocalizationLocalSource;
-    use crate::common::result::{ErrorModel, NbResult};
+    use crate::common::result::{ErrorModel, NBResult};
 
     pub(crate) struct SqliteLocalizationDatabase {
         conn: Mutex<Connection>,
     }
 
     impl SqliteLocalizationDatabase {
-        pub(crate) fn open(path: &str) -> NbResult<Arc<Self>> {
+        pub(crate) fn open(path: &str) -> NBResult<Arc<Self>> {
             let conn = Connection::open(path).map_err(map_error)?;
             Self::init(conn)
         }
 
-        #[cfg(test)]
-        pub(crate) fn in_memory() -> NbResult<Arc<Self>> {
-            let conn = Connection::open_in_memory().map_err(map_error)?;
-            Self::init(conn)
-        }
-
-        fn init(conn: Connection) -> NbResult<Arc<Self>> {
+        fn init(conn: Connection) -> NBResult<Arc<Self>> {
             // The two localization Room tables, verbatim. `IF NOT EXISTS` keeps an
             // existing on-device database untouched, so no schema migration runs.
             conn.execute_batch(
@@ -65,7 +68,7 @@ pub(crate) mod sqlite {
             }))
         }
 
-        fn lock(&self) -> NbResult<std::sync::MutexGuard<'_, Connection>> {
+        fn lock(&self) -> NBResult<std::sync::MutexGuard<'_, Connection>> {
             self.conn
                 .lock()
                 .map_err(|_| ErrorModel::cache("Localization database connection poisoned"))
@@ -73,7 +76,7 @@ pub(crate) mod sqlite {
     }
 
     impl LocalizationLocalSource for SqliteLocalizationDatabase {
-        fn dev_find_by_language_code(&self, language_code: &str) -> NbResult<Option<String>> {
+        fn dev_find_by_language_code(&self, language_code: &str) -> NBResult<Option<String>> {
             let conn = self.lock()?;
             conn.query_row(
                 "SELECT localizationJson FROM localization WHERE languageCode = ?1 LIMIT 1",
@@ -89,7 +92,7 @@ pub(crate) mod sqlite {
             language_code: &str,
             checksum: &str,
             localization_json: &str,
-        ) -> NbResult<()> {
+        ) -> NBResult<()> {
             self.lock()?
                 .execute(
                     "INSERT OR REPLACE INTO localization (languageCode, checksum, localizationJson) VALUES (?1, ?2, ?3)",
@@ -99,7 +102,7 @@ pub(crate) mod sqlite {
             Ok(())
         }
 
-        fn prod_find_by_language_code(&self, language_code: &str) -> NbResult<Option<String>> {
+        fn prod_find_by_language_code(&self, language_code: &str) -> NBResult<Option<String>> {
             let conn = self.lock()?;
             conn.query_row(
                 "SELECT localizationJson FROM localization_production WHERE languageCode = ?1 LIMIT 1",
@@ -114,7 +117,7 @@ pub(crate) mod sqlite {
             &self,
             language_code: &str,
             checksum: &str,
-        ) -> NbResult<Option<String>> {
+        ) -> NBResult<Option<String>> {
             let conn = self.lock()?;
             conn.query_row(
                 "SELECT checksum FROM localization_production WHERE languageCode = ?1 AND checksum = ?2 LIMIT 1",
@@ -130,7 +133,7 @@ pub(crate) mod sqlite {
             language_code: &str,
             checksum: &str,
             localization_json: &str,
-        ) -> NbResult<()> {
+        ) -> NBResult<()> {
             self.lock()?
                 .execute(
                     "INSERT OR REPLACE INTO localization_production (languageCode, checksum, localizationJson) VALUES (?1, ?2, ?3)",

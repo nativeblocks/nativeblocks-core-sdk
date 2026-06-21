@@ -1,128 +1,22 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use async_trait::async_trait;
 use tokio::sync::watch;
 
-use crate::common::config::{NativeblocksEnvironment, ProjectConfigGateway, SdkConfig};
-use crate::common::logger::{self, LoggerEventLevel, NativeLoggerProvider, keys};
-use crate::common::net::HttpClient;
-use crate::common::result::{ErrorType, NbResult};
-use crate::frame::data::frame_repository::{
-    self, FrameRepository, FrameStream, new_frame_repository,
-};
+use crate::common::config::SdkConfig;
+use crate::common::logger::{LoggerEventLevel, NativeLoggerProvider, keys};
+use crate::common::result::{ErrorType, NBResult};
 use crate::frame::action::{ActionContext, ActionResult, NativeActionHandler};
-use crate::frame::data::source::FrameLocalSource;
+use crate::frame::data::repository::{FrameRepository, FrameStream};
 use crate::frame::model::{
-    NativeActionModel, NativeActionTriggerModel, NativeBlockModel, NativeFrameModel,
-    NativeFrameState, NativeVariableModel,
+    FrameSyncRequest, NativeActionModel, NativeActionTriggerModel, NativeBlockModel,
+    NativeFrameModel, NativeFrameState, NativeVariableModel,
 };
 use crate::localization;
 
-#[derive(Debug, Clone)]
-pub struct FrameSyncRequest {
-    pub endpoint_frame: ProjectConfigGateway,
-    pub endpoint_frame_production: ProjectConfigGateway,
-    pub endpoint_frame_production_checksum: ProjectConfigGateway,
-    pub graphql_endpoint: String,
-    pub install_id: String,
-    pub route: String,
-}
-
-#[async_trait]
-pub trait Client: Send + Sync {
-    async fn setup_frame(&self, route: String, route_arguments: HashMap<String, String>);
-    async fn sync_frame(&self, request: FrameSyncRequest) -> NbResult<()>;
-    async fn sync_community_frame(&self, endpoint_frame: String, route: String) -> NbResult<()>;
-
-    fn handle_variable(&self, variable: NativeVariableModel, need_to_log: bool);
-    async fn handle_action(
-        &self,
-        index: i32,
-        action: Option<NativeActionModel>,
-        performed_event_type: String,
-    );
-    fn register_action_handler(&self, key_type: String, handler: Arc<dyn NativeActionHandler>);
-    fn change_block(&self, block: NativeBlockModel);
-    fn localize(&self, key: String) -> Option<String>;
-    fn set_global_parameters(&self, parameters: HashMap<String, String>);
-
-    fn clear_all_frames(&self) -> NbResult<()>;
-    fn clear_frame(&self, route: String) -> NbResult<()>;
-
-    fn native_frame_state(&self) -> NativeFrameState;
-    fn blocks_state(&self) -> HashMap<String, NativeBlockModel>;
-    fn variables_state(&self) -> HashMap<String, NativeVariableModel>;
-    fn action_state(&self) -> HashMap<String, Vec<NativeActionModel>>;
-    fn frame_update_generation(&self) -> u32;
-
-    fn observe_frame_state(&self) -> watch::Receiver<NativeFrameState>;
-    fn observe_blocks(&self) -> watch::Receiver<HashMap<String, NativeBlockModel>>;
-    fn observe_variables(&self) -> watch::Receiver<HashMap<String, NativeVariableModel>>;
-    fn observe_actions(&self) -> watch::Receiver<HashMap<String, Vec<NativeActionModel>>>;
-    fn observe_frame_update_generation(&self) -> watch::Receiver<u32>;
-}
-
-pub fn new_client(
-    http: Arc<dyn HttpClient>,
-    environment: NativeblocksEnvironment,
-    config: SdkConfig,
-    frame_source: Arc<dyn FrameLocalSource>,
-    localization: Arc<dyn localization::Client>,
-) -> Arc<dyn Client> {
-    let development_mode = development_mode(&environment);
-    let instance_name = environment.instance_name().to_string();
-    let logger = logger::get_or_create(environment.instance_name());
-
-    let frame_repo = new_frame_repository(http, frame_source, environment.clone(), config.clone());
-
-    let (frame_state, _) = watch::channel(NativeFrameState::initial(development_mode));
-    let (blocks, _) = watch::channel(HashMap::new());
-    let (variables, _) = watch::channel(HashMap::new());
-    let (actions, _) = watch::channel(HashMap::new());
-    let (generation, _) = watch::channel(0u32);
-
-    Arc::new(FrameEngine {
-        frame_repo,
-        localization,
-        config,
-        logger,
-        development_mode,
-        instance_name,
-        frame_state,
-        blocks,
-        variables,
-        actions,
-        generation,
-        action_handlers: Mutex::new(HashMap::new()),
-        current_route: Mutex::new(None),
-        route_arguments: Mutex::new(HashMap::new()),
-        frame_stream: Mutex::new(None),
-    })
-}
-
-#[cfg(feature = "cache-sqlite")]
-pub fn open_engine(
-    http: Arc<dyn HttpClient>,
-    environment: NativeblocksEnvironment,
-    config: SdkConfig,
-    db_path: &str,
-    localization: Arc<dyn localization::Client>,
-) -> NbResult<Arc<dyn Client>> {
-    use crate::frame::data::source::sqlite::SqliteFrameDatabase;
-    let frame_source: Arc<dyn FrameLocalSource> = SqliteFrameDatabase::open(db_path)?;
-    Ok(new_client(
-        http,
-        environment,
-        config,
-        frame_source,
-        localization,
-    ))
-}
-
-struct FrameEngine {
-    frame_repo: Arc<dyn FrameRepository>,
-    localization: Arc<dyn localization::Client>,
+pub(crate) struct Client {
+    repository: FrameRepository,
+    localization: Arc<localization::Client>,
     config: SdkConfig,
     logger: Arc<Mutex<NativeLoggerProvider>>,
     development_mode: bool,
@@ -138,8 +32,196 @@ struct FrameEngine {
     frame_stream: Mutex<Option<FrameStream>>,
 }
 
-impl FrameEngine {
-    fn apply_frame_result(&self, value: NbResult<NativeFrameModel>) {
+impl Client {
+    pub(crate) fn new(
+        repository: FrameRepository,
+        localization: Arc<localization::Client>,
+        config: SdkConfig,
+        logger: Arc<Mutex<NativeLoggerProvider>>,
+        development_mode: bool,
+        instance_name: String,
+    ) -> Self {
+        let (frame_state, _) = watch::channel(NativeFrameState::initial(development_mode));
+        let (blocks, _) = watch::channel(HashMap::new());
+        let (variables, _) = watch::channel(HashMap::new());
+        let (actions, _) = watch::channel(HashMap::new());
+        let (generation, _) = watch::channel(0u32);
+
+        return Self {
+            repository,
+            localization,
+            config,
+            logger,
+            development_mode,
+            instance_name,
+            frame_state,
+            blocks,
+            variables,
+            actions,
+            generation,
+            action_handlers: Mutex::new(HashMap::new()),
+            current_route: Mutex::new(None),
+            route_arguments: Mutex::new(HashMap::new()),
+            frame_stream: Mutex::new(None),
+        };
+    }
+
+    pub(crate) async fn setup_frame(&self, route: String, route_arguments: HashMap<String, String>) {
+        *self.current_route.lock().unwrap() = Some(route.clone());
+        *self.route_arguments.lock().unwrap() = route_arguments;
+
+        let mut params = HashMap::new();
+        params.insert(
+            keys::parameter::STATE.to_string(),
+            keys::state::FRAME_LOADING.to_string(),
+        );
+        self.log(
+            LoggerEventLevel::Info,
+            keys::tag::FRAME_STATE,
+            format!("Frame loading: {route}"),
+            params,
+        );
+
+        let stream = self.repository.get_frame(&route, self.development_mode);
+        let value = stream.borrow().clone();
+        *self.frame_stream.lock().unwrap() = Some(stream);
+        self.apply_frame_result(value);
+    }
+
+    pub(crate) async fn sync_frame(&self, request: FrameSyncRequest) -> NBResult<()> {
+        let route = request.route.clone();
+        let result = self
+            .repository
+            .sync_frame(&request, self.development_mode)
+            .await;
+
+        match &result {
+            Ok(()) => {
+                let mut params = HashMap::new();
+                params.insert(
+                    keys::parameter::STATE.to_string(),
+                    keys::state::FRAME_SYNC_SUCCEED.to_string(),
+                );
+                self.log(
+                    LoggerEventLevel::Info,
+                    keys::tag::FRAME_SYNC_STATE,
+                    format!("Frame synced for {route}"),
+                    params,
+                );
+                let latest = self
+                    .frame_stream
+                    .lock()
+                    .unwrap()
+                    .as_ref()
+                    .map(|rx| rx.borrow().clone());
+                if let Some(value) = latest {
+                    self.apply_frame_result(value);
+                }
+            }
+            Err(error) => {
+                let mut params = error.to_logger_parameters();
+                params.insert(
+                    keys::parameter::STATE.to_string(),
+                    keys::state::FRAME_SYNC_FAILED.to_string(),
+                );
+                self.log(
+                    LoggerEventLevel::Error,
+                    keys::tag::FRAME_SYNC_STATE,
+                    format!("Frame sync failed for {route}"),
+                    params,
+                );
+            }
+        }
+        return result;
+    }
+
+    pub(crate) async fn sync_community_frame(
+        &self,
+        endpoint_frame: String,
+        route: String,
+    ) -> NBResult<()> {
+        let result = self
+            .repository
+            .sync_community_frame(&endpoint_frame, &route)
+            .await;
+        if result.is_ok() {
+            let latest = self
+                .frame_stream
+                .lock()
+                .unwrap()
+                .as_ref()
+                .map(|rx| rx.borrow().clone());
+            if let Some(value) = latest {
+                self.apply_frame_result(value);
+            }
+        }
+        return result;
+    }
+
+    pub(crate) fn handle_variable(&self, variable: NativeVariableModel, need_to_log: bool) {
+        self.handle_variable_internal(variable, need_to_log);
+    }
+
+    pub(crate) async fn handle_action(
+        &self,
+        index: i32,
+        action: Option<NativeActionModel>,
+        performed_event_type: String,
+    ) {
+        if let Some(action) = action {
+            self.run_event(index, action, performed_event_type).await;
+        }
+    }
+
+    pub(crate) fn register_action_handler(
+        &self,
+        key_type: String,
+        handler: Arc<dyn NativeActionHandler>,
+    ) {
+        self.action_handlers.lock().unwrap().insert(key_type, handler);
+    }
+
+    pub(crate) fn change_block(&self, block: NativeBlockModel) {
+        self.block_hoist(block, true);
+    }
+
+    pub(crate) fn localize(&self, key: String) -> Option<String> {
+        return self.localization.translate(key);
+    }
+
+    pub(crate) fn set_global_parameters(&self, parameters: HashMap<String, String>) {
+        self.repository.set_global_parameters(parameters);
+    }
+
+    pub(crate) fn clear_all_frames(&self) -> NBResult<()> {
+        return self.repository.clear_all_frames();
+    }
+
+    pub(crate) fn clear_frame(&self, route: String) -> NBResult<()> {
+        return self.repository.clear_frame(&route);
+    }
+
+    pub(crate) fn native_frame_state(&self) -> NativeFrameState {
+        return self.frame_state.borrow().clone();
+    }
+
+    pub(crate) fn blocks_state(&self) -> HashMap<String, NativeBlockModel> {
+        return self.blocks.borrow().clone();
+    }
+
+    pub(crate) fn variables_state(&self) -> HashMap<String, NativeVariableModel> {
+        return self.variables.borrow().clone();
+    }
+
+    pub(crate) fn action_state(&self) -> HashMap<String, Vec<NativeActionModel>> {
+        return self.actions.borrow().clone();
+    }
+
+    pub(crate) fn frame_update_generation(&self) -> u32 {
+        return *self.generation.borrow();
+    }
+
+    fn apply_frame_result(&self, value: NBResult<NativeFrameModel>) {
         match value {
             Ok(frame) => {
                 self.generation.send_modify(|g| *g += 1);
@@ -187,7 +269,7 @@ impl FrameEngine {
 
     fn apply_external_arguments(&self) {
         let mut external = self.route_arguments.lock().unwrap().clone();
-        external.extend(self.frame_repo.get_global_parameters());
+        external.extend(self.repository.get_global_parameters());
         for (key, value) in external {
             self.handle_variable_internal(
                 NativeVariableModel::new(key, value, "STRING"),
@@ -334,7 +416,7 @@ impl FrameEngine {
         index: i32,
         trigger: &'a NativeActionTriggerModel,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'a>> {
-        Box::pin(async move {
+        return Box::pin(async move {
             self.log_trigger(action, trigger);
 
             let outcome = if trigger.key_type == crate::frame::action::SCRIPT_KEY_TYPE {
@@ -364,22 +446,22 @@ impl FrameEngine {
             for child in children {
                 self.run_trigger(action, index, child).await;
             }
-        })
+        });
     }
 
     fn action_handler(&self, key_type: &str) -> Option<Arc<dyn NativeActionHandler>> {
-        self.action_handlers.lock().unwrap().get(key_type).cloned()
+        return self.action_handlers.lock().unwrap().get(key_type).cloned();
     }
 
     fn action_context(&self, index: i32, trigger: &NativeActionTriggerModel) -> ActionContext {
-        ActionContext {
+        return ActionContext {
             instance_name: self.instance_name.clone(),
             list_item_index: index,
             key_type: trigger.key_type.clone(),
             trigger: trigger.clone(),
             variables: self.variables.borrow().clone(),
             blocks: self.blocks.borrow().clone(),
-        }
+        };
     }
 
     fn apply_action_result(&self, result: &ActionResult) {
@@ -440,20 +522,20 @@ impl FrameEngine {
             development_mode: self.development_mode,
             route: self.current_route.lock().unwrap().clone().unwrap_or_default(),
         };
-        Some(crate::frame::script::evaluate(&bridge, trigger, index))
+        return Some(crate::frame::script::evaluate(&bridge, trigger, index));
     }
 
     #[cfg(not(feature = "script-quickjs"))]
     fn run_script(&self, _trigger: &NativeActionTriggerModel, _index: i32) -> Option<ActionResult> {
-        None
+        return None;
     }
 
     fn var_level(&self) -> LoggerEventLevel {
-        if self.development_mode {
+        return if self.development_mode {
             LoggerEventLevel::Debug
         } else {
             LoggerEventLevel::Info
-        }
+        };
     }
 
     fn log(
@@ -470,195 +552,3 @@ impl FrameEngine {
         }
     }
 }
-
-#[async_trait]
-impl Client for FrameEngine {
-    async fn setup_frame(&self, route: String, route_arguments: HashMap<String, String>) {
-        *self.current_route.lock().unwrap() = Some(route.clone());
-        *self.route_arguments.lock().unwrap() = route_arguments;
-
-        let mut params = HashMap::new();
-        params.insert(
-            keys::parameter::STATE.to_string(),
-            keys::state::FRAME_LOADING.to_string(),
-        );
-        self.log(
-            LoggerEventLevel::Info,
-            keys::tag::FRAME_STATE,
-            format!("Frame loading: {route}"),
-            params,
-        );
-
-        let stream = self.frame_repo.get_frame(&route, self.development_mode);
-        let value = stream.borrow().clone();
-        *self.frame_stream.lock().unwrap() = Some(stream);
-        self.apply_frame_result(value);
-    }
-
-    async fn sync_frame(&self, request: FrameSyncRequest) -> NbResult<()> {
-        let route = request.route.clone();
-        let result = self
-            .frame_repo
-            .sync_frame(frame_repository::FrameSyncRequest {
-                endpoint_frame: request.endpoint_frame,
-                endpoint_frame_production: request.endpoint_frame_production,
-                endpoint_frame_production_checksum: request.endpoint_frame_production_checksum,
-                graphql_endpoint: request.graphql_endpoint,
-                development_mode: self.development_mode,
-                install_id: request.install_id,
-                route: route.clone(),
-            })
-            .await;
-
-        match &result {
-            Ok(()) => {
-                let mut params = HashMap::new();
-                params.insert(
-                    keys::parameter::STATE.to_string(),
-                    keys::state::FRAME_SYNC_SUCCEED.to_string(),
-                );
-                self.log(
-                    LoggerEventLevel::Info,
-                    keys::tag::FRAME_SYNC_STATE,
-                    format!("Frame synced for {route}"),
-                    params,
-                );
-                let latest = self
-                    .frame_stream
-                    .lock()
-                    .unwrap()
-                    .as_ref()
-                    .map(|rx| rx.borrow().clone());
-                if let Some(value) = latest {
-                    self.apply_frame_result(value);
-                }
-            }
-            Err(error) => {
-                let mut params = error.to_logger_parameters();
-                params.insert(
-                    keys::parameter::STATE.to_string(),
-                    keys::state::FRAME_SYNC_FAILED.to_string(),
-                );
-                self.log(
-                    LoggerEventLevel::Error,
-                    keys::tag::FRAME_SYNC_STATE,
-                    format!("Frame sync failed for {route}"),
-                    params,
-                );
-            }
-        }
-        result
-    }
-
-    async fn sync_community_frame(&self, endpoint_frame: String, route: String) -> NbResult<()> {
-        let result = self
-            .frame_repo
-            .sync_community_frame(&endpoint_frame, &route)
-            .await;
-        if result.is_ok() {
-            let latest = self
-                .frame_stream
-                .lock()
-                .unwrap()
-                .as_ref()
-                .map(|rx| rx.borrow().clone());
-            if let Some(value) = latest {
-                self.apply_frame_result(value);
-            }
-        }
-        result
-    }
-
-    fn handle_variable(&self, variable: NativeVariableModel, need_to_log: bool) {
-        self.handle_variable_internal(variable, need_to_log);
-    }
-
-    async fn handle_action(
-        &self,
-        index: i32,
-        action: Option<NativeActionModel>,
-        performed_event_type: String,
-    ) {
-        if let Some(action) = action {
-            self.run_event(index, action, performed_event_type).await;
-        }
-    }
-
-    fn register_action_handler(&self, key_type: String, handler: Arc<dyn NativeActionHandler>) {
-        self.action_handlers.lock().unwrap().insert(key_type, handler);
-    }
-
-    fn change_block(&self, block: NativeBlockModel) {
-        self.block_hoist(block, true);
-    }
-
-    fn localize(&self, key: String) -> Option<String> {
-        self.localization.translate(key)
-    }
-
-    fn set_global_parameters(&self, parameters: HashMap<String, String>) {
-        self.frame_repo.set_global_parameters(parameters);
-    }
-
-    fn clear_all_frames(&self) -> NbResult<()> {
-        self.frame_repo.clear_all_frames()
-    }
-
-    fn clear_frame(&self, route: String) -> NbResult<()> {
-        self.frame_repo.clear_frame(&route)
-    }
-
-    fn native_frame_state(&self) -> NativeFrameState {
-        self.frame_state.borrow().clone()
-    }
-
-    fn blocks_state(&self) -> HashMap<String, NativeBlockModel> {
-        self.blocks.borrow().clone()
-    }
-
-    fn variables_state(&self) -> HashMap<String, NativeVariableModel> {
-        self.variables.borrow().clone()
-    }
-
-    fn action_state(&self) -> HashMap<String, Vec<NativeActionModel>> {
-        self.actions.borrow().clone()
-    }
-
-    fn frame_update_generation(&self) -> u32 {
-        *self.generation.borrow()
-    }
-
-    fn observe_frame_state(&self) -> watch::Receiver<NativeFrameState> {
-        self.frame_state.subscribe()
-    }
-
-    fn observe_blocks(&self) -> watch::Receiver<HashMap<String, NativeBlockModel>> {
-        self.blocks.subscribe()
-    }
-
-    fn observe_variables(&self) -> watch::Receiver<HashMap<String, NativeVariableModel>> {
-        self.variables.subscribe()
-    }
-
-    fn observe_actions(&self) -> watch::Receiver<HashMap<String, Vec<NativeActionModel>>> {
-        self.actions.subscribe()
-    }
-
-    fn observe_frame_update_generation(&self) -> watch::Receiver<u32> {
-        self.generation.subscribe()
-    }
-}
-
-fn development_mode(environment: &NativeblocksEnvironment) -> bool {
-    matches!(
-        environment,
-        NativeblocksEnvironment::Cloud {
-            development_mode: true,
-            ..
-        }
-    )
-}
-
-#[cfg(test)]
-#[path = "client.test.rs"]
-mod tests;

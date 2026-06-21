@@ -1,90 +1,48 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use async_trait::async_trait;
+use crate::common::config::SdkConfig;
+use crate::common::logger::{LoggerEventLevel, NativeLoggerProvider, keys};
+use crate::common::result::{ErrorModel, NBResult};
+use crate::scaffold::data::repository::ScaffoldRepository;
+use crate::scaffold::domain::get_scaffold::get_scaffold_use_case;
+use crate::scaffold::model::{NativeScaffoldModel, ScaffoldRequest};
 
-use crate::common::config::{NativeblocksEnvironment, ProjectConfigGateway, SdkConfig};
-use crate::common::logger::{self, LoggerEventLevel, NativeLoggerProvider, keys};
-use crate::common::net::{
-    GATEWAY_TYPE_REST, GraphQlRequest, HttpClient, INSTALL_ID_HEADER, with_headers, decode_envelope,
-    execute_graphql,
-};
-use crate::common::result::NbResult;
-use crate::scaffold::data::dto::NativeScaffoldDataDto;
-use crate::scaffold::graphql;
-use crate::scaffold::model::NativeScaffoldModel;
-
-#[derive(Debug, Clone)]
-pub struct ScaffoldRequest {
-    pub gateway: ProjectConfigGateway,
-    pub graphql_endpoint: String,
-    pub install_id: String,
-}
-
-#[async_trait]
-pub trait Client: Send + Sync {
-    async fn get_scaffold(&self, request: ScaffoldRequest) -> NbResult<NativeScaffoldModel>;
-}
-
-struct ClientImpl {
-    http: Arc<dyn HttpClient>,
-    environment: NativeblocksEnvironment,
-    config: SdkConfig,
+pub(crate) struct Client {
+    repository: ScaffoldRepository,
     logger: Arc<Mutex<NativeLoggerProvider>>,
-}
-
-pub fn new_client(
-    http: Arc<dyn HttpClient>,
-    environment: NativeblocksEnvironment,
     config: SdkConfig,
-) -> Arc<dyn Client> {
-    let logger = logger::get_or_create(environment.instance_name());
-    Arc::new(ClientImpl {
-        http,
-        environment,
-        config,
-        logger,
-    })
 }
 
-#[async_trait]
-impl Client for ClientImpl {
-    async fn get_scaffold(&self, request: ScaffoldRequest) -> NbResult<NativeScaffoldModel> {
-        let mut headers = with_headers(&self.environment, &self.config);
-        headers.push((INSTALL_ID_HEADER.to_string(), request.install_id.clone()));
+impl Client {
+    pub(crate) fn new(
+        repository: ScaffoldRepository,
+        logger: Arc<Mutex<NativeLoggerProvider>>,
+        config: SdkConfig,
+    ) -> Self {
+        return Self {
+            repository,
+            logger,
+            config,
+        };
+    }
 
-        let fetched: NbResult<NativeScaffoldDataDto> =
-            if request.gateway.gateway_type == GATEWAY_TYPE_REST {
-                self.http
-                    .get(&request.gateway.value, &headers)
-                    .await
-                    .and_then(|body| decode_envelope::<NativeScaffoldDataDto>(&body))
-            } else {
-                let gql = GraphQlRequest::new(graphql::SCAFFOLD_QUERY);
-                execute_graphql::<NativeScaffoldDataDto>(
-                    self.http.as_ref(),
-                    &request.graphql_endpoint,
-                    &headers,
-                    &gql,
-                )
-                .await
-            };
-
-        match fetched {
-            Ok(dto) => {
-                let scaffold = dto.to_model();
+    pub(crate) async fn get_scaffold(
+        &self,
+        request: ScaffoldRequest,
+    ) -> NBResult<NativeScaffoldModel> {
+        match get_scaffold_use_case(&self.repository, &request).await {
+            Ok(scaffold) => {
                 self.log_success(scaffold.frames.len());
-                Ok(scaffold)
+                return Ok(scaffold);
             }
             Err(error) => {
                 self.log_failure(&error);
-                Err(error)
+                return Err(error);
             }
         }
     }
-}
 
-impl ClientImpl {
     fn log_success(&self, frames_count: usize) {
         let mut params = HashMap::new();
         params.insert(
@@ -95,14 +53,10 @@ impl ClientImpl {
             keys::parameter::FRAMES_COUNT.to_string(),
             frames_count.to_string(),
         );
-        self.dispatch(
-            LoggerEventLevel::Info,
-            "Successfully fetched scaffold",
-            params,
-        );
+        self.dispatch(LoggerEventLevel::Info, "Successfully fetched scaffold", params);
     }
 
-    fn log_failure(&self, error: &crate::common::result::ErrorModel) {
+    fn log_failure(&self, error: &ErrorModel) {
         let mut params = error.to_logger_parameters();
         params.insert(
             keys::parameter::STATE.to_string(),
@@ -123,7 +77,3 @@ impl ClientImpl {
         }
     }
 }
-
-#[cfg(test)]
-#[path = "client.test.rs"]
-mod tests;

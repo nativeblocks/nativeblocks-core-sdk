@@ -2,6 +2,18 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::common::config::ProjectConfigGateway;
+
+#[derive(Debug, Clone)]
+pub(crate) struct FrameSyncRequest {
+    pub endpoint_frame: ProjectConfigGateway,
+    pub endpoint_frame_production: ProjectConfigGateway,
+    pub endpoint_frame_production_checksum: ProjectConfigGateway,
+    pub graphql_endpoint: String,
+    pub install_id: String,
+    pub route: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeVariableModel {
     pub key: String,

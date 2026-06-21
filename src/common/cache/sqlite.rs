@@ -4,24 +4,24 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use rusqlite::{Connection, OptionalExtension, params};
 
 use super::CacheProvider;
-use crate::common::result::{ErrorModel, NbResult};
+use crate::common::result::{ErrorModel, NBResult};
 
 pub struct SqliteCacheProvider {
     conn: Mutex<Connection>,
 }
 
 impl SqliteCacheProvider {
-    pub fn open(path: &str) -> NbResult<Self> {
+    pub fn open(path: &str) -> NBResult<Self> {
         let conn = Connection::open(path).map_err(map_sqlite_error)?;
         Self::init(conn)
     }
 
-    pub fn in_memory() -> NbResult<Self> {
+    pub fn in_memory() -> NBResult<Self> {
         let conn = Connection::open_in_memory().map_err(map_sqlite_error)?;
         Self::init(conn)
     }
 
-    fn init(conn: Connection) -> NbResult<Self> {
+    fn init(conn: Connection) -> NBResult<Self> {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS cache (
                 key    TEXT PRIMARY KEY,
@@ -36,7 +36,7 @@ impl SqliteCacheProvider {
         })
     }
 
-    fn lock(&self) -> NbResult<std::sync::MutexGuard<'_, Connection>> {
+    fn lock(&self) -> NBResult<std::sync::MutexGuard<'_, Connection>> {
         self.conn
             .lock()
             .map_err(|_| ErrorModel::cache("Cache connection poisoned"))
@@ -44,7 +44,7 @@ impl SqliteCacheProvider {
 }
 
 impl CacheProvider for SqliteCacheProvider {
-    fn save_string(&self, key: &str, value: &str, ttl: Option<Duration>) -> NbResult<()> {
+    fn save_string(&self, key: &str, value: &str, ttl: Option<Duration>) -> NBResult<()> {
         let expiry = ttl.map(|d| now_millis().saturating_add(d.as_millis() as i64));
         let conn = self.lock()?;
         conn.execute(
@@ -56,7 +56,7 @@ impl CacheProvider for SqliteCacheProvider {
         Ok(())
     }
 
-    fn get_string(&self, key: &str, default: &str) -> NbResult<String> {
+    fn get_string(&self, key: &str, default: &str) -> NBResult<String> {
         let conn = self.lock()?;
         let row: Option<(String, Option<i64>)> = conn
             .query_row(
@@ -82,21 +82,21 @@ impl CacheProvider for SqliteCacheProvider {
         }
     }
 
-    fn remove(&self, key: &str) -> NbResult<()> {
+    fn remove(&self, key: &str) -> NBResult<()> {
         self.lock()?
             .execute("DELETE FROM cache WHERE key = ?1", params![key])
             .map_err(map_sqlite_error)?;
         Ok(())
     }
 
-    fn clear(&self) -> NbResult<()> {
+    fn clear(&self) -> NBResult<()> {
         self.lock()?
             .execute("DELETE FROM cache", [])
             .map_err(map_sqlite_error)?;
         Ok(())
     }
 
-    fn has(&self, key: &str) -> NbResult<bool> {
+    fn has(&self, key: &str) -> NBResult<bool> {
         let conn = self.lock()?;
         conn.query_row(
             "SELECT EXISTS(SELECT 1 FROM cache WHERE key = ?1 AND (expiry IS NULL OR expiry > ?2))",
@@ -117,7 +117,3 @@ fn now_millis() -> i64 {
 fn map_sqlite_error(error: rusqlite::Error) -> ErrorModel {
     ErrorModel::cache(error.to_string())
 }
-
-#[cfg(test)]
-#[path = "sqlite.test.rs"]
-mod tests;

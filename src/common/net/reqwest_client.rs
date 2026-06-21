@@ -4,18 +4,18 @@ use async_trait::async_trait;
 use reqwest::Client;
 
 use super::{DEFAULT_TIMEOUT_SECS, Header, HttpClient};
-use crate::common::result::{ErrorModel, NbResult};
+use crate::common::result::{ErrorModel, NBResult};
 
-pub struct ReqwestHttpClient {
+pub(crate) struct ReqwestHttpClient {
     client: Client,
 }
 
 impl ReqwestHttpClient {
-    pub fn new() -> NbResult<Self> {
+    pub(crate) fn new() -> NBResult<Self> {
         Self::with_timeout(Duration::from_secs(DEFAULT_TIMEOUT_SECS))
     }
 
-    pub fn with_timeout(timeout: Duration) -> NbResult<Self> {
+    fn with_timeout(timeout: Duration) -> NBResult<Self> {
         let client = Client::builder()
             .timeout(timeout)
             .connect_timeout(timeout)
@@ -27,7 +27,7 @@ impl ReqwestHttpClient {
 
 #[async_trait]
 impl HttpClient for ReqwestHttpClient {
-    async fn post(&self, endpoint: &str, headers: &[Header], body: &str) -> NbResult<String> {
+    async fn post(&self, endpoint: &str, headers: &[Header], body: &str) -> NBResult<String> {
         let mut request = self
             .client
             .post(endpoint)
@@ -41,7 +41,7 @@ impl HttpClient for ReqwestHttpClient {
         response.text().await.map_err(map_reqwest_error)
     }
 
-    async fn get(&self, endpoint: &str, headers: &[Header]) -> NbResult<String> {
+    async fn get(&self, endpoint: &str, headers: &[Header]) -> NBResult<String> {
         let mut request = self.client.get(endpoint);
         for (name, value) in headers {
             request = request.header(name, value);

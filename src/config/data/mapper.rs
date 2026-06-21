@@ -5,7 +5,7 @@ use crate::config::model::NativeProjectConfigModel;
 impl ProjectConfigDataDto {
     pub fn to_model(&self) -> NativeProjectConfigModel {
         let config = self.project_config.as_ref();
-        NativeProjectConfigModel {
+        return NativeProjectConfigModel {
             gateway: config
                 .and_then(|c| c.gateway.clone())
                 .unwrap_or_else(|| GRAPHQL_GATEWAY_TYPE.to_string()),
@@ -13,6 +13,6 @@ impl ProjectConfigDataDto {
             endpoints: config
                 .and_then(|c| c.endpoints.clone())
                 .unwrap_or_default(),
-        }
+        };
     }
 }
