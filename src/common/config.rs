@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct SdkConfig {
     pub version: String,
     pub platform: String,
@@ -26,7 +26,7 @@ impl Default for SdkConfig {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
 pub enum NativeblocksEnvironment {
     Cloud {
         instance_name: String,
@@ -40,7 +40,7 @@ pub enum NativeblocksEnvironment {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct ProjectConfigGateway {
     pub operation: String,
     #[serde(rename = "type")]

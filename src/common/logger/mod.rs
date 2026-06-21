@@ -28,6 +28,20 @@ pub trait Logger: Send + Sync {
     );
 }
 
+#[uniffi::export]
+pub fn provide_event_logger(instance_name: String, logger_type: String, logger: Box<dyn Logger>) {
+    if let Ok(mut provider) = get_or_create(&instance_name).lock() {
+        provider.provide_event_logger(logger_type, logger);
+    }
+}
+
+#[uniffi::export]
+pub fn remove_event_logger(instance_name: String, logger_type: String) {
+    if let Ok(mut provider) = get_or_create(&instance_name).lock() {
+        provider.remove_event_logger(&logger_type);
+    }
+}
+
 pub fn log_with_context(
     logger: &dyn Logger,
     config: &SdkConfig,
@@ -53,6 +67,10 @@ impl NativeLoggerProvider {
         logger: Box<dyn Logger>,
     ) {
         self.loggers.insert(logger_type.into(), logger);
+    }
+
+    pub fn remove_event_logger(&mut self, logger_type: &str) {
+        self.loggers.remove(logger_type);
     }
 
     pub fn logger_types(&self) -> Vec<String> {

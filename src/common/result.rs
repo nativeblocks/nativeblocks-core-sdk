@@ -4,7 +4,7 @@ use crate::common::logger::keys::parameter as param_key;
 
 pub type NbResult<T> = Result<T, ErrorModel>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
 pub enum ErrorType {
     Network,
     Cache,
@@ -17,6 +17,38 @@ impl ErrorType {
             ErrorType::Network => "NETWORK",
             ErrorType::Cache => "CACHE",
             ErrorType::Support => "SUPPORT",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Error)]
+pub enum NbError {
+    Failure {
+        reason: String,
+        error_type: ErrorType,
+        error_code: Option<String>,
+    },
+}
+
+impl std::fmt::Display for NbError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let NbError::Failure {
+            reason,
+            error_type,
+            ..
+        } = self;
+        write!(f, "[{}] {}", error_type.as_str(), reason)
+    }
+}
+
+impl std::error::Error for NbError {}
+
+impl From<ErrorModel> for NbError {
+    fn from(error: ErrorModel) -> Self {
+        NbError::Failure {
+            reason: error.message,
+            error_type: error.error_type,
+            error_code: error.error_code,
         }
     }
 }

@@ -2,7 +2,6 @@
 pub mod sqlite;
 
 use std::time::Duration;
-
 use crate::common::result::NbResult;
 
 pub trait CacheProvider: Send + Sync {
