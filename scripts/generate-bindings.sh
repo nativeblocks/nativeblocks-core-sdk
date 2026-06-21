@@ -12,7 +12,6 @@ cd "$(dirname "$0")/.."
 
 LIB_NAME="nativeblocks_core_sdk"
 
-# Pick the right shared-library extension for the host OS.
 case "$(uname -s)" in
   Darwin) EXT="dylib" ;;
   Linux)  EXT="so" ;;

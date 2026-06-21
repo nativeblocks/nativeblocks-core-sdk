@@ -85,7 +85,7 @@ if want ios; then
 ADD TO YOUR XCODE TARGET:
 
   dist/ios/NativeblocksCoreSdk.xcframework  ->  drag in, set "Do Not Embed"
-  dist/ios/nativeblocks_core_sdk.swift      ->  add to the target's sources
+  dist/ios/NativeblocksCoreEngine.swift     ->  add to the target's sources
 EOF
 fi
 
@@ -125,6 +125,6 @@ echo "=================================================="
 echo " DONE  v$VERSION"
 echo "=================================================="
 [[ ${#BUILT[@]}   -gt 0 ]] && printf '  built:   %s\n' "${BUILT[*]}"
-for s in "${SKIPPED[@]}"; do printf '  skipped: %s\n' "$s"; done
+[[ ${#SKIPPED[@]} -gt 0 ]] && for s in "${SKIPPED[@]}"; do printf '  skipped: %s\n' "$s"; done
 echo
 echo "  Artifacts in ./$DIST/  — read $DIST/COPY-GUIDE.md"
