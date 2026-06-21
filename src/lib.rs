@@ -1,4 +1,5 @@
-uniffi::setup_scaffolding!();
+  uniffi::setup_scaffolding!();
 
-pub mod common;
-pub mod scaffold;
+  pub mod common;
+  pub mod config;
+  pub mod scaffold;
