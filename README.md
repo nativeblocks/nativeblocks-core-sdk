@@ -69,8 +69,8 @@ a hint** (e.g. iOS off macOS), not errors. The layout:
 
 ```
 dist/
-├── android/  jniLibs/<abi>/libnativeblocks_core_sdk.so + java/…/nativeblocks_core_sdk.kt
-├── ios/      NativeblocksCoreSdk.xcframework/ + nativeblocks_core_sdk.swift
+├── android/  jniLibs/<abi>/libnativeblocks_core_sdk.so + java/io/nativeblocks/core/engine/nativeblocks_core_sdk.kt
+├── ios/      NativeblocksCoreSdk.xcframework/ + NativeblocksCoreEngine.swift
 └── flutter/  android/jniLibs/… + ios/… + lib/nativeblocks_core_sdk.dart
 ```
 
@@ -98,7 +98,7 @@ dependencies {
 | Add to the Xcode target                    | How                         |
 | ------------------------------------------ | --------------------------- |
 | `dist/ios/NativeblocksCoreSdk.xcframework` | drag in → **Do Not Embed**  |
-| `dist/ios/nativeblocks_core_sdk.swift`     | add to the target's sources |
+| `dist/ios/NativeblocksCoreEngine.swift`    | add to the target's sources |
 
 **Flutter** — then run `flutter run`:
 
