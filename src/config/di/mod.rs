@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use crate::common::cache::CacheProvider;
 use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::HttpClient;
-use crate::config::client::Client;
+use crate::config::presenter::client::Client;
 use crate::config::data::repository::ProjectConfigRepository;
 use crate::config::data::source::ProjectConfigRemoteSource;
 
@@ -17,12 +17,12 @@ pub(crate) fn get_or_create(
     http: Arc<dyn HttpClient>,
     environment: &NativeblocksEnvironment,
     config: &SdkConfig,
-    local_cache: Arc<dyn CacheProvider>,
+    cache: Arc<dyn CacheProvider>,
 ) -> Arc<Client> {
     let mut map = registry().lock().expect("config registry poisoned");
     return map
         .entry(environment.instance_name().to_string())
-        .or_insert_with(|| build_client(http, environment.clone(), config.clone(), local_cache))
+        .or_insert_with(|| build_client(http, environment.clone(), config.clone(), cache))
         .clone();
 }
 
@@ -30,9 +30,9 @@ fn build_client(
     http: Arc<dyn HttpClient>,
     environment: NativeblocksEnvironment,
     config: SdkConfig,
-    local_cache: Arc<dyn CacheProvider>,
+    cache: Arc<dyn CacheProvider>,
 ) -> Arc<Client> {
     let source = ProjectConfigRemoteSource::new(http, environment, config);
-    let repository = ProjectConfigRepository::new(source, local_cache);
+    let repository = ProjectConfigRepository::new(source, cache);
     return Arc::new(Client::new(repository));
 }

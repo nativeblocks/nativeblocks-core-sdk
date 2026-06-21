@@ -5,11 +5,11 @@ use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::new_http_client;
 use crate::common::result::NbError;
 use crate::config;
-use crate::localization::client::Client;
+use crate::localization::presenter::client::Client;
 use crate::localization::data::source::new_local_source;
 use crate::localization::di;
-use crate::localization::key::operation;
-use crate::localization::model::LocalizationSyncRequest;
+use crate::localization::domain::key::operation;
+use crate::localization::domain::model::LocalizationSyncRequest;
 
 /// UniFFI handle for the localization feature. Wraps the internal localization
 /// `Client` and projects its surface across the FFI boundary. The real GraphQL
@@ -42,14 +42,14 @@ impl LocalizationClient {
     }
 
     pub async fn sync_localization(&self, language_code: String) -> Result<(), NbError> {
-        let localization = self.config.gateway_for(operation::LOCALIZATIONS).await?;
+        let localization = self.config.gateway(operation::LOCALIZATIONS).await?;
         let production = self
             .config
-            .gateway_for(operation::LOCALIZATIONS_PRODUCTION)
+            .gateway(operation::LOCALIZATIONS_PRODUCTION)
             .await?;
         let checksum = self
             .config
-            .gateway_for(operation::PRODUCTION_CHECKSUM)
+            .gateway(operation::PRODUCTION_CHECKSUM)
             .await?;
         let request = LocalizationSyncRequest {
             endpoint_localization: localization.gateway,

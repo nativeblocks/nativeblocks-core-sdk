@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::dto::NativeLocalizationsDto;
-use crate::localization::model::NativeLocalizationModel;
+use crate::localization::domain::model::NativeLocalizationModel;
 
 impl NativeLocalizationsDto {
     pub(crate) fn to_model(&self) -> NativeLocalizationModel {

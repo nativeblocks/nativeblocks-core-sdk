@@ -4,7 +4,7 @@ use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::{HttpClient, INSTALL_ID_HEADER, decode_envelope, with_headers};
 use crate::common::result::{ErrorModel, NBResult};
 use crate::config::data::dto::ProjectConfigDataDto;
-use crate::config::key::{error_code, message};
+use crate::config::domain::key::{error_code, message};
 
 pub(crate) struct ProjectConfigRemoteSource {
     http: Arc<dyn HttpClient>,

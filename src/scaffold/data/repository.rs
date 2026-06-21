@@ -1,6 +1,6 @@
 use crate::common::result::NBResult;
 use crate::scaffold::data::source::ScaffoldRemoteSource;
-use crate::scaffold::model::{NativeScaffoldModel, ScaffoldRequest};
+use crate::scaffold::domain::model::{NativeScaffoldModel, ScaffoldRequest};
 
 pub(crate) struct ScaffoldRepository {
     source: ScaffoldRemoteSource,

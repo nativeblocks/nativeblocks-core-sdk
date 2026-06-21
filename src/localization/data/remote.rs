@@ -10,8 +10,8 @@ use crate::localization::data::dto::{
     NativeLocalizationDataDto, NativeLocalizationProductionChecksumDataDto,
 };
 use crate::localization::data::mapper::localization_to_model;
-use crate::localization::graphql;
-use crate::localization::model::NativeLocalizationModel;
+use crate::localization::data::graphql;
+use crate::localization::domain::model::NativeLocalizationModel;
 
 pub(crate) struct LocalizationRemoteSource {
     http: Arc<dyn HttpClient>,

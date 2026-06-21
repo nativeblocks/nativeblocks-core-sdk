@@ -1,7 +1,7 @@
 use crate::common::result::NBResult;
 use crate::config::data::repository::ProjectConfigRepository;
-use crate::config::domain::resolve_gateway::get_gateway_use_case;
-use crate::config::model::ResolvedGateway;
+use crate::config::domain::get_gateway::get_gateway_use_case;
+use crate::config::domain::model::ResolvedGateway;
 
 pub(crate) struct Client {
     repository: ProjectConfigRepository,
@@ -12,7 +12,7 @@ impl Client {
         return Self { repository };
     }
 
-    pub(crate) async fn gateway_for(&self, operation: &str) -> NBResult<ResolvedGateway> {
+    pub(crate) async fn gateway(&self, operation: &str) -> NBResult<ResolvedGateway> {
         return get_gateway_use_case(&self.repository, operation).await;
     }
 }

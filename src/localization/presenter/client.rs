@@ -9,8 +9,8 @@ use crate::common::result::{ErrorModel, NBResult};
 use crate::localization::data::repository::LocalizationRepository;
 use crate::localization::domain::get_localization::get_localization_use_case;
 use crate::localization::domain::sync_localization::sync_localization_use_case;
-use crate::localization::key::message;
-use crate::localization::model::{LocalizationSyncRequest, NativeLocalizationModel};
+use crate::localization::domain::key::message;
+use crate::localization::domain::model::{LocalizationSyncRequest, NativeLocalizationModel};
 
 pub(crate) struct Client {
     repository: LocalizationRepository,

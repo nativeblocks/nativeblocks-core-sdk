@@ -1,6 +1,6 @@
 use crate::common::result::NBResult;
 use crate::experiment::data::repository::ExperimentRepository;
-use crate::experiment::model::{ExperimentRequest, NativeExperimentModel};
+use crate::experiment::domain::model::{ExperimentRequest, NativeExperimentModel};
 
 pub(crate) async fn get_experiment_use_case(
     repository: &ExperimentRepository,

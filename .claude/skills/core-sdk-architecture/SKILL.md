@@ -126,31 +126,48 @@ that returns it) and its models.** Everything else is private to the module.
 The module-root re-export therefore looks like:
 
 ```rust
-pub(crate) use client::Client;                 // the gate (concrete struct; trait only if 2nd impl)
-pub(crate) use di::get_or_create;              // DI builds + caches the per-instance Arc<Client>
-pub use ffi::FeatureClient;                     // the uniffi object = real external boundary
-pub use model::{ /* only FFI-facing models */ };
-pub(crate) use model::{ /* models used cross-module but not across FFI */ };
+pub(crate) use di::get_or_create;                  // DI builds the client (per-instance for config)
+pub(crate) use presenter::client::Client;          // the gate (concrete struct; trait only if 2nd impl)
+pub use presenter::ffi::FeatureClient;             // the uniffi object = real external boundary
+pub use domain::model::{ /* only FFI-facing models */ };
 // nothing else — no key, no graphql, no data, no request structs
 ```
 
-### Per-feature file layout (convention)
+### Per-feature package layout (convention — every feature is identical)
+
+Each feature is organized into the four clean-architecture packages
+**`data / domain / di / presenter`**:
 
 ```
 src/<feature>/
-  mod.rs        // wiring; re-exports ONLY Client + models (+ FFI object). get_or_create from di.
-  client.rs     // pub(crate) struct Client with pub(crate) ::new + methods (trait only if 2nd impl)
-  di.rs         // wires source -> repository -> client; owns the per-instance registry of Arc<Client>
-  ffi.rs        // #[derive(uniffi::Object)] FeatureClient — the real external boundary
-  model.rs      // serde structs = the feature's wire contract (mod model; selectively re-exported)
-  key.rs        // const keys / error constants — mod key; (private, never re-exported)
-  graphql.rs    // query strings — mod graphql; (private)
-  domain/       // use cases = pure async fns, one job per file, named <verb>_use_case — private
-  data/         // dto, mappers, sources (cache/net), repository — private
+  mod.rs              // wiring; re-exports ONLY Client + models (+ FFI object) from the packages below
+  presenter/          // the boundary / gate
+    mod.rs
+    client.rs         //   pub(crate) struct Client with pub(crate) ::new + methods (the gate; stateful
+                      //   engine for frame). trait only if a 2nd impl exists.
+    ffi.rs            //   #[derive(uniffi::Object)] FeatureClient — the real external boundary (cfg-gated)
+  domain/             // entities + business rules
+    mod.rs
+    model.rs          //   serde structs = the feature's wire contract + request structs
+    key.rs            //   const keys / error constants / gateway operation names
+    <verb>.rs         //   use cases = pure async fns, one job per file, named <verb>_use_case
+    action.rs         //   (frame only) action contracts + NativeActionHandler callback
+  data/               // data sources + wire format
+    mod.rs
+    dto.rs / mapper.rs
+    source.rs|remote.rs //   network source (plain struct) + local source (trait only if feature-gated)
+    repository.rs     //   manages sources, returns models (never DTOs)
+    graphql.rs        //   query strings (cfg-gated script.rs for frame)
+  di/
+    mod.rs            //   wires data -> domain -> presenter; owns the per-instance registry (config)
 ```
 
-Keep names and granularity proportional to the feature. Small features may collapse
-`data/` into a single file; large ones (frame) split it.
+Internal cross-package references use full paths
+(`crate::<feature>::domain::model::X`, `crate::<feature>::data::repository::Y`, …); only
+the feature root `mod.rs` re-exports the public surface. Cross-feature references go
+through the *other* feature's root re-exports (`config::Client`, `localization::Client`),
+never its internal packages. Stateful features (frame) may omit the use-case files and
+have the presenter call the repository directly — the engine is itself the domain layer.
 
 ### Layering inside a feature (client → use case → repository → source)
 

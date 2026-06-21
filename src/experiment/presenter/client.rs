@@ -6,7 +6,7 @@ use crate::common::logger::{LoggerEventLevel, NativeLoggerProvider, keys};
 use crate::common::result::{ErrorModel, NBResult};
 use crate::experiment::data::repository::ExperimentRepository;
 use crate::experiment::domain::get_experiment::get_experiment_use_case;
-use crate::experiment::model::{ExperimentRequest, NativeExperimentModel};
+use crate::experiment::domain::model::{ExperimentRequest, NativeExperimentModel};
 
 pub(crate) struct Client {
     repository: ExperimentRepository,

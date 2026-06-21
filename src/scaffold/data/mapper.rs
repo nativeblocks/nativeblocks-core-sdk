@@ -1,5 +1,5 @@
 use super::dto::{NativeFrameRouteDto, NativeRouteArgumentsDto, NativeScaffoldDataDto};
-use crate::scaffold::model::{
+use crate::scaffold::domain::model::{
     FrameTypeModel, NativeFrameRouteModel, NativeRouteArgumentsModel, NativeScaffoldModel,
 };
 

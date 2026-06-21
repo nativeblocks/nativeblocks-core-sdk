@@ -6,11 +6,11 @@ use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::new_http_client;
 use crate::common::result::NbError;
 use crate::config;
-use crate::frame::action::NativeActionHandler;
-use crate::frame::client::Client;
+use crate::frame::domain::action::NativeActionHandler;
+use crate::frame::presenter::client::Client;
 use crate::frame::di;
-use crate::frame::key::operation;
-use crate::frame::model::{
+use crate::frame::domain::key::operation;
+use crate::frame::domain::model::{
     FrameSyncRequest, NativeActionModel, NativeBlockModel, NativeFrameState, NativeVariableModel,
 };
 use crate::localization::LocalizationClient;
@@ -51,11 +51,11 @@ impl FrameClient {
     }
 
     pub async fn sync_frame(&self, route: String) -> Result<(), NbError> {
-        let frame = self.config.gateway_for(operation::FRAME).await?;
-        let production = self.config.gateway_for(operation::FRAME_PRODUCTION).await?;
+        let frame = self.config.gateway(operation::FRAME).await?;
+        let production = self.config.gateway(operation::FRAME_PRODUCTION).await?;
         let checksum = self
             .config
-            .gateway_for(operation::FRAME_PRODUCTION_CHECKSUM)
+            .gateway(operation::FRAME_PRODUCTION_CHECKSUM)
             .await?;
         let request = FrameSyncRequest {
             endpoint_frame: frame.gateway,

@@ -1,9 +1,7 @@
-mod client;
 mod data;
 mod di;
 mod domain;
-mod key;
-mod model;
+mod presenter;
 
-pub(crate) use client::Client;
 pub(crate) use di::get_or_create;
+pub(crate) use presenter::client::Client;

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::logger;
 use crate::common::net::HttpClient;
-use crate::localization::client::Client;
+use crate::localization::presenter::client::Client;
 use crate::localization::data::remote::LocalizationRemoteSource;
 use crate::localization::data::repository::LocalizationRepository;
 use crate::localization::data::source::LocalizationLocalSource;

@@ -6,9 +6,9 @@ use tokio::sync::watch;
 use crate::common::config::SdkConfig;
 use crate::common::logger::{LoggerEventLevel, NativeLoggerProvider, keys};
 use crate::common::result::{ErrorType, NBResult};
-use crate::frame::action::{ActionContext, ActionResult, NativeActionHandler};
+use crate::frame::domain::action::{ActionContext, ActionResult, NativeActionHandler};
 use crate::frame::data::repository::{FrameRepository, FrameStream};
-use crate::frame::model::{
+use crate::frame::domain::model::{
     FrameSyncRequest, NativeActionModel, NativeActionTriggerModel, NativeBlockModel,
     NativeFrameModel, NativeFrameState, NativeVariableModel,
 };
@@ -419,7 +419,7 @@ impl Client {
         return Box::pin(async move {
             self.log_trigger(action, trigger);
 
-            let outcome = if trigger.key_type == crate::frame::action::SCRIPT_KEY_TYPE {
+            let outcome = if trigger.key_type == crate::frame::domain::action::SCRIPT_KEY_TYPE {
                 self.run_script(trigger, index)
             } else if let Some(handler) = self.action_handler(&trigger.key_type) {
                 let context = self.action_context(index, trigger);
@@ -514,7 +514,7 @@ impl Client {
 
     #[cfg(feature = "script-quickjs")]
     fn run_script(&self, trigger: &NativeActionTriggerModel, index: i32) -> Option<ActionResult> {
-        let bridge = crate::frame::script::ScriptBridge {
+        let bridge = crate::frame::data::script::ScriptBridge {
             variables: self.variables.clone(),
             blocks: self.blocks.clone(),
             logger: self.logger.clone(),
@@ -522,7 +522,7 @@ impl Client {
             development_mode: self.development_mode,
             route: self.current_route.lock().unwrap().clone().unwrap_or_default(),
         };
-        return Some(crate::frame::script::evaluate(&bridge, trigger, index));
+        return Some(crate::frame::data::script::evaluate(&bridge, trigger, index));
     }
 
     #[cfg(not(feature = "script-quickjs"))]

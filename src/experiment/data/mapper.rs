@@ -1,5 +1,5 @@
 use super::dto::NativeExperimentDataDto;
-use crate::experiment::model::NativeExperimentModel;
+use crate::experiment::domain::model::NativeExperimentModel;
 
 impl NativeExperimentDataDto {
     pub(crate) fn to_model(&self) -> NativeExperimentModel {

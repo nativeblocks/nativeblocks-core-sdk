@@ -9,8 +9,8 @@ use crate::common::net::{
 };
 use crate::common::result::NBResult;
 use crate::experiment::data::dto::NativeExperimentDataDto;
-use crate::experiment::graphql;
-use crate::experiment::model::ExperimentRequest;
+use crate::experiment::data::graphql;
+use crate::experiment::domain::model::ExperimentRequest;
 
 pub(crate) struct ExperimentRemoteSource {
     http: Arc<dyn HttpClient>,

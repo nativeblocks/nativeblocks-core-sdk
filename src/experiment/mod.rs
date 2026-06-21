@@ -1,11 +1,7 @@
-mod client;
 mod data;
 mod di;
 mod domain;
-mod ffi;
-mod graphql;
-mod key;
-mod model;
+mod presenter;
 
-pub use ffi::ExperimentClient;
-pub use model::NativeExperimentModel;
+pub use domain::model::NativeExperimentModel;
+pub use presenter::ffi::ExperimentClient;

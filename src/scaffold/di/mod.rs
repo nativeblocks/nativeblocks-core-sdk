@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::logger;
 use crate::common::net::HttpClient;
-use crate::scaffold::client::Client;
+use crate::scaffold::presenter::client::Client;
 use crate::scaffold::data::repository::ScaffoldRepository;
 use crate::scaffold::data::source::ScaffoldRemoteSource;
 

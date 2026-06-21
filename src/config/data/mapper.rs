@@ -1,6 +1,6 @@
 use crate::config::data::dto::ProjectConfigDataDto;
-use crate::config::key::GRAPHQL_GATEWAY_TYPE;
-use crate::config::model::NativeProjectConfigModel;
+use crate::config::domain::key::GRAPHQL_GATEWAY_TYPE;
+use crate::config::domain::model::NativeProjectConfigModel;
 
 impl ProjectConfigDataDto {
     pub fn to_model(&self) -> NativeProjectConfigModel {

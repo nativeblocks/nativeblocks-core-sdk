@@ -6,8 +6,8 @@ use tokio::sync::watch;
 use crate::common::result::{ErrorModel, NBResult};
 use crate::frame::data::remote::FrameRemoteSource;
 use crate::frame::data::source::FrameLocalSource;
-use crate::frame::key::{error_code, message};
-use crate::frame::model::{FrameSyncRequest, NativeFrameModel};
+use crate::frame::domain::key::{error_code, message};
+use crate::frame::domain::model::{FrameSyncRequest, NativeFrameModel};
 
 pub(crate) type FrameStream = watch::Receiver<NBResult<NativeFrameModel>>;
 

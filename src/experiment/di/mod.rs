@@ -4,7 +4,7 @@ use crate::common::cache::CacheProvider;
 use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::logger;
 use crate::common::net::HttpClient;
-use crate::experiment::client::Client;
+use crate::experiment::presenter::client::Client;
 use crate::experiment::data::repository::ExperimentRepository;
 use crate::experiment::data::source::ExperimentRemoteSource;
 

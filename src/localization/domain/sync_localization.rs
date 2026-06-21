@@ -1,6 +1,6 @@
 use crate::common::result::NBResult;
 use crate::localization::data::repository::LocalizationRepository;
-use crate::localization::model::{LocalizationSyncRequest, NativeLocalizationModel};
+use crate::localization::domain::model::{LocalizationSyncRequest, NativeLocalizationModel};
 
 pub(crate) async fn sync_localization_use_case(
     repository: &LocalizationRepository,

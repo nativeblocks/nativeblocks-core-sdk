@@ -4,8 +4,8 @@ use std::time::Duration;
 use crate::common::cache::CacheProvider;
 use crate::common::result::{ErrorModel, NBResult};
 use crate::experiment::data::source::ExperimentRemoteSource;
-use crate::experiment::key::{CACHE_PREFIX, CACHE_SEPARATOR, message};
-use crate::experiment::model::{ExperimentRequest, NativeExperimentModel};
+use crate::experiment::domain::key::{CACHE_PREFIX, CACHE_SEPARATOR, message};
+use crate::experiment::domain::model::{ExperimentRequest, NativeExperimentModel};
 
 pub(crate) struct ExperimentRepository {
     source: ExperimentRemoteSource,

@@ -1,12 +1,9 @@
-mod client;
 mod data;
 mod di;
 mod domain;
-mod ffi;
-mod graphql;
-mod model;
+mod presenter;
 
-pub use ffi::ScaffoldClient;
-pub use model::{
+pub use domain::model::{
     FrameTypeModel, NativeFrameRouteModel, NativeRouteArgumentsModel, NativeScaffoldModel,
 };
+pub use presenter::ffi::ScaffoldClient;

@@ -5,10 +5,10 @@ use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::new_http_client;
 use crate::common::result::NbError;
 use crate::config;
-use crate::scaffold::client::Client;
+use crate::scaffold::presenter::client::Client;
 use crate::scaffold::di;
-use crate::scaffold::graphql::GATEWAY_OPERATION;
-use crate::scaffold::model::{NativeScaffoldModel, ScaffoldRequest};
+use crate::scaffold::data::graphql::GATEWAY_OPERATION;
+use crate::scaffold::domain::model::{NativeScaffoldModel, ScaffoldRequest};
 
 /// UniFFI handle for the scaffold feature. Wraps the internal scaffold `Client`
 /// and projects its surface across the FFI boundary. The real GraphQL endpoint,
@@ -40,7 +40,7 @@ impl ScaffoldClient {
     }
 
     pub async fn get_scaffold(&self) -> Result<NativeScaffoldModel, NbError> {
-        let resolved = self.config.gateway_for(GATEWAY_OPERATION).await?;
+        let resolved = self.config.gateway(GATEWAY_OPERATION).await?;
         let request = ScaffoldRequest {
             gateway: resolved.gateway,
             graphql_endpoint: resolved.endpoint,

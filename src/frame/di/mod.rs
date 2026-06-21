@@ -4,7 +4,7 @@ use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::logger;
 use crate::common::net::HttpClient;
 use crate::common::result::NBResult;
-use crate::frame::client::Client;
+use crate::frame::presenter::client::Client;
 use crate::frame::data::remote::FrameRemoteSource;
 use crate::frame::data::repository::FrameRepository;
 use crate::frame::data::source::FrameLocalSource;

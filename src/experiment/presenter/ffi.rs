@@ -6,10 +6,10 @@ use crate::common::config::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::new_http_client;
 use crate::common::result::NbError;
 use crate::config;
-use crate::experiment::client::Client;
+use crate::experiment::presenter::client::Client;
 use crate::experiment::di;
-use crate::experiment::graphql::GATEWAY_OPERATION;
-use crate::experiment::model::{ExperimentRequest, NativeExperimentModel};
+use crate::experiment::data::graphql::GATEWAY_OPERATION;
+use crate::experiment::domain::model::{ExperimentRequest, NativeExperimentModel};
 
 /// UniFFI handle for the experiment feature. Wraps the internal experiment
 /// `Client` and projects its surface across the FFI boundary. The real GraphQL
@@ -47,7 +47,7 @@ impl ExperimentClient {
         parameters: HashMap<String, String>,
         cache_ttl_millis: i64,
     ) -> Result<NativeExperimentModel, NbError> {
-        let resolved = self.config.gateway_for(GATEWAY_OPERATION).await?;
+        let resolved = self.config.gateway(GATEWAY_OPERATION).await?;
         let request = ExperimentRequest {
             gateway: resolved.gateway,
             graphql_endpoint: resolved.endpoint,

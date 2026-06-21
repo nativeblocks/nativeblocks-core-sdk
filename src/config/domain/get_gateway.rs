@@ -1,8 +1,8 @@
 use crate::common::config::ProjectConfigGateway;
 use crate::common::result::NBResult;
 use crate::config::data::repository::ProjectConfigRepository;
-use crate::config::key::GRAPHQL_GATEWAY_TYPE;
-use crate::config::model::ResolvedGateway;
+use crate::config::domain::key::GRAPHQL_GATEWAY_TYPE;
+use crate::config::domain::model::ResolvedGateway;
 
 pub(crate) async fn get_gateway_use_case(
     repository: &ProjectConfigRepository,

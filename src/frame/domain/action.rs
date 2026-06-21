@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::frame::model::{
+use crate::frame::domain::model::{
     NativeActionTriggerModel, NativeActionTriggerThen, NativeBlockModel, NativeVariableModel,
 };
 

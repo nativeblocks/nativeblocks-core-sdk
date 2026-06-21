@@ -6,7 +6,7 @@ use crate::common::logger::{LoggerEventLevel, NativeLoggerProvider, keys};
 use crate::common::result::{ErrorModel, NBResult};
 use crate::scaffold::data::repository::ScaffoldRepository;
 use crate::scaffold::domain::get_scaffold::get_scaffold_use_case;
-use crate::scaffold::model::{NativeScaffoldModel, ScaffoldRequest};
+use crate::scaffold::domain::model::{NativeScaffoldModel, ScaffoldRequest};
 
 pub(crate) struct Client {
     repository: ScaffoldRepository,

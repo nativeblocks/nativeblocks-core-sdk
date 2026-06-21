@@ -7,8 +7,8 @@ use crate::common::net::{
 };
 use crate::common::result::NBResult;
 use crate::scaffold::data::dto::NativeScaffoldDataDto;
-use crate::scaffold::graphql;
-use crate::scaffold::model::ScaffoldRequest;
+use crate::scaffold::data::graphql;
+use crate::scaffold::domain::model::ScaffoldRequest;
 
 pub(crate) struct ScaffoldRemoteSource {
     http: Arc<dyn HttpClient>,

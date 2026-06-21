@@ -7,8 +7,8 @@ use tokio::sync::watch;
 
 use crate::common::config::SdkConfig;
 use crate::common::logger::{LoggerEventLevel, NativeLoggerProvider, keys};
-use crate::frame::action::ActionResult;
-use crate::frame::model::{NativeBlockModel, NativeBlockPropertyModel, NativeVariableModel};
+use crate::frame::domain::action::ActionResult;
+use crate::frame::domain::model::{NativeBlockModel, NativeBlockPropertyModel, NativeVariableModel};
 
 const SCRIPT_TIMEOUT: Duration = Duration::from_millis(2000);
 
@@ -119,7 +119,7 @@ impl ScriptBridge {
 /// Script errors are swallowed (as in Kotlin) — the graph always proceeds.
 pub(crate) fn evaluate(
     bridge: &ScriptBridge,
-    trigger: &crate::frame::model::NativeActionTriggerModel,
+    trigger: &crate::frame::domain::model::NativeActionTriggerModel,
     index: i32,
 ) -> ActionResult {
     let script = trigger

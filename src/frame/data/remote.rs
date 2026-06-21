@@ -9,8 +9,8 @@ use crate::common::net::{
 use crate::common::result::NBResult;
 use crate::frame::data::dto::{NativeFrameDataDto, NativeFrameProductionChecksumDataDto};
 use crate::frame::data::mapper::frame_to_model;
-use crate::frame::graphql;
-use crate::frame::model::NativeFrameModel;
+use crate::frame::data::graphql;
+use crate::frame::domain::model::NativeFrameModel;
 
 pub(crate) struct FrameRemoteSource {
     http: Arc<dyn HttpClient>,

@@ -5,7 +5,7 @@ use super::dto::{
     NativeActionTriggerPropertyDto, NativeBlockDataDto, NativeBlockDto, NativeBlockPropertyDto,
     NativeBlockSlotDto, NativeFrameDto, NativeVariableDto,
 };
-use crate::frame::model::{
+use crate::frame::domain::model::{
     NativeActionModel, NativeActionTriggerDataModel, NativeActionTriggerModel,
     NativeActionTriggerPropertyModel, NativeActionTriggerThen, NativeBlockDataModel,
     NativeBlockModel, NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameModel,

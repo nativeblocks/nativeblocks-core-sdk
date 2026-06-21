@@ -3,8 +3,8 @@ use std::sync::Arc;
 use crate::common::result::{ErrorModel, NBResult};
 use crate::localization::data::remote::LocalizationRemoteSource;
 use crate::localization::data::source::LocalizationLocalSource;
-use crate::localization::key::{error_code, message};
-use crate::localization::model::{LocalizationSyncRequest, NativeLocalizationModel};
+use crate::localization::domain::key::{error_code, message};
+use crate::localization::domain::model::{LocalizationSyncRequest, NativeLocalizationModel};
 
 pub(crate) struct LocalizationRepository {
     remote: LocalizationRemoteSource,
