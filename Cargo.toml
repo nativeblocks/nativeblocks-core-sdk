@@ -16,65 +16,22 @@ name = "uniffi-bindgen"
 path = "src/bin/uniffi-bindgen.rs"
 
 [features]
-# Built-in implementations of the lib seams. Both default on; flip off to
-# supply a host-provided transport / cache and shed their binary weight.
-default = ["net-reqwest", "cache-sqlite", "script-quickjs"]
-# reqwest(async)+rustls transport behind the `HttpClient` trait. Adds ~2.3-3.7 MB
-# (~1 MB of that is TLS, paid by any HTTPS client). Disable to delegate transport
-# to the host and add ~0 KB. Layers the async runtime onto the always-on tokio
-# `sync` (watch channels) that back the observable engine state.
-net-reqwest = ["dep:reqwest", "tokio/rt-multi-thread"]
-# rusqlite (bundled SQLite) implementation of the `CacheProvider` trait.
-cache-sqlite = ["dep:rusqlite"]
-# In-core JavaScript for NativeScriptAction (the SCRIPT keyType), via QuickJS
-# (rquickjs). Replaces the Kotlin Rhino engine; runs once for all platforms.
-# Adds ~0.6-1.5 MB (the embedded JS engine). Default-on but droppable: disable
-# to shed the weight and delegate SCRIPT to a host action handler instead.
+default = ["script-quickjs"]
 script-quickjs = ["dep:rquickjs"]
-# Generate the QuickJS FFI bindings at build time (via libclang) instead of
-# using rquickjs's precompiled set. rquickjs ships bindings only for a fixed
-# list of triples that excludes Android/iOS, so the cross builds enable this;
-# host builds keep the precompiled path (no libclang needed). See the build
-# scripts under scripts/.
 script-quickjs-bindgen = ["script-quickjs", "rquickjs/bindgen"]
 
 [dependencies]
 uniffi = { version = "0.31", features = ["cli", "tokio"] }
-# Wire contract (DTOs, models) + GraphQL request/response (de)serialization.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-# Object-safe async traits for the `HttpClient` seam (boxes futures; negligible
-# binary cost).
 async-trait = "0.1"
-# `tokio::sync::watch` is the observable-state substrate (the `StateFlow`
-# replacement): the engine publishes whole snapshots, callers observe a stream.
-# Only the `sync` primitives are pulled in here; the runtime arrives with
-# `net-reqwest`.
-tokio = { version = "1", default-features = false, features = ["sync"] }
-# Generated install id (time-ordered UUID v7). Small crate; v7 reuses the
-# already-present `getrandom` for its random bits.
+tokio = { version = "1", default-features = false, features = ["sync", "rt-multi-thread"] }
 uuid = { version = "1", features = ["v7"] }
-
-# --- net-reqwest feature ---
-# default-features off => no OpenSSL. rustls-tls is our only TLS. No `json`
-# feature: we POST a raw body string and read the response as text, keeping the
-# transport boundary coarse.
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"], optional = true }
-
-# --- cache-sqlite feature ---
-# `bundled` compiles SQLite from source (no system dep, deterministic across
-# platforms). Swap to system SQLite later to shave size if measurement favors it.
-rusqlite = { version = "0.32", features = ["bundled"], optional = true }
-
-# --- script-quickjs feature ---
-# QuickJS engine for in-core scripting. Default features use prebuilt bindings
-# (no libclang/bindgen build dependency on supported targets).
 rquickjs = { version = "0.9", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
-# Size-first release profile (app size is priority #1).
 [profile.release]
 opt-level = "z"
 lto = true

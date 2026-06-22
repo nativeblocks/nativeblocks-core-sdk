@@ -1,5 +1,7 @@
 [bindings.kotlin]
 package_name = "io.nativeblocks.core.engine"
+generate_immutable_records = true
 
 [bindings.swift]
 module_name = "NativeblocksCoreEngine"
+generate_immutable_records = true

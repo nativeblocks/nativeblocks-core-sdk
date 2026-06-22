@@ -53,6 +53,21 @@ impl From<ErrorModel> for NbError {
     }
 }
 
+impl From<NbError> for ErrorModel {
+    fn from(error: NbError) -> Self {
+        let NbError::Failure {
+            reason,
+            error_type,
+            error_code,
+        } = error;
+        return ErrorModel {
+            message: reason,
+            error_type,
+            error_code,
+        };
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ErrorModel {
     pub message: String,
@@ -84,6 +99,13 @@ impl ErrorModel {
     pub fn with_code(mut self, code: impl Into<String>) -> Self {
         self.error_code = Some(code.into());
         self
+    }
+
+    pub fn or_code(self, code: impl Into<String>) -> Self {
+        if self.error_code.is_some() {
+            return self;
+        }
+        return self.with_code(code);
     }
 
     pub fn to_logger_parameters(&self) -> HashMap<String, String> {

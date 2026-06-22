@@ -1,110 +1,53 @@
-#[cfg(feature = "net-reqwest")]
-mod reqwest_client;
+use std::collections::HashMap;
 
-use std::sync::Arc;
-
-use async_trait::async_trait;
-use serde::Serialize;
 use serde::de::DeserializeOwned;
-use serde_json::Value;
 
-use crate::common::config::{NativeblocksEnvironment, SdkConfig};
-use crate::common::dto::{BaseDto, BaseErrorDto};
-use crate::common::result::{ErrorModel, NBResult};
+use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::result::{NBResult, NbError};
 
-pub(crate) const DEFAULT_TIMEOUT_SECS: u64 = 10;
+mod mapper;
+mod graphql;
+mod rest;
 
+pub(crate) use mapper::map;
+pub(crate) use graphql::{GATEWAY_TYPE_GRAPHQL, GraphQlRequest, GraphQlTransport};
+pub(crate) use rest::{GATEWAY_TYPE_REST, RestTransport};
+
+pub(crate) const API_KEY_HEADER: &str = "Api-Key";
 pub(crate) const INSTALL_ID_HEADER: &str = "Install-Id";
-pub(crate) const GATEWAY_TYPE_REST: &str = "rest";
+pub(crate) const SDK_PLATFORM_HEADER: &str = "SDK-Platform";
+pub(crate) const SDK_VERSION_HEADER: &str = "SDK-Version";
 
-pub(crate) type Header = (String, String);
-
-#[async_trait]
+#[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
 pub trait HttpClient: Send + Sync {
-    async fn post(&self, endpoint: &str, headers: &[Header], body: &str) -> NBResult<String>;
-    async fn get(&self, endpoint: &str, headers: &[Header]) -> NBResult<String>;
+    async fn get(&self, url: String, headers: HashMap<String, String>) -> Result<String, NbError>;
+    async fn post(&self, url: String, headers: HashMap<String, String>, body: String) -> Result<String, NbError>;
 }
 
-#[cfg(feature = "net-reqwest")]
-pub(crate) fn new_http_client() -> NBResult<Arc<dyn HttpClient>> {
-    Ok(Arc::new(reqwest_client::ReqwestHttpClient::new()?))
+pub(crate) fn with_headers(
+    environment: &NativeblocksEnvironment,
+    config: &SdkConfig,
+    install_id: &str,
+) -> HashMap<String, String> {
+    let mut headers = HashMap::new();
+    headers.insert(API_KEY_HEADER.to_string(), format!("Bearer {}", environment.api_key()));
+    headers.insert(SDK_VERSION_HEADER.to_string(), config.version.clone());
+    headers.insert(SDK_PLATFORM_HEADER.to_string(), config.platform.clone());
+    headers.insert(INSTALL_ID_HEADER.to_string(), install_id.to_string());
+    return headers;
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct GraphQlRequest {
-    pub query: String,
-    pub variables: Value,
-    pub operation_name: String,
+#[async_trait::async_trait]
+pub(crate) trait GatewayTransport: Send + Sync {
+    async fn send(&self, client: &dyn HttpClient, headers: HashMap<String, String>) -> NBResult<String>;
 }
 
-impl GraphQlRequest {
-    pub(crate) fn new(query: impl Into<String>) -> Self {
-        let query = query.into();
-        let operation_name = operation_name_from_query(&query);
-        Self {
-            query,
-            variables: Value::Object(Default::default()),
-            operation_name,
-        }
-    }
-
-    pub(crate) fn with_variables(mut self, variables: Value) -> Self {
-        self.variables = variables;
-        self
-    }
-}
-
-fn operation_name_from_query(query: &str) -> String {
-    let mut tokens = query.split_whitespace();
-    while let Some(token) = tokens.next() {
-        if matches!(token, "query" | "mutation" | "subscription") {
-            if let Some(next) = tokens.next() {
-                let name: String = next.chars().take_while(|c| c.is_alphanumeric() || *c == '_').collect();
-                if !name.is_empty() {
-                    return name;
-                }
-            }
-        }
-    }
-    String::new()
-}
-
-pub(crate) fn with_headers(environment: &NativeblocksEnvironment, config: &SdkConfig) -> Vec<Header> {
-    vec![
-        ("Api-Key".to_string(),format!("Bearer {}", environment.api_key())),
-        ("SDK-Version".to_string(), config.version.clone()),
-        ("SDK-Platform".to_string(), config.platform.clone()),
-    ]
-}
-
-pub(crate) async fn execute_graphql<D: DeserializeOwned>(
+pub(crate) async fn request<D: DeserializeOwned>(
     client: &dyn HttpClient,
-    endpoint: &str,
-    headers: &[Header],
-    request: &GraphQlRequest,
+    headers: HashMap<String, String>,
+    transport: &dyn GatewayTransport,
 ) -> NBResult<D> {
-    let body = serde_json::to_string(request)
-.map_err(|e| ErrorModel::network(format!("Failed to encode request: {e}")))?;
-    let response = client.post(endpoint, headers, &body).await?;
-    decode_envelope::<D>(&response)
-}
-
-pub(crate) fn decode_envelope<D: DeserializeOwned>(response: &str) -> NBResult<D> {
-    let dto: BaseDto<D> = serde_json::from_str(response)
-        .map_err(|e| ErrorModel::network(format!("Failed to decode response: {e}")))?;
-
-    if let Some(errors) = dto.errors.as_ref().filter(|e| !e.is_empty()) {
-        return Err(map_graphql_errors(errors));
-    }
-    dto.data
-        .ok_or_else(|| ErrorModel::network("Please try again"))
-}
-
-fn map_graphql_errors(errors: &[BaseErrorDto]) -> ErrorModel {
-    match errors.first() {
-        Some(error) => ErrorModel::network(error.message.clone())
-            .with_code(error.extensions.classification.clone()),
-        None => ErrorModel::network("Please try again"),
-    }
+    let body = transport.send(client, headers).await?;
+    return map::<D>(&body);
 }
