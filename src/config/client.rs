@@ -7,7 +7,7 @@ use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::HttpClient;
 use crate::common::result::NBResult;
 use crate::config::model::{NativeProjectConfigModel, ResolvedGatewayModel};
-use crate::config::source;
+use crate::config::repository;
 
 pub(crate) struct Client {
     http: Arc<dyn HttpClient>,
@@ -34,9 +34,9 @@ impl Client {
     }
 
     pub(crate) async fn gateway(&self, operation: &str) -> NBResult<ResolvedGatewayModel> {
-        let install_id = source::install_id(self.cache.as_ref())?;
+        let install_id = repository::install_id(self.cache.as_ref())?;
         let config = self.project_config(&install_id).await?;
-        let gateway = source::resolve_gateway(&config, operation);
+        let gateway = repository::resolve_gateway(&config, operation);
         return Ok(ResolvedGatewayModel {
             gateway,
             endpoint: config.endpoint,
@@ -49,9 +49,12 @@ impl Client {
         if let Some(config) = guard.as_ref() {
             return Ok(config.clone());
         }
-        let config =
-            source::fetch_project_config(self.http.as_ref(), &self.environment, &self.sdk_config, install_id)
-                .await?;
+        let config = repository::fetch_project_config(
+            self.http.as_ref(),
+            &self.environment,
+            &self.sdk_config,
+            install_id
+        ).await?;
         *guard = Some(config.clone());
         return Ok(config);
     }

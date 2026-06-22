@@ -4,7 +4,7 @@ mod key;
 mod mapper;
 mod model;
 mod provider;
-mod source;
+mod repository;
 
 pub(crate) use client::Client;
 pub(crate) use model::ProjectConfigGatewayModel;

@@ -10,12 +10,15 @@ use crate::config::mapper::to_model;
 use crate::config::model::{NativeProjectConfigModel, ProjectConfigGatewayModel};
 
 pub(crate) fn install_id(cache: &dyn CacheProvider) -> NBResult<String> {
-    let existing = cache.get_string(INSTALL_ID_KEY.to_string(), String::new())?;
-    if !existing.is_empty() {
-        return Ok(existing);
+    if let Some(bytes) = cache.get_bytes(INSTALL_ID_KEY.to_string())? {
+        if let Ok(existing) = String::from_utf8(bytes) {
+            if !existing.is_empty() {
+                return Ok(existing);
+            }
+        }
     }
     let install_id = Uuid::now_v7().to_string();
-    cache.save_string(INSTALL_ID_KEY.to_string(), install_id.clone(), None)?;
+    cache.save_bytes(INSTALL_ID_KEY.to_string(), install_id.clone().into_bytes(), None)?;
     return Ok(install_id);
 }
 
