@@ -1,7 +1,11 @@
-mod data;
-mod di;
-mod domain;
-mod presenter;
+mod client;
+mod dto;
+mod key;
+mod mapper;
+mod model;
+mod provider;
+mod source;
 
-pub(crate) use di::get_or_create;
-pub(crate) use presenter::client::Client;
+pub(crate) use client::Client;
+pub(crate) use model::ProjectConfigGatewayModel;
+pub(crate) use provider::get_or_create;
