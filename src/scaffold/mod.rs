@@ -1,9 +1,10 @@
 mod client;
 mod dto;
+mod interactor;
 mod key;
 mod mapper;
 mod model;
-mod source;
+mod repository;
 
 pub use client::ScaffoldClient;
 pub use model::{
