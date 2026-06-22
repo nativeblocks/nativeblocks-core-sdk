@@ -1,21 +1,19 @@
-use super::dto::{NativeFrameRouteDto, NativeRouteArgumentsDto, NativeScaffoldDataDto};
-use crate::scaffold::domain::model::{
+use crate::scaffold::dto::{NativeFrameRouteDto, NativeRouteArgumentsDto, NativeScaffoldDataDto};
+use crate::scaffold::model::{
     FrameTypeModel, NativeFrameRouteModel, NativeRouteArgumentsModel, NativeScaffoldModel,
 };
 
-impl NativeScaffoldDataDto {
-    pub(crate) fn to_model(&self) -> NativeScaffoldModel {
-        let frames = self
-            .scaffold
-            .as_ref()
-            .map(|s| s.frames.iter().map(map_frame_route).collect())
-            .unwrap_or_default();
-        NativeScaffoldModel { frames }
-    }
+pub(super) fn to_model(dto: &NativeScaffoldDataDto) -> NativeScaffoldModel {
+    let frames = dto
+        .scaffold
+        .as_ref()
+        .map(|s| s.frames.iter().map(map_frame_route).collect())
+        .unwrap_or_default();
+    return NativeScaffoldModel { frames };
 }
 
 fn map_frame_route(dto: &NativeFrameRouteDto) -> NativeFrameRouteModel {
-    NativeFrameRouteModel {
+    return NativeFrameRouteModel {
         id: dto.id.clone(),
         name: dto.name.clone(),
         frame_type: Some(FrameTypeModel::from_string(
@@ -27,11 +25,11 @@ fn map_frame_route(dto: &NativeFrameRouteDto) -> NativeFrameRouteModel {
             .route_arguments
             .as_ref()
             .map(|args| args.iter().map(map_route_argument).collect()),
-    }
+    };
 }
 
 fn map_route_argument(dto: &NativeRouteArgumentsDto) -> NativeRouteArgumentsModel {
-    NativeRouteArgumentsModel {
+    return NativeRouteArgumentsModel {
         name: dto.name.clone(),
-    }
+    };
 }

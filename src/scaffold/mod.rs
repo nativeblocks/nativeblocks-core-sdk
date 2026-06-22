@@ -1,9 +1,11 @@
-mod data;
-mod di;
-mod domain;
-mod presenter;
+mod client;
+mod dto;
+mod key;
+mod mapper;
+mod model;
+mod source;
 
-pub use domain::model::{
+pub use client::ScaffoldClient;
+pub use model::{
     FrameTypeModel, NativeFrameRouteModel, NativeRouteArgumentsModel, NativeScaffoldModel,
 };
-pub use presenter::ffi::ScaffoldClient;
