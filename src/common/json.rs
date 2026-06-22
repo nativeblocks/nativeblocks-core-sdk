@@ -1,7 +1,12 @@
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 use crate::common::result::{ErrorModel, NBResult};
 
-pub(crate) fn to_json<T: Serialize>(value: &T) -> NBResult<String> {
-    return serde_json::to_string(value).map_err(|e| ErrorModel::cache(e.to_string()));
+pub(crate) fn to_bytes<T: Serialize>(value: &T) -> NBResult<Vec<u8>> {
+    return serde_json::to_vec(value).map_err(|e| ErrorModel::cache(e.to_string()));
+}
+
+pub(crate) fn from_bytes<T: DeserializeOwned>(bytes: &[u8]) -> NBResult<T> {
+    return serde_json::from_slice(bytes).map_err(|e| ErrorModel::cache(e.to_string()));
 }
