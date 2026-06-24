@@ -36,6 +36,13 @@ impl NativeblocksEnvironment {
         return matches!(self.edition, NativeblocksEdition::Community { .. });
     }
 
+    pub fn community_frame_endpoint(&self, route: &str) -> Option<String> {
+        return match &self.edition {
+            NativeblocksEdition::Community { frames_data } => frames_data.get(route).cloned(),
+            NativeblocksEdition::Cloud { .. } => None,
+        };
+    }
+
     pub fn validate(&self) -> NBResult<()> {
         if is_valid_instance_name(&self.instance_name) {
             return Ok(());

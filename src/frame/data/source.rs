@@ -1,159 +1,311 @@
-use std::sync::Arc;
+use std::collections::HashMap;
 
-use crate::common::result::NBResult;
+use serde_json::{Value, json};
 
-pub(crate) trait FrameLocalSource: Send + Sync {
-    fn dev_find_by_route(&self, route: &str) -> NBResult<Option<String>>;
-    fn dev_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NBResult<()>;
+use crate::common::cache::CacheProvider;
+use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::net::{self, GatewayTransport, GraphQlRequest, HttpClient, with_headers};
+use crate::common::result::{ErrorModel, NBResult};
+use crate::config::ProjectConfigGatewayModel;
+use crate::frame::data::dto::{NativeFrameDataDto, NativeFrameProductionChecksumDataDto};
+use crate::frame::data::key::{self, error_code};
+use crate::frame::data::mapper;
+use crate::frame::domain::model::NativeFrameModel;
+use crate::frame::data::query;
 
-    fn prod_find_by_route(&self, route: &str) -> NBResult<Option<String>>;
-    fn prod_exists(&self, route: &str) -> NBResult<bool>;
-    fn prod_find_checksum(&self, route: &str, checksum: &str) -> NBResult<Option<String>>;
-    fn prod_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NBResult<()>;
-
-    fn clear_all(&self) -> NBResult<()>;
-    fn clear(&self, route: &str) -> NBResult<()>;
-}
-
-#[cfg(feature = "cache-sqlite")]
-pub(crate) fn new_frame_local_source(db_path: &str) -> NBResult<Arc<dyn FrameLocalSource>> {
-    let source: Arc<dyn FrameLocalSource> = sqlite::SqliteFrameDatabase::open(db_path)?;
-    return Ok(source);
-}
-
-#[cfg(feature = "cache-sqlite")]
-pub(crate) mod sqlite {
-    use std::sync::{Arc, Mutex};
-
-    use rusqlite::{Connection, OptionalExtension, params};
-
-    use super::FrameLocalSource;
-    use crate::common::result::{ErrorModel, NBResult};
-
-    pub(crate) struct SqliteFrameDatabase {
-        conn: Mutex<Connection>,
+pub(super) async fn sync_cloud(
+    http: &dyn HttpClient,
+    environment: &NativeblocksEnvironment,
+    sdk_config: &SdkConfig,
+    cache: &dyn CacheProvider,
+    frame_gateway: ProjectConfigGatewayModel,
+    frame_production_gateway: ProjectConfigGatewayModel,
+    frame_production_checksum_gateway: ProjectConfigGatewayModel,
+    graphql_endpoint: &str,
+    install_id: &str,
+    route: &str,
+    parameters: &HashMap<String, String>,
+) -> NBResult<NativeFrameModel> {
+    if environment.development_mode() {
+        return fetch_dev_frame(
+            http,
+            environment,
+            sdk_config,
+            cache,
+            frame_gateway,
+            graphql_endpoint,
+            install_id,
+            route,
+            parameters,
+        )
+        .await;
     }
 
-    impl SqliteFrameDatabase {
-        pub(crate) fn open(path: &str) -> NBResult<Arc<Self>> {
-            let conn = Connection::open(path).map_err(map_error)?;
-            Self::init(conn)
-        }
-
-        fn init(conn: Connection) -> NBResult<Arc<Self>> {
-            // The two frame Room tables, verbatim. `IF NOT EXISTS` keeps existing
-            // on-device databases untouched, so no schema migration is needed.
-            conn.execute_batch(
-                r#"
-                CREATE TABLE IF NOT EXISTS `frame` (
-                    `route` TEXT NOT NULL,
-                    `checksum` TEXT NOT NULL,
-                    `frameJson` TEXT NOT NULL,
-                    PRIMARY KEY(`route`)
-                );
-                CREATE TABLE IF NOT EXISTS `frame_production` (
-                    `route` TEXT NOT NULL,
-                    `checksum` TEXT NOT NULL,
-                    `frameJson` TEXT NOT NULL,
-                    PRIMARY KEY(`route`)
-                );
-                "#,
-            )
-            .map_err(map_error)?;
-            Ok(Arc::new(Self {
-                conn: Mutex::new(conn),
-            }))
-        }
-
-        fn lock(&self) -> NBResult<std::sync::MutexGuard<'_, Connection>> {
-            self.conn
-                .lock()
-                .map_err(|_| ErrorModel::cache("Frame database connection poisoned"))
-        }
-
-        fn query_text(&self, sql: &str, key: &str) -> NBResult<Option<String>> {
-            let conn = self.lock()?;
-            conn.query_row(sql, params![key], |r| r.get::<_, String>(0))
-                .optional()
-                .map_err(map_error)
-        }
-    }
-
-    impl FrameLocalSource for SqliteFrameDatabase {
-        fn dev_find_by_route(&self, route: &str) -> NBResult<Option<String>> {
-            self.query_text("SELECT frameJson FROM frame WHERE route = ?1 LIMIT 1", route)
-        }
-
-        fn dev_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NBResult<()> {
-            self.lock()?
-                .execute(
-                    "INSERT OR REPLACE INTO frame (route, checksum, frameJson) VALUES (?1, ?2, ?3)",
-                    params![route, checksum, frame_json],
-                )
-                .map_err(map_error)?;
-            Ok(())
-        }
-
-        fn prod_find_by_route(&self, route: &str) -> NBResult<Option<String>> {
-            self.query_text(
-                "SELECT frameJson FROM frame_production WHERE route = ?1 LIMIT 1",
+    return match cached_checksum(cache, route)? {
+        None => {
+            fetch_production_frame(
+                http,
+                environment,
+                sdk_config,
+                cache,
+                frame_production_gateway,
+                graphql_endpoint,
+                install_id,
                 route,
+                parameters,
             )
+            .await
         }
-
-        fn prod_exists(&self, route: &str) -> NBResult<bool> {
-            let conn = self.lock()?;
-            conn.query_row(
-                "SELECT EXISTS(SELECT 1 FROM frame_production WHERE route = ?1)",
-                params![route],
-                |r| r.get::<_, bool>(0),
+        Some(cached) => {
+            let remote = fetch_production_checksum(
+                http,
+                environment,
+                sdk_config,
+                frame_production_checksum_gateway,
+                graphql_endpoint,
+                install_id,
+                route,
+                parameters,
             )
-            .map_err(map_error)
-        }
-
-        fn prod_find_checksum(&self, route: &str, checksum: &str) -> NBResult<Option<String>> {
-            let conn = self.lock()?;
-            conn.query_row(
-                "SELECT checksum FROM frame_production WHERE route = ?1 AND checksum = ?2 LIMIT 1",
-                params![route, checksum],
-                |r| r.get::<_, String>(0),
-            )
-            .optional()
-            .map_err(map_error)
-        }
-
-        fn prod_upsert(&self, route: &str, checksum: &str, frame_json: &str) -> NBResult<()> {
-            self.lock()?
-                .execute(
-                    "INSERT OR REPLACE INTO frame_production (route, checksum, frameJson) VALUES (?1, ?2, ?3)",
-                    params![route, checksum, frame_json],
+            .await?;
+            if remote != cached {
+                fetch_production_frame(
+                    http,
+                    environment,
+                    sdk_config,
+                    cache,
+                    frame_production_gateway,
+                    graphql_endpoint,
+                    install_id,
+                    route,
+                    parameters,
                 )
-                .map_err(map_error)?;
-            Ok(())
+                .await
+            } else {
+                get_frame(cache, route, false)
+            }
         }
+    };
+}
 
-        fn clear_all(&self) -> NBResult<()> {
-            let conn = self.lock()?;
-            conn.execute("DELETE FROM frame", []).map_err(map_error)?;
-            conn.execute("DELETE FROM frame_production", [])
-                .map_err(map_error)?;
-            Ok(())
-        }
+pub(super) async fn sync_community(
+    http: &dyn HttpClient,
+    cache: &dyn CacheProvider,
+    endpoint: &str,
+    route: &str,
+) -> NBResult<NativeFrameModel> {
+    let body = http
+        .get(endpoint.to_string(), HashMap::new())
+        .await
+        .map_err(|error| ErrorModel::from(error).or_code(error_code::FRAME_COMMUNITY_SYNC))?;
+    let data: NativeFrameDataDto =
+        net::map(&body).map_err(|error| error.or_code(error_code::FRAME_COMMUNITY_SYNC))?;
+    let frame = mapper::to_model(data.frame_production.as_ref());
+    cache_frame(cache, route, &frame, true)?;
+    return Ok(frame);
+}
 
-        fn clear(&self, route: &str) -> NBResult<()> {
-            let conn = self.lock()?;
-            conn.execute("DELETE FROM frame WHERE route = ?1", params![route])
-                .map_err(map_error)?;
-            conn.execute(
-                "DELETE FROM frame_production WHERE route = ?1",
-                params![route],
-            )
-            .map_err(map_error)?;
-            Ok(())
-        }
+pub(super) fn get_frame(
+    cache: &dyn CacheProvider,
+    route: &str,
+    development_mode: bool,
+) -> NBResult<NativeFrameModel> {
+    let cache_key = if development_mode {
+        key::dev_key(route)
+    } else {
+        key::prod_key(route)
+    };
+    return match cache.get_bytes(cache_key)? {
+        Some(bytes) => decode_frame(&bytes),
+        None => Err(ErrorModel::cache(key::message::FRAME_NOT_CACHED)
+            .with_code(error_code::FRAME_NOT_CACHED)),
+    };
+}
+
+pub(super) fn clear(cache: &dyn CacheProvider, route: &str) -> NBResult<()> {
+    cache.remove(key::dev_key(route))?;
+    cache.remove(key::prod_key(route))?;
+    return Ok(());
+}
+
+pub(super) fn clear_all(cache: &dyn CacheProvider, routes: &[String]) -> NBResult<()> {
+    for route in routes {
+        clear(cache, route)?;
     }
+    return Ok(());
+}
 
-    fn map_error(error: rusqlite::Error) -> ErrorModel {
-        ErrorModel::cache(error.to_string())
-    }
+async fn fetch_dev_frame(
+    http: &dyn HttpClient,
+    environment: &NativeblocksEnvironment,
+    sdk_config: &SdkConfig,
+    cache: &dyn CacheProvider,
+    gateway: ProjectConfigGatewayModel,
+    graphql_endpoint: &str,
+    install_id: &str,
+    route: &str,
+    parameters: &HashMap<String, String>,
+) -> NBResult<NativeFrameModel> {
+    let frame = request_frame(
+        http,
+        environment,
+        sdk_config,
+        &gateway,
+        graphql_endpoint,
+        install_id,
+        route,
+        parameters,
+        query::FRAME_QUERY,
+        false,
+    )
+    .await
+    .map_err(|error| error.or_code(error_code::FRAME_DEV_SYNC))?;
+    cache_frame(cache, route, &frame, false)?;
+    return Ok(frame);
+}
+
+async fn fetch_production_frame(
+    http: &dyn HttpClient,
+    environment: &NativeblocksEnvironment,
+    sdk_config: &SdkConfig,
+    cache: &dyn CacheProvider,
+    gateway: ProjectConfigGatewayModel,
+    graphql_endpoint: &str,
+    install_id: &str,
+    route: &str,
+    parameters: &HashMap<String, String>,
+) -> NBResult<NativeFrameModel> {
+    let frame = request_frame(
+        http,
+        environment,
+        sdk_config,
+        &gateway,
+        graphql_endpoint,
+        install_id,
+        route,
+        parameters,
+        query::FRAME_PRODUCTION_QUERY,
+        true,
+    )
+    .await
+    .map_err(|error| error.or_code(error_code::FRAME_PRODUCTION_SYNC))?;
+    cache_frame(cache, route, &frame, true)?;
+    return Ok(frame);
+}
+
+async fn fetch_production_checksum(
+    http: &dyn HttpClient,
+    environment: &NativeblocksEnvironment,
+    sdk_config: &SdkConfig,
+    gateway: ProjectConfigGatewayModel,
+    graphql_endpoint: &str,
+    install_id: &str,
+    route: &str,
+    parameters: &HashMap<String, String>,
+) -> NBResult<String> {
+    let headers = with_headers(environment, sdk_config, install_id);
+    let transport = build_transport(
+        &gateway,
+        graphql_endpoint,
+        route,
+        parameters,
+        query::FRAME_PRODUCTION_CHECKSUM_QUERY,
+    );
+    let data: NativeFrameProductionChecksumDataDto =
+        net::request(http, headers, transport.as_ref())
+            .await
+            .map_err(|error| error.or_code(error_code::FRAME_CHECKSUM))?;
+    return Ok(data
+        .frame_production_checksum
+        .and_then(|checksum| checksum.checksum)
+        .unwrap_or_default());
+}
+
+fn cached_checksum(cache: &dyn CacheProvider, route: &str) -> NBResult<Option<String>> {
+    return match cache.get_bytes(key::prod_key(route))? {
+        Some(bytes) => Ok(decode_frame(&bytes)?.checksum),
+        None => Ok(None),
+    };
+}
+
+async fn request_frame(
+    http: &dyn HttpClient,
+    environment: &NativeblocksEnvironment,
+    sdk_config: &SdkConfig,
+    gateway: &ProjectConfigGatewayModel,
+    graphql_endpoint: &str,
+    install_id: &str,
+    route: &str,
+    parameters: &HashMap<String, String>,
+    query: &str,
+    production: bool,
+) -> NBResult<NativeFrameModel> {
+    let headers = with_headers(environment, sdk_config, install_id);
+    let transport = build_transport(gateway, graphql_endpoint, route, parameters, query);
+    let data: NativeFrameDataDto = net::request(http, headers, transport.as_ref()).await?;
+    let frame = if production {
+        data.frame_production
+    } else {
+        data.frame
+    };
+    return Ok(mapper::to_model(frame.as_ref()));
+}
+
+fn build_transport(
+    gateway: &ProjectConfigGatewayModel,
+    graphql_endpoint: &str,
+    route: &str,
+    parameters: &HashMap<String, String>,
+    query: &str,
+) -> Box<dyn GatewayTransport> {
+    return match gateway.gateway_type.as_str() {
+        net::GATEWAY_TYPE_REST => {
+            let mut variables = vec![(key::PARAM_ROUTE.to_string(), route.to_string())];
+            if !parameters.is_empty() {
+                variables.push((key::PARAM_PARAMETERS.to_string(), encode_parameters(parameters)));
+            }
+            Box::new(net::RestTransport::new(gateway.value.clone(), variables))
+        }
+        net::GATEWAY_TYPE_GRAPHQL | _ => {
+            let request =
+                GraphQlRequest::new(query).with_variables(graphql_variables(route, parameters));
+            Box::new(net::GraphQlTransport::new(graphql_endpoint, request))
+        }
+    };
+}
+
+fn graphql_variables(route: &str, parameters: &HashMap<String, String>) -> Value {
+    let params: Vec<Value> = parameters
+        .iter()
+        .map(|(key, value)| json!({ "key": key, "value": value }))
+        .collect();
+    return json!({
+        "route": route,
+        "parameter": { "variables": params }
+    });
+}
+
+fn encode_parameters(parameters: &HashMap<String, String>) -> String {
+    return serde_json::to_string(parameters).unwrap_or_else(|_| "{}".to_string());
+}
+
+fn cache_frame(
+    cache: &dyn CacheProvider,
+    route: &str,
+    frame: &NativeFrameModel,
+    production: bool,
+) -> NBResult<()> {
+    let cache_key = if production {
+        key::prod_key(route)
+    } else {
+        key::dev_key(route)
+    };
+    let bytes = crate::common::json::to_bytes(frame)?;
+    cache.save_bytes(cache_key, bytes, None)?;
+    return Ok(());
+}
+
+fn decode_frame(bytes: &[u8]) -> NBResult<NativeFrameModel> {
+    return crate::common::json::from_bytes(bytes)
+        .map_err(|error| error.with_code(error_code::FRAME_NOT_CACHED));
 }

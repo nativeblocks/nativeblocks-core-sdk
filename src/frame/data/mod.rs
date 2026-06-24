@@ -1,9 +1,9 @@
-pub(crate) mod dto;
-pub(crate) mod graphql;
-pub(crate) mod mapper;
-pub(crate) mod remote;
-pub(crate) mod repository;
-pub(crate) mod source;
+pub(crate) mod cloud_repository;
+pub(crate) mod community_repository;
 
-#[cfg(feature = "script-quickjs")]
-pub(crate) mod script;
+mod dto;
+mod key;
+mod logging;
+mod mapper;
+mod query;
+mod source;

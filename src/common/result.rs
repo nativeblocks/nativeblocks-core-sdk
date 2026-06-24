@@ -13,7 +13,7 @@ pub enum ErrorType {
 
 impl ErrorType {
     pub fn as_str(self) -> &'static str {
-        match self {
+        return match self {
             ErrorType::Network => "NETWORK",
             ErrorType::Cache => "CACHE",
             ErrorType::Support => "SUPPORT",
@@ -37,7 +37,7 @@ impl std::fmt::Display for NbError {
             error_type,
             ..
         } = self;
-        write!(f, "[{}] {}", error_type.as_str(), reason)
+        return write!(f, "[{}] {}", error_type.as_str(), reason)
     }
 }
 
@@ -85,20 +85,20 @@ impl ErrorModel {
     }
 
     pub fn network(message: impl Into<String>) -> Self {
-        Self::new(message, ErrorType::Network)
+        return Self::new(message, ErrorType::Network);
     }
 
     pub fn cache(message: impl Into<String>) -> Self {
-        Self::new(message, ErrorType::Cache)
+        return Self::new(message, ErrorType::Cache);
     }
 
     pub fn support(message: impl Into<String>) -> Self {
-        Self::new(message, ErrorType::Support)
+        return Self::new(message, ErrorType::Support);
     }
 
     pub fn with_code(mut self, code: impl Into<String>) -> Self {
         self.error_code = Some(code.into());
-        self
+        return self;
     }
 
     pub fn or_code(self, code: impl Into<String>) -> Self {
@@ -118,13 +118,13 @@ impl ErrorModel {
         if let Some(code) = &self.error_code {
             map.insert(param_key::ERROR_TAG.to_string(), code.clone());
         }
-        map
+        return map;
     }
 }
 
 impl std::fmt::Display for ErrorModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}] {}", self.error_type.as_str(), self.message)
+        return write!(f, "[{}] {}", self.error_type.as_str(), self.message);
     }
 }
 

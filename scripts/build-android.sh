@@ -18,13 +18,11 @@ JNILIBS="$OUT/jniLibs"
 KT_PKG="io/nativeblocks/core/engine"
 
 echo "==> Cross-compiling release .so for all ABIs"
-# script-quickjs-bindgen: rquickjs has no precompiled bindings for the Android
-# triples, so generate them at build time. cargo-ndk exports the per-target
-# BINDGEN_EXTRA_CLANG_ARGS_* (sysroot) that bindgen needs.
+# Pure-Rust crate (no C deps), so cargo-ndk just needs the target list.
 cargo ndk \
   -t arm64-v8a -t armeabi-v7a -t x86_64 -t x86 \
   -o "$JNILIBS" \
-  build --release --features script-quickjs-bindgen
+  build --release
 
 echo "==> Generating Kotlin bindings"
 ./scripts/generate-bindings.sh >/dev/null

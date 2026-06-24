@@ -51,7 +51,7 @@ each step works the way it does, see
 ```bash
 rustup target add \
   aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android \
-  aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+  aarch64-apple-ios aarch64-apple-ios-sim
 
 cargo install cargo-ndk                              # + install the Android NDK
 ```

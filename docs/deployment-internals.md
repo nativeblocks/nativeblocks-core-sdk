@@ -75,7 +75,6 @@ build for explicit **target triples** (installed once with `rustup target add`):
 | Android  | `i686-linux-android`         | x86 `.so`         | older emulators                |
 | iOS      | `aarch64-apple-ios`          | arm64 `.a`        | physical devices               |
 | iOS      | `aarch64-apple-ios-sim`      | arm64 `.a`        | simulator on Apple Silicon     |
-| iOS      | `x86_64-apple-ios`           | x86_64 `.a`       | simulator on Intel Macs        |
 
 You ship **all** the ABIs a platform might run on; the OS/loader picks the right
 one at install/run time.
@@ -142,21 +141,21 @@ What `scripts/build-ios.sh` does:
 ```bash
 cargo build --release --target aarch64-apple-ios       # device
 cargo build --release --target aarch64-apple-ios-sim   # simulator (Apple Silicon)
-cargo build --release --target x86_64-apple-ios        # simulator (Intel)
 ```
 
-### 4.2 Fuse the simulator slices with `lipo`
+The simulator slice is **arm64-only** — Intel-Mac simulators are intentionally
+not supported, so there is no `x86_64-apple-ios` build and no `lipo` fuse step.
+The `aarch64-apple-ios-sim` archive is used directly.
 
-```bash
-lipo -create <sim-arm64>.a <sim-x86_64>.a -output libnativeblocks_core_sdk-sim.a
-```
+### 4.2 No `lipo` fuse (arm64-only simulator)
 
-An `.xcframework` can hold **one** library per *platform variant*. "iOS
-Simulator" is a single variant, so its arm64 and x86_64 archives must be merged
-into one fat (universal) `.a` first. Device (`aarch64-apple-ios`) is a *separate*
-variant and stays its own slice — you must **not** lipo device + simulator
-together (that's the classic "building for iOS but linking for iOS Simulator"
-error).
+Because the simulator slice is arm64-only, there is nothing to fuse — the
+`aarch64-apple-ios-sim` archive goes straight into the xcframework. (If you ever
+re-add Intel-Mac support, the arm64 + x86_64 simulator archives would first need
+merging into one fat `.a` with `lipo`, since "iOS Simulator" is a single
+platform variant.) Device (`aarch64-apple-ios`) is a *separate* variant and
+stays its own slice — you must **not** lipo device + simulator together (that's
+the classic "building for iOS but linking for iOS Simulator" error).
 
 ### 4.3 Generate the Swift binding + assemble headers
 
@@ -187,8 +186,8 @@ cp …FFI.modulemap dist/ios/headers/module.modulemap
 
 ```bash
 xcodebuild -create-xcframework \
-  -library <device>.a    -headers dist/ios/headers \
-  -library <sim-fat>.a   -headers dist/ios/headers \
+  -library <device>.a       -headers dist/ios/headers \
+  -library <sim-arm64>.a    -headers dist/ios/headers \
   -output NativeblocksCoreSdk.xcframework
 ```
 

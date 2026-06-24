@@ -1,119 +1,112 @@
 use serde::Deserialize;
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct NativeFrameDataDto {
-    #[serde(default)]
-    pub(crate) frame_production: Option<NativeFrameDto>,
-    #[serde(default)]
-    pub(crate) frame: Option<NativeFrameDto>,
+pub(super) struct NativeFrameDataDto {
+    pub(super) frame: Option<NativeFrameDto>,
+    pub(super) frame_production: Option<NativeFrameDto>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
-pub(crate) struct NativeFrameDto {
-    #[serde(default)]
-    pub(crate) checksum: Option<String>,
-    #[serde(default)]
-    pub(crate) variables: Option<Vec<Option<NativeVariableDto>>>,
-    #[serde(default)]
-    pub(crate) blocks: Option<Vec<Option<NativeBlockDto>>>,
-    #[serde(default)]
-    pub(crate) actions: Option<Vec<Option<NativeActionDto>>>,
+#[derive(Deserialize)]
+pub(super) struct NativeFrameDto {
+    pub(super) checksum: Option<String>,
+    pub(super) variables: Option<Vec<NativeVariableDto>>,
+    pub(super) blocks: Option<Vec<NativeBlockDto>>,
+    pub(super) actions: Option<Vec<NativeActionDto>>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
-pub(crate) struct NativeVariableDto {
-    pub(crate) key: Option<String>,
-    pub(crate) value: Option<String>,
+#[derive(Deserialize)]
+pub(super) struct NativeVariableDto {
+    pub(super) key: Option<String>,
+    pub(super) value: Option<String>,
     #[serde(rename = "type")]
-    pub(crate) value_type: Option<String>,
+    pub(super) variable_type: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct NativeBlockDto {
-    pub(crate) id: Option<String>,
-    pub(crate) parent_id: Option<String>,
-    pub(crate) integration_version: Option<i32>,
-    pub(crate) slot: Option<String>,
-    pub(crate) key_type: Option<String>,
-    pub(crate) key: Option<String>,
-    pub(crate) visibility_key: Option<String>,
-    pub(crate) position: Option<i32>,
-    pub(crate) data: Option<Vec<Option<NativeBlockDataDto>>>,
-    pub(crate) properties: Option<Vec<Option<NativeBlockPropertyDto>>>,
-    pub(crate) slots: Option<Vec<Option<NativeBlockSlotDto>>>,
+pub(super) struct NativeBlockDto {
+    pub(super) id: Option<String>,
+    pub(super) parent_id: Option<String>,
+    pub(super) integration_version: Option<i32>,
+    pub(super) slot: Option<String>,
+    pub(super) key_type: Option<String>,
+    pub(super) key: Option<String>,
+    pub(super) visibility_key: Option<String>,
+    pub(super) position: Option<i32>,
+    pub(super) data: Option<Vec<NativeBlockDataDto>>,
+    pub(super) properties: Option<Vec<NativeBlockPropertyDto>>,
+    pub(super) slots: Option<Vec<NativeBlockSlotDto>>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct NativeBlockPropertyDto {
-    pub(crate) key: Option<String>,
-    pub(crate) value_mobile: Option<String>,
-    pub(crate) value_tablet: Option<String>,
-    pub(crate) value_desktop: Option<String>,
+pub(super) struct NativeBlockPropertyDto {
+    pub(super) key: Option<String>,
+    pub(super) value_mobile: Option<String>,
+    pub(super) value_tablet: Option<String>,
+    pub(super) value_desktop: Option<String>,
     #[serde(rename = "type")]
-    pub(crate) value_type: Option<String>,
+    pub(super) property_type: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
-pub(crate) struct NativeBlockDataDto {
-    pub(crate) key: Option<String>,
-    pub(crate) value: Option<String>,
+#[derive(Deserialize)]
+pub(super) struct NativeBlockDataDto {
+    pub(super) key: Option<String>,
+    pub(super) value: Option<String>,
     #[serde(rename = "type")]
-    pub(crate) value_type: Option<String>,
+    pub(super) data_type: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
-pub(crate) struct NativeBlockSlotDto {
-    pub(crate) slot: Option<String>,
+#[derive(Deserialize)]
+pub(super) struct NativeBlockSlotDto {
+    pub(super) slot: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
-pub(crate) struct NativeActionDto {
-    pub(crate) id: Option<String>,
-    pub(crate) key: Option<String>,
-    pub(crate) event: Option<String>,
-    pub(crate) triggers: Option<Vec<Option<NativeActionTriggerDto>>>,
+#[derive(Deserialize)]
+pub(super) struct NativeActionDto {
+    pub(super) id: Option<String>,
+    pub(super) key: Option<String>,
+    pub(super) event: Option<String>,
+    pub(super) triggers: Option<Vec<NativeActionTriggerDto>>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct NativeActionTriggerDto {
-    pub(crate) id: Option<String>,
-    pub(crate) parent_id: Option<String>,
-    pub(crate) integration_version: Option<i32>,
-    pub(crate) name: Option<String>,
-    pub(crate) key_type: Option<String>,
-    pub(crate) then: Option<String>,
-    pub(crate) properties: Option<Vec<Option<NativeActionTriggerPropertyDto>>>,
-    pub(crate) data: Option<Vec<Option<NativeActionTriggerDataDto>>>,
+pub(super) struct NativeActionTriggerDto {
+    pub(super) id: Option<String>,
+    pub(super) parent_id: Option<String>,
+    pub(super) integration_version: Option<i32>,
+    pub(super) name: Option<String>,
+    pub(super) key_type: Option<String>,
+    pub(super) then: Option<String>,
+    pub(super) properties: Option<Vec<NativeActionTriggerPropertyDto>>,
+    pub(super) data: Option<Vec<NativeActionTriggerDataDto>>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
-pub(crate) struct NativeActionTriggerPropertyDto {
-    pub(crate) key: Option<String>,
-    pub(crate) value: Option<String>,
+#[derive(Deserialize)]
+pub(super) struct NativeActionTriggerPropertyDto {
+    pub(super) key: Option<String>,
+    pub(super) value: Option<String>,
     #[serde(rename = "type")]
-    pub(crate) value_type: Option<String>,
+    pub(super) property_type: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
-pub(crate) struct NativeActionTriggerDataDto {
-    pub(crate) key: Option<String>,
-    pub(crate) value: Option<String>,
+#[derive(Deserialize)]
+pub(super) struct NativeActionTriggerDataDto {
+    pub(super) key: Option<String>,
+    pub(super) value: Option<String>,
     #[serde(rename = "type")]
-    pub(crate) value_type: Option<String>,
+    pub(super) data_type: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct NativeFrameProductionChecksumDataDto {
-    #[serde(default)]
-    pub(crate) frame_production_checksum: Option<NativeFrameProductionChecksumDto>,
+pub(super) struct NativeFrameProductionChecksumDataDto {
+    pub(super) frame_production_checksum: Option<NativeFrameProductionChecksumDto>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
-pub(crate) struct NativeFrameProductionChecksumDto {
-    pub(crate) checksum: Option<String>,
+#[derive(Deserialize)]
+pub(super) struct NativeFrameProductionChecksumDto {
+    pub(super) checksum: Option<String>,
 }

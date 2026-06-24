@@ -1,8 +1,4 @@
-use std::collections::HashMap;
-
-use serde_json::{Value, json};
-
-pub const FRAME_QUERY: &str = r#"query frame($route: String!,$parameter: FrameParameterInput) {
+pub(super) const FRAME_QUERY: &str = r#"query frame($route: String!,$parameter: FrameParameterInput) {
     frame(route: $route, parameter: $parameter) {
         variables {
             key
@@ -60,7 +56,7 @@ pub const FRAME_QUERY: &str = r#"query frame($route: String!,$parameter: FramePa
     }
 }"#;
 
-pub const FRAME_PRODUCTION_QUERY: &str = r#"query frameProduction($route: String!, $parameter: FrameParameterInput) {
+pub(super) const FRAME_PRODUCTION_QUERY: &str = r#"query frameProduction($route: String!, $parameter: FrameParameterInput) {
     frameProduction(route: $route, parameter: $parameter) {
         checksum
         variables {
@@ -119,21 +115,10 @@ pub const FRAME_PRODUCTION_QUERY: &str = r#"query frameProduction($route: String
     }
 }"#;
 
-pub const FRAME_PRODUCTION_CHECKSUM_QUERY: &str =
+pub(super) const FRAME_PRODUCTION_CHECKSUM_QUERY: &str =
     r#"query frameProductionChecksum($route: String!, $parameter: FrameParameterInput) {
     frameProductionChecksum(route: $route, parameter: $parameter) {
         checksum
         route
     }
 }"#;
-
-pub fn frame_variables(route: &str, parameters: &HashMap<String, String>) -> Value {
-    let entries: Vec<Value> = parameters
-        .iter()
-        .map(|(key, value)| json!({ "key": key, "value": value }))
-        .collect();
-    json!({
-        "route": route,
-        "parameter": { "variables": entries },
-    })
-}

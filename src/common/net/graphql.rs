@@ -22,9 +22,9 @@ impl GraphQlRequest {
         let query = query.into();
         let operation_name = operation_name_from_query(&query);
         return Self {
-            query: query,
+            query,
             variables: Value::Object(Default::default()),
-            operation_name: operation_name,
+            operation_name,
         };
     }
 
@@ -59,7 +59,7 @@ pub(crate) struct GraphQlTransport {
 
 impl GraphQlTransport {
     pub(crate) fn new(endpoint: impl Into<String>, request: GraphQlRequest) -> Self {
-        return Self { endpoint: endpoint.into(), request: request };
+        return Self { endpoint: endpoint.into(), request };
     }
 }
 

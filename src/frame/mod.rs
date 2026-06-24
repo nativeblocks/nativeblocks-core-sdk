@@ -3,13 +3,10 @@ mod di;
 mod domain;
 mod presenter;
 
-#[cfg(all(feature = "net-reqwest", feature = "cache-sqlite"))]
-pub use presenter::ffi::FrameClient;
-
-pub use domain::action::{ActionContext, ActionResult, NativeActionHandler};
 pub use domain::model::{
     NativeActionModel, NativeActionTriggerDataModel, NativeActionTriggerModel,
     NativeActionTriggerPropertyModel, NativeActionTriggerThen, NativeBlockDataModel,
-    NativeBlockModel, NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameState,
+    NativeBlockModel, NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameModel,
     NativeVariableModel,
 };
+pub use presenter::{FrameClient, FrameObserver, FrameState, FrameStateManager};

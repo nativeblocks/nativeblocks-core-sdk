@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::dto::{
+use crate::frame::data::dto::{
     NativeActionDto, NativeActionTriggerDataDto, NativeActionTriggerDto,
     NativeActionTriggerPropertyDto, NativeBlockDataDto, NativeBlockDto, NativeBlockPropertyDto,
     NativeBlockSlotDto, NativeFrameDto, NativeVariableDto,
@@ -12,220 +12,165 @@ use crate::frame::domain::model::{
     NativeVariableModel,
 };
 
-fn or_empty(value: &Option<String>) -> String {
-    value.clone().unwrap_or_default()
-}
-
-impl NativeFrameDto {
-    pub(crate) fn to_model(&self) -> NativeFrameModel {
-        NativeFrameModel {
-            checksum: self.checksum.clone(),
-            variables: Some(map_variables(&self.variables)),
-            actions: Some(map_actions(&self.actions)),
-            blocks: Some(map_blocks(&self.blocks)),
+pub(super) fn to_model(dto: Option<&NativeFrameDto>) -> NativeFrameModel {
+    let dto = match dto {
+        Some(dto) => dto,
+        None => {
+            return NativeFrameModel {
+                checksum: None,
+                variables: HashMap::new(),
+                blocks: HashMap::new(),
+                actions: HashMap::new(),
+            };
         }
+    };
+
+    let variables = dto
+        .variables
+        .iter()
+        .flatten()
+        .map(|variable| (text(&variable.key), map_variable(variable)))
+        .collect();
+
+    let blocks = dto
+        .blocks
+        .iter()
+        .flatten()
+        .map(|block| (text(&block.key), map_block(block)))
+        .collect();
+
+    let mut actions: HashMap<String, Vec<NativeActionModel>> = HashMap::new();
+    for action in dto.actions.iter().flatten() {
+        let model = map_action(action);
+        actions.entry(model.key.clone()).or_default().push(model);
     }
+
+    return NativeFrameModel {
+        checksum: dto.checksum.clone(),
+        variables,
+        blocks,
+        actions,
+    };
 }
 
-pub(crate) fn frame_to_model(dto: Option<&NativeFrameDto>) -> NativeFrameModel {
-    match dto {
-        Some(dto) => dto.to_model(),
-        None => NativeFrameModel {
-            checksum: None,
-            variables: Some(HashMap::new()),
-            actions: Some(HashMap::new()),
-            blocks: Some(HashMap::new()),
-        },
-    }
+fn map_variable(dto: &NativeVariableDto) -> NativeVariableModel {
+    return NativeVariableModel {
+        key: text(&dto.key),
+        value: text(&dto.value),
+        variable_type: text(&dto.variable_type),
+    };
 }
 
-fn map_variables(
-    variables: &Option<Vec<Option<NativeVariableDto>>>,
-) -> HashMap<String, NativeVariableModel> {
-    let mut map = HashMap::new();
-    if let Some(items) = variables {
-        for item in items.iter().flatten() {
-            let key = or_empty(&item.key);
-            map.insert(
-                key.clone(),
-                NativeVariableModel {
-                    key,
-                    value: or_empty(&item.value),
-                    value_type: or_empty(&item.value_type),
-                },
-            );
-        }
-    }
-    map
+fn map_block(dto: &NativeBlockDto) -> NativeBlockModel {
+    return NativeBlockModel {
+        id: text(&dto.id),
+        parent_id: text(&dto.parent_id),
+        version: dto.integration_version.unwrap_or(-1),
+        slot: text(&dto.slot),
+        key_type: text(&dto.key_type),
+        key: text(&dto.key),
+        visibility: text(&dto.visibility_key),
+        position: dto.position.unwrap_or(0),
+        data: dto
+            .data
+            .iter()
+            .flatten()
+            .map(|data| (text(&data.key), map_block_data(data)))
+            .collect(),
+        properties: dto
+            .properties
+            .iter()
+            .flatten()
+            .map(|property| (text(&property.key), map_block_property(property)))
+            .collect(),
+        slots: dto
+            .slots
+            .iter()
+            .flatten()
+            .map(|slot| (text(&slot.slot), map_block_slot(slot)))
+            .collect(),
+        sub_blocks: None,
+    };
 }
 
-fn map_blocks(blocks: &Option<Vec<Option<NativeBlockDto>>>) -> HashMap<String, NativeBlockModel> {
-    let mut map = HashMap::new();
-    if let Some(items) = blocks {
-        for item in items.iter().flatten() {
-            let key = or_empty(&item.key);
-            map.insert(key.clone(), map_block(item, key.clone()));
-        }
-    }
-    map
+fn map_block_data(dto: &NativeBlockDataDto) -> NativeBlockDataModel {
+    return NativeBlockDataModel {
+        key: text(&dto.key),
+        value: text(&dto.value),
+        data_type: text(&dto.data_type),
+    };
 }
 
-fn map_block(block: &NativeBlockDto, key: String) -> NativeBlockModel {
-    NativeBlockModel {
-        id: or_empty(&block.id),
-        parent_id: or_empty(&block.parent_id),
-        version: block.integration_version.unwrap_or(-1),
-        slot: or_empty(&block.slot),
-        key_type: or_empty(&block.key_type),
-        key,
-        visibility: or_empty(&block.visibility_key),
-        position: block.position.unwrap_or(0),
-        data: map_block_data(&block.data),
-        properties: map_block_properties(&block.properties),
-        slots: map_block_slots(&block.slots),
-    }
+fn map_block_property(dto: &NativeBlockPropertyDto) -> NativeBlockPropertyModel {
+    return NativeBlockPropertyModel {
+        key: text(&dto.key),
+        value_mobile: text(&dto.value_mobile),
+        value_tablet: text(&dto.value_tablet),
+        value_desktop: text(&dto.value_desktop),
+        property_type: text(&dto.property_type),
+    };
 }
 
-fn map_block_data(
-    data: &Option<Vec<Option<NativeBlockDataDto>>>,
-) -> HashMap<String, NativeBlockDataModel> {
-    let mut map = HashMap::new();
-    if let Some(items) = data {
-        for item in items.iter().flatten() {
-            let key = or_empty(&item.key);
-            map.insert(
-                key.clone(),
-                NativeBlockDataModel {
-                    key,
-                    value: or_empty(&item.value),
-                    value_type: or_empty(&item.value_type),
-                },
-            );
-        }
-    }
-    map
+fn map_block_slot(dto: &NativeBlockSlotDto) -> NativeBlockSlotModel {
+    return NativeBlockSlotModel {
+        slot: text(&dto.slot),
+    };
 }
 
-fn map_block_properties(
-    properties: &Option<Vec<Option<NativeBlockPropertyDto>>>,
-) -> HashMap<String, NativeBlockPropertyModel> {
-    let mut map = HashMap::new();
-    if let Some(items) = properties {
-        for item in items.iter().flatten() {
-            let key = or_empty(&item.key);
-            map.insert(
-                key.clone(),
-                NativeBlockPropertyModel {
-                    key,
-                    value_mobile: or_empty(&item.value_mobile),
-                    value_tablet: or_empty(&item.value_tablet),
-                    value_desktop: or_empty(&item.value_desktop),
-                    value_type: or_empty(&item.value_type),
-                },
-            );
-        }
-    }
-    map
+fn map_action(dto: &NativeActionDto) -> NativeActionModel {
+    return NativeActionModel {
+        id: text(&dto.id),
+        key: text(&dto.key),
+        event: text(&dto.event),
+        triggers: dto
+            .triggers
+            .iter()
+            .flatten()
+            .map(map_trigger)
+            .collect(),
+    };
 }
 
-fn map_block_slots(
-    slots: &Option<Vec<Option<NativeBlockSlotDto>>>,
-) -> HashMap<String, NativeBlockSlotModel> {
-    let mut map = HashMap::new();
-    if let Some(items) = slots {
-        for item in items.iter().flatten() {
-            let slot = or_empty(&item.slot);
-            map.insert(slot.clone(), NativeBlockSlotModel { slot });
-        }
-    }
-    map
+fn map_trigger(dto: &NativeActionTriggerDto) -> NativeActionTriggerModel {
+    return NativeActionTriggerModel {
+        name: text(&dto.name),
+        id: text(&dto.id),
+        parent_id: text(&dto.parent_id),
+        version: dto.integration_version.unwrap_or(-1),
+        key_type: text(&dto.key_type),
+        then: NativeActionTriggerThen::from_string(dto.then.as_deref().unwrap_or("")),
+        properties: dto
+            .properties
+            .iter()
+            .flatten()
+            .map(|property| (text(&property.key), map_trigger_property(property)))
+            .collect(),
+        data: dto
+            .data
+            .iter()
+            .flatten()
+            .map(|data| (text(&data.key), map_trigger_data(data)))
+            .collect(),
+        sub_triggers: None,
+    };
 }
 
-fn map_actions(
-    actions: &Option<Vec<Option<NativeActionDto>>>,
-) -> HashMap<String, Vec<NativeActionModel>> {
-    let mut models: Vec<NativeActionModel> = Vec::new();
-    let mut keys: Vec<String> = Vec::new();
-    if let Some(items) = actions {
-        for item in items.iter().flatten() {
-            let key = or_empty(&item.key);
-            models.push(map_action(item, key.clone()));
-            keys.push(key);
-        }
-    }
-
-    let mut map = HashMap::new();
-    for key in keys {
-        let grouped: Vec<NativeActionModel> =
-            models.iter().filter(|a| a.key == key).cloned().collect();
-        map.insert(key, grouped);
-    }
-    map
+fn map_trigger_property(dto: &NativeActionTriggerPropertyDto) -> NativeActionTriggerPropertyModel {
+    return NativeActionTriggerPropertyModel {
+        key: text(&dto.key),
+        value: text(&dto.value),
+        property_type: text(&dto.property_type),
+    };
 }
 
-fn map_action(action: &NativeActionDto, key: String) -> NativeActionModel {
-    let triggers = action
-        .triggers
-        .as_ref()
-        .map(|items| items.iter().flatten().map(map_trigger).collect())
-        .unwrap_or_default();
-    NativeActionModel {
-        id: or_empty(&action.id),
-        key,
-        event: or_empty(&action.event),
-        triggers,
-    }
+fn map_trigger_data(dto: &NativeActionTriggerDataDto) -> NativeActionTriggerDataModel {
+    return NativeActionTriggerDataModel {
+        key: text(&dto.key),
+        value: text(&dto.value),
+        data_type: text(&dto.data_type),
+    };
 }
 
-fn map_trigger(trigger: &NativeActionTriggerDto) -> NativeActionTriggerModel {
-    NativeActionTriggerModel {
-        id: or_empty(&trigger.id),
-        parent_id: or_empty(&trigger.parent_id),
-        version: trigger.integration_version.unwrap_or(-1),
-        name: or_empty(&trigger.name),
-        key_type: or_empty(&trigger.key_type),
-        then: NativeActionTriggerThen::from_then(&or_empty(&trigger.then)),
-        properties: map_trigger_properties(&trigger.properties),
-        data: map_trigger_data(&trigger.data),
-    }
-}
-
-fn map_trigger_properties(
-    properties: &Option<Vec<Option<NativeActionTriggerPropertyDto>>>,
-) -> HashMap<String, NativeActionTriggerPropertyModel> {
-    let mut map = HashMap::new();
-    if let Some(items) = properties {
-        for item in items.iter().flatten() {
-            let key = or_empty(&item.key);
-            map.insert(
-                key.clone(),
-                NativeActionTriggerPropertyModel {
-                    key,
-                    value: or_empty(&item.value),
-                    value_type: or_empty(&item.value_type),
-                },
-            );
-        }
-    }
-    map
-}
-
-fn map_trigger_data(
-    data: &Option<Vec<Option<NativeActionTriggerDataDto>>>,
-) -> HashMap<String, NativeActionTriggerDataModel> {
-    let mut map = HashMap::new();
-    if let Some(items) = data {
-        for item in items.iter().flatten() {
-            let key = or_empty(&item.key);
-            map.insert(
-                key.clone(),
-                NativeActionTriggerDataModel {
-                    key,
-                    value: or_empty(&item.value),
-                    value_type: or_empty(&item.value_type),
-                },
-            );
-        }
-    }
-    map
+fn text(value: &Option<String>) -> String {
+    return value.clone().unwrap_or_default();
 }
