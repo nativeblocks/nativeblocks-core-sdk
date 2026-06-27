@@ -4,6 +4,7 @@ use serde_json::{Value, json};
 
 use crate::common::cache::CacheProvider;
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::json;
 use crate::common::net::{self, GatewayTransport, GraphQlRequest, HttpClient, with_headers};
 use crate::common::result::{ErrorModel, NBResult};
 use crate::config::ProjectConfigGatewayModel;
@@ -88,23 +89,6 @@ pub(super) async fn sync_cloud(
     };
 }
 
-pub(super) async fn sync_community(
-    http: &dyn HttpClient,
-    cache: &dyn CacheProvider,
-    endpoint: &str,
-    route: &str,
-) -> NBResult<NativeFrameModel> {
-    let body = http
-        .get(endpoint.to_string(), HashMap::new())
-        .await
-        .map_err(|error| ErrorModel::from(error).or_code(error_code::FRAME_COMMUNITY_SYNC))?;
-    let data: NativeFrameDataDto =
-        net::map(&body).map_err(|error| error.or_code(error_code::FRAME_COMMUNITY_SYNC))?;
-    let frame = mapper::to_model(data.frame_production.as_ref());
-    cache_frame(cache, route, &frame, true)?;
-    return Ok(frame);
-}
-
 pub(super) fn get_frame(
     cache: &dyn CacheProvider,
     route: &str,
@@ -117,20 +101,19 @@ pub(super) fn get_frame(
     };
     return match cache.get_bytes(cache_key)? {
         Some(bytes) => decode_frame(&bytes),
-        None => Err(ErrorModel::cache(key::message::FRAME_NOT_CACHED)
-            .with_code(error_code::FRAME_NOT_CACHED)),
+        None => Err(ErrorModel::cache(key::message::FRAME_NOT_CACHED).with_code(error_code::FRAME_NOT_CACHED)),
     };
 }
 
-pub(super) fn clear(cache: &dyn CacheProvider, route: &str) -> NBResult<()> {
+pub(super) async fn clear(cache: &dyn CacheProvider, route: &str) -> NBResult<()> {
     cache.remove(key::dev_key(route))?;
     cache.remove(key::prod_key(route))?;
     return Ok(());
 }
 
-pub(super) fn clear_all(cache: &dyn CacheProvider, routes: &[String]) -> NBResult<()> {
+pub(super) async fn clear_all(cache: &dyn CacheProvider, routes: &[String]) -> NBResult<()> {
     for route in routes {
-        clear(cache, route)?;
+        clear(cache, route).await?;
     }
     return Ok(());
 }
@@ -211,9 +194,7 @@ async fn fetch_production_checksum(
         parameters,
         query::FRAME_PRODUCTION_CHECKSUM_QUERY,
     );
-    let data: NativeFrameProductionChecksumDataDto =
-        net::request(http, headers, transport.as_ref())
-            .await
+    let data: NativeFrameProductionChecksumDataDto = net::request(http, headers, transport.as_ref()).await
             .map_err(|error| error.or_code(error_code::FRAME_CHECKSUM))?;
     return Ok(data
         .frame_production_checksum
@@ -243,11 +224,7 @@ async fn request_frame(
     let headers = with_headers(environment, sdk_config, install_id);
     let transport = build_transport(gateway, graphql_endpoint, route, parameters, query);
     let data: NativeFrameDataDto = net::request(http, headers, transport.as_ref()).await?;
-    let frame = if production {
-        data.frame_production
-    } else {
-        data.frame
-    };
+    let frame = if production { data.frame_production } else { data.frame };
     return Ok(mapper::to_model(frame.as_ref()));
 }
 
@@ -267,8 +244,7 @@ fn build_transport(
             Box::new(net::RestTransport::new(gateway.value.clone(), variables))
         }
         net::GATEWAY_TYPE_GRAPHQL | _ => {
-            let request =
-                GraphQlRequest::new(query).with_variables(graphql_variables(route, parameters));
+            let request = GraphQlRequest::new(query).with_variables(graphql_variables(route, parameters));
             Box::new(net::GraphQlTransport::new(graphql_endpoint, request))
         }
     };
@@ -295,17 +271,12 @@ fn cache_frame(
     frame: &NativeFrameModel,
     production: bool,
 ) -> NBResult<()> {
-    let cache_key = if production {
-        key::prod_key(route)
-    } else {
-        key::dev_key(route)
-    };
-    let bytes = crate::common::json::to_bytes(frame)?;
+    let cache_key = if production { key::prod_key(route) } else { key::dev_key(route) };
+    let bytes = json::to_bytes(frame)?;
     cache.save_bytes(cache_key, bytes, None)?;
     return Ok(());
 }
 
 fn decode_frame(bytes: &[u8]) -> NBResult<NativeFrameModel> {
-    return crate::common::json::from_bytes(bytes)
-        .map_err(|error| error.with_code(error_code::FRAME_NOT_CACHED));
+    return json::from_bytes(bytes).map_err(|error| error.with_code(error_code::FRAME_NOT_CACHED));
 }

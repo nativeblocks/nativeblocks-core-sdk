@@ -1,12 +1,9 @@
-mod client;
-mod dto;
-mod interactor;
-mod key;
-mod mapper;
-mod model;
-mod repository;
+mod data;
+mod di;
+mod domain;
+mod presenter;
 
-pub use client::ScaffoldClient;
-pub use model::{
+pub use domain::model::{
     FrameTypeModel, NativeFrameRouteModel, NativeRouteArgumentsModel, NativeScaffoldModel,
 };
+pub use presenter::ScaffoldClient;

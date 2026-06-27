@@ -5,11 +5,15 @@
 #![allow(clippy::match_single_binding)] // versioned cache-migration dispatch placeholder
 #![allow(clippy::wildcard_in_or_patterns)] // explicit default branch documents intent
 
-uniffi::setup_scaffolding!();
+uniffi::setup_scaffolding!("NativeblocksCoreEngine");
 
 pub mod common;
 pub mod config;
 // pub mod experiment; // disabled for now — not needed yet
 pub mod frame;
+pub mod global_parameter;
+pub mod instance;
 // pub mod localization; // disabled for now — not needed yet
 pub mod scaffold;
+#[cfg(feature = "script-quickjs")]
+pub mod script;

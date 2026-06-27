@@ -1,32 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::SdkConfig;
 use crate::common::logger::{LoggerEventLevel, NativeLoggerProvider, keys};
-use crate::common::net::HttpClient;
-use crate::common::result::{ErrorModel, NBResult};
-use crate::config;
-use crate::scaffold::key::GATEWAY_OPERATION;
-use crate::scaffold::model::NativeScaffoldModel;
-use crate::scaffold::repository::fetch_scaffold;
-
-pub(super) async fn get_use_case(
-    http: &dyn HttpClient,
-    environment: &NativeblocksEnvironment,
-    sdk_config: &SdkConfig,
-    config_client: &config::Client,
-) -> NBResult<NativeScaffoldModel> {
-    let resolved = config_client.gateway(GATEWAY_OPERATION).await?;
-    return fetch_scaffold(
-        http,
-        environment,
-        sdk_config,
-        resolved.gateway,
-        &resolved.endpoint,
-        &resolved.install_id,
-    )
-    .await;
-}
+use crate::common::result::ErrorModel;
 
 pub(super) fn log_success(
     logger: &Mutex<NativeLoggerProvider>,
@@ -78,12 +55,6 @@ fn dispatch(
     params: HashMap<String, String>,
 ) {
     if let Ok(provider) = logger.lock() {
-        provider.dispatch(
-            sdk_config,
-            level,
-            keys::tag::SCAFFOLD_FETCH,
-            message,
-            params,
-        );
+        provider.dispatch(sdk_config, level, keys::tag::SCAFFOLD_FETCH, message, params);
     }
 }

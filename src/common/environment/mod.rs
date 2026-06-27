@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 mod accessor;
 mod validation;
 
@@ -9,20 +7,10 @@ pub struct SdkConfig {
     pub platform: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
-pub enum NativeblocksEdition {
-    Cloud {
-        endpoint: String,
-        api_key: String,
-        development_mode: bool,
-    },
-    Community {
-        frames_data: HashMap<String, String>,
-    },
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct NativeblocksEnvironment {
     pub instance_name: String,
-    pub edition: NativeblocksEdition,
+    pub endpoint: String,
+    pub api_key: String,
+    pub development_mode: bool,
 }

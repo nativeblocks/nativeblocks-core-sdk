@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct NativeFrameModel {
     pub checksum: Option<String>,
     pub variables: HashMap<String, NativeVariableModel>,
-    pub blocks: HashMap<String, NativeBlockModel>,
+    pub blocks: HashMap<String, Vec<NativeBlockModel>>,
     pub actions: HashMap<String, Vec<NativeActionModel>>,
 }
 

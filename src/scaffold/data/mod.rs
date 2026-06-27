@@ -1,4 +1,4 @@
-pub(crate) mod cloud_repository;
+pub(crate) mod repository_impl;
 
 mod dto;
 mod key;

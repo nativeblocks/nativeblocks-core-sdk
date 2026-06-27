@@ -1,34 +1,56 @@
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use crate::frame::domain::model::{
-    NativeActionModel, NativeActionTriggerModel, NativeActionTriggerThen, NativeBlockModel,
-    NativeVariableModel,
+    NativeActionTriggerModel, NativeBlockModel, NativeVariableModel,
 };
-use crate::frame::presenter::state_manager::FrameStateManager;
+
+pub(super) type FindVariable = Arc<dyn Fn(String) -> Option<NativeVariableModel> + Send + Sync>;
+pub(super) type VariableChange = Arc<dyn Fn(NativeVariableModel) + Send + Sync>;
+pub(super) type FindBlock = Arc<dyn Fn(String) -> Option<NativeBlockModel> + Send + Sync>;
+pub(super) type ChangeBlock = Arc<dyn Fn(NativeBlockModel) + Send + Sync>;
+pub(super) type HandleTrigger = Arc<dyn Fn(NativeActionTriggerModel) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 #[derive(uniffi::Object)]
 pub struct ActionProps {
-    manager: Arc<FrameStateManager>,
     instance_name: String,
     list_item_index: i32,
-    action: NativeActionModel,
     trigger: NativeActionTriggerModel,
+    find_variable: FindVariable,
+    variable_change: VariableChange,
+    find_block: FindBlock,
+    change_block: ChangeBlock,
+    on_handle_next_trigger: HandleTrigger,
+    on_handle_success_next_trigger: HandleTrigger,
+    on_handle_failure_next_trigger: HandleTrigger,
 }
 
 impl ActionProps {
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn new(
-        manager: Arc<FrameStateManager>,
         instance_name: String,
         list_item_index: i32,
-        action: NativeActionModel,
         trigger: NativeActionTriggerModel,
+        find_variable: FindVariable,
+        variable_change: VariableChange,
+        find_block: FindBlock,
+        change_block: ChangeBlock,
+        on_handle_next_trigger: HandleTrigger,
+        on_handle_success_next_trigger: HandleTrigger,
+        on_handle_failure_next_trigger: HandleTrigger,
     ) -> Self {
         return Self {
-            manager,
             instance_name,
             list_item_index,
-            action,
             trigger,
+            find_variable,
+            variable_change,
+            find_block,
+            change_block,
+            on_handle_next_trigger,
+            on_handle_success_next_trigger,
+            on_handle_failure_next_trigger,
         };
     }
 }
@@ -48,51 +70,30 @@ impl ActionProps {
     }
 
     pub fn find_variable(&self, key: String) -> Option<NativeVariableModel> {
-        return self.manager.find_variable(&key);
+        return (self.find_variable)(key);
     }
 
-    pub fn change_variable(&self, variable: NativeVariableModel) {
-        self.manager.handle_variable(variable);
+    pub fn variable_change(&self, variable: NativeVariableModel) {
+        (self.variable_change)(variable);
     }
 
     pub fn find_block(&self, key: String) -> Option<NativeBlockModel> {
-        return self.manager.find_block(&key);
+        return (self.find_block)(key);
     }
 
     pub fn change_block(&self, block: NativeBlockModel) {
-        self.manager.handle_block(block);
+        (self.change_block)(block);
     }
 
-    pub async fn handle_next_triggers(&self) {
-        self.manager
-            .handle_child_triggers(
-                self.list_item_index,
-                &self.action,
-                &self.trigger,
-                NativeActionTriggerThen::Next,
-            )
-            .await;
+    pub async fn handle_next_trigger(&self, trigger: NativeActionTriggerModel) {
+        (self.on_handle_next_trigger)(trigger).await;
     }
 
-    pub async fn handle_success_triggers(&self) {
-        self.manager
-            .handle_child_triggers(
-                self.list_item_index,
-                &self.action,
-                &self.trigger,
-                NativeActionTriggerThen::Success,
-            )
-            .await;
+    pub async fn handle_success_next_trigger(&self, trigger: NativeActionTriggerModel) {
+        (self.on_handle_success_next_trigger)(trigger).await;
     }
 
-    pub async fn handle_failure_triggers(&self) {
-        self.manager
-            .handle_child_triggers(
-                self.list_item_index,
-                &self.action,
-                &self.trigger,
-                NativeActionTriggerThen::Failure,
-            )
-            .await;
+    pub async fn handle_failure_next_trigger(&self, trigger: NativeActionTriggerModel) {
+        (self.on_handle_failure_next_trigger)(trigger).await;
     }
 }

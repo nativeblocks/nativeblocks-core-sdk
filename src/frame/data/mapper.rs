@@ -32,12 +32,14 @@ pub(super) fn to_model(dto: Option<&NativeFrameDto>) -> NativeFrameModel {
         .map(|variable| (text(&variable.key), map_variable(variable)))
         .collect();
 
-    let blocks = dto
-        .blocks
-        .iter()
-        .flatten()
-        .map(|block| (text(&block.key), map_block(block)))
-        .collect();
+    let mut blocks: HashMap<String, Vec<NativeBlockModel>> = HashMap::new();
+    for block in dto.blocks.iter().flatten() {
+        let model = map_block(block);
+        blocks.entry(model.parent_id.clone()).or_default().push(model);
+    }
+    for children in blocks.values_mut() {
+        children.sort_by_key(|block| block.position);
+    }
 
     let mut actions: HashMap<String, Vec<NativeActionModel>> = HashMap::new();
     for action in dto.actions.iter().flatten() {

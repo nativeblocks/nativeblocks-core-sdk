@@ -1,4 +1,4 @@
-use crate::common::result::NbError;
+use crate::common::result::NBError;
 
 mod migration;
 
@@ -6,9 +6,9 @@ pub(crate) use migration::run_migrations;
 
 #[uniffi::export(with_foreign)]
 pub trait CacheProvider: Send + Sync {
-    fn save_bytes(&self, key: String, value: Vec<u8>, ttl_millis: Option<i64>) -> Result<(), NbError>;
-    fn get_bytes(&self, key: String) -> Result<Option<Vec<u8>>, NbError>;
-    fn remove(&self, key: String) -> Result<(), NbError>;
-    fn clear(&self) -> Result<(), NbError>;
-    fn has(&self, key: String) -> Result<bool, NbError>;
+    fn save_bytes(&self, key: String, value: Vec<u8>, ttl_millis: Option<i64>) -> Result<(), NBError>;
+    fn get_bytes(&self, key: String) -> Result<Option<Vec<u8>>, NBError>;
+    fn remove(&self, key: String) -> Result<(), NBError>;
+    fn clear(&self) -> Result<(), NBError>;
+    fn has(&self, key: String) -> Result<bool, NBError>;
 }

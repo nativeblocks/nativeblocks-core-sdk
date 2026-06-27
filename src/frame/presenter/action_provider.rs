@@ -9,11 +9,15 @@ pub trait NativeActionHandler: Send + Sync {
     async fn handle(&self, props: Arc<ActionProps>);
 }
 
-/// Invoked when a trigger's `keyType` has no registered handler. The host decides
-/// what to do (e.g. surface a "not available in this version" message).
 #[uniffi::export(with_foreign)]
 pub trait NativeActionFallback: Send + Sync {
     fn handle(&self, key_type: String, name: String);
+}
+
+#[uniffi::export(with_foreign)]
+pub trait ActionFinder: Send + Sync {
+    fn find_handler(&self, key_type: String) -> Option<Arc<dyn NativeActionHandler>>;
+    fn fallback(&self, key_type: String, name: String);
 }
 
 pub(super) struct ActionProvider {
@@ -59,6 +63,13 @@ pub(super) fn get_or_create(instance_name: &str) -> Arc<ActionProvider> {
         .clone();
 }
 
+pub(super) fn remove(instance_name: &str) {
+    registry()
+        .lock()
+        .expect("action registry poisoned")
+        .remove(instance_name);
+}
+
 #[uniffi::export]
 pub fn provide_action(
     instance_name: String,
@@ -71,4 +82,17 @@ pub fn provide_action(
 #[uniffi::export]
 pub fn provide_action_fallback(instance_name: String, fallback: Arc<dyn NativeActionFallback>) {
     get_or_create(&instance_name).provide_fallback(fallback);
+}
+
+#[uniffi::export]
+pub fn action_handler(
+    instance_name: String,
+    key_type: String,
+) -> Option<Arc<dyn NativeActionHandler>> {
+    return get_or_create(&instance_name).find(&key_type);
+}
+
+#[uniffi::export]
+pub fn action_fallback(instance_name: String) -> Option<Arc<dyn NativeActionFallback>> {
+    return get_or_create(&instance_name).fallback();
 }

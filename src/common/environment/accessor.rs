@@ -1,7 +1,7 @@
 use crate::common::result::{ErrorModel, NBResult};
 
+use super::NativeblocksEnvironment;
 use super::validation::is_valid_instance_name;
-use super::{NativeblocksEdition, NativeblocksEnvironment};
 
 impl NativeblocksEnvironment {
     pub fn instance_name(&self) -> &str {
@@ -9,38 +9,15 @@ impl NativeblocksEnvironment {
     }
 
     pub fn api_key(&self) -> &str {
-        return match &self.edition {
-            NativeblocksEdition::Cloud { api_key, .. } => api_key,
-            NativeblocksEdition::Community { .. } => "",
-        };
+        return &self.api_key;
     }
 
-    pub fn endpoint(&self) -> Option<&str> {
-        return match &self.edition {
-            NativeblocksEdition::Cloud { endpoint, .. } => Some(endpoint),
-            NativeblocksEdition::Community { .. } => None,
-        };
+    pub fn endpoint(&self) -> &str {
+        return &self.endpoint;
     }
 
     pub fn development_mode(&self) -> bool {
-        return matches!(
-            self.edition,
-            NativeblocksEdition::Cloud {
-                development_mode: true,
-                ..
-            }
-        );
-    }
-
-    pub fn is_community(&self) -> bool {
-        return matches!(self.edition, NativeblocksEdition::Community { .. });
-    }
-
-    pub fn community_frame_endpoint(&self, route: &str) -> Option<String> {
-        return match &self.edition {
-            NativeblocksEdition::Community { frames_data } => frames_data.get(route).cloned(),
-            NativeblocksEdition::Cloud { .. } => None,
-        };
+        return self.development_mode;
     }
 
     pub fn validate(&self) -> NBResult<()> {

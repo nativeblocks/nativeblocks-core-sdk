@@ -8,4 +8,4 @@ mod repository;
 
 pub(crate) use client::Client;
 pub(crate) use model::ProjectConfigGatewayModel;
-pub(crate) use provider::get_or_create;
+pub(crate) use provider::{get_or_create, remove};

@@ -1,30 +1,53 @@
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use crate::frame::domain::model::{NativeActionModel, NativeBlockModel, NativeVariableModel};
-use crate::frame::presenter::state_manager::FrameStateManager;
 
-pub const NONE_INDEX: i32 = -1;
+pub(super) type FindVariable = Arc<dyn Fn(String) -> Option<NativeVariableModel> + Send + Sync>;
+pub(super) type VariableChange = Arc<dyn Fn(NativeVariableModel) + Send + Sync>;
+pub(super) type Localize = Arc<dyn Fn(String) -> Option<String> + Send + Sync>;
+pub(super) type SubBlock = Arc<dyn Fn(String, i32) + Send + Sync>;
+pub(super) type FindAction = Arc<dyn Fn(String) -> Option<NativeActionModel> + Send + Sync>;
+pub(super) type CurrentBlock = Arc<dyn Fn() -> Option<NativeBlockModel> + Send + Sync>;
+pub(super) type HandleAction = Arc<dyn Fn(i32, Option<NativeActionModel>, String) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 #[derive(uniffi::Object)]
 pub struct BlockProps {
-    manager: Arc<FrameStateManager>,
     instance_name: String,
     list_item_index: i32,
-    block: NativeBlockModel,
+    current_block: CurrentBlock,
+    find_variable: FindVariable,
+    variable_change: VariableChange,
+    localize: Localize,
+    on_sub_block: SubBlock,
+    find_action: FindAction,
+    handle_action: HandleAction,
 }
 
 impl BlockProps {
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn new(
-        manager: Arc<FrameStateManager>,
         instance_name: String,
         list_item_index: i32,
-        block: NativeBlockModel,
+        current_block: CurrentBlock,
+        find_variable: FindVariable,
+        variable_change: VariableChange,
+        localize: Localize,
+        on_sub_block: SubBlock,
+        find_action: FindAction,
+        handle_action: HandleAction,
     ) -> Self {
         return Self {
-            manager,
             instance_name,
             list_item_index,
-            block,
+            current_block,
+            find_variable,
+            variable_change,
+            localize,
+            on_sub_block,
+            find_action,
+            handle_action,
         };
     }
 }
@@ -39,20 +62,28 @@ impl BlockProps {
         return self.list_item_index;
     }
 
-    pub fn block(&self) -> NativeBlockModel {
-        return self.block.clone();
+    pub fn block(&self) -> Option<NativeBlockModel> {
+        return (self.current_block)();
     }
 
     pub fn find_variable(&self, key: String) -> Option<NativeVariableModel> {
-        return self.manager.find_variable(&key);
+        return (self.find_variable)(key);
     }
 
-    pub fn change_variable(&self, variable: NativeVariableModel) {
-        self.manager.handle_variable(variable);
+    pub fn variable_change(&self, variable: NativeVariableModel) {
+        (self.variable_change)(variable);
     }
 
-    pub fn find_action(&self, event_type: String) -> Option<NativeActionModel> {
-        return self.manager.find_action(&self.block.key, &event_type);
+    pub fn localize(&self, key: String) -> Option<String> {
+        return (self.localize)(key);
+    }
+
+    pub fn sub_block(&self, slot: String, list_item_index: i32) {
+        (self.on_sub_block)(slot, list_item_index);
+    }
+
+    pub fn find_action(&self, event: String) -> Option<NativeActionModel> {
+        return (self.find_action)(event);
     }
 
     pub async fn handle_action(
@@ -61,26 +92,6 @@ impl BlockProps {
         action: Option<NativeActionModel>,
         event_type: String,
     ) {
-        self.manager
-            .handle_action(list_item_index, action, event_type)
-            .await;
-    }
-
-    pub fn sub_blocks(&self, slot: String) -> Vec<NativeBlockModel> {
-        return self.manager.children(&self.block.id, &slot);
-    }
-
-    pub fn sub_block_props(&self, slot: String, list_item_index: i32) -> Vec<Arc<BlockProps>> {
-        let index = if list_item_index == NONE_INDEX {
-            self.list_item_index
-        } else {
-            list_item_index
-        };
-        return self
-            .manager
-            .children(&self.block.id, &slot)
-            .into_iter()
-            .map(|child| self.manager.block_props(child, index))
-            .collect();
+        (self.handle_action)(list_item_index, action, event_type).await;
     }
 }

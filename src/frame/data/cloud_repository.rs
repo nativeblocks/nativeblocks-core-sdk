@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use tokio::sync::watch;
+
 use crate::common::cache::CacheProvider;
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
 use crate::common::logger::NativeLoggerProvider;
@@ -15,9 +17,8 @@ use crate::frame::data::source;
 use crate::frame::domain::model::NativeFrameModel;
 use crate::frame::domain::repository::FrameRepository;
 
-/// Cloud-backed [`FrameRepository`]. Resolves gateways through the config client
-/// and reads the dev-vs-production decision from the environment internally — so
-/// the dev/prod axis lives here, never leaking up to the use cases.
+type FrameUpdate = NBResult<NativeFrameModel>;
+
 pub(crate) struct CloudFrameRepository {
     http: Arc<dyn HttpClient>,
     environment: NativeblocksEnvironment,
@@ -25,6 +26,7 @@ pub(crate) struct CloudFrameRepository {
     cache: Arc<dyn CacheProvider>,
     config_client: Arc<config::Client>,
     logger: Arc<Mutex<NativeLoggerProvider>>,
+    channels: Mutex<HashMap<String, watch::Sender<FrameUpdate>>>,
 }
 
 impl CloudFrameRepository {
@@ -43,7 +45,19 @@ impl CloudFrameRepository {
             cache,
             config_client,
             logger,
+            channels: Mutex::new(HashMap::new()),
         };
+    }
+
+    fn read(&self, route: &str) -> FrameUpdate {
+        return source::get_frame(self.cache.as_ref(), route, self.environment.development_mode());
+    }
+
+    fn emit(&self, route: &str) {
+        let value = self.read(route);
+        if let Some(sender) = self.channels.lock().unwrap().get(route) {
+            let _ = sender.send(value);
+        }
     }
 
     async fn fetch(
@@ -51,8 +65,6 @@ impl CloudFrameRepository {
         route: &str,
         parameters: &HashMap<String, String>,
     ) -> NBResult<NativeFrameModel> {
-        // The cloud pipeline needs three gateways resolved from the project config;
-        // they share the same endpoint and install id.
         let frame = self.config_client.gateway(GATEWAY_FRAME).await?;
         let production = self.config_client.gateway(GATEWAY_FRAME_PRODUCTION).await?;
         let checksum = self
@@ -78,28 +90,32 @@ impl CloudFrameRepository {
 
 #[async_trait::async_trait]
 impl FrameRepository for CloudFrameRepository {
-    async fn sync(
-        &self,
-        route: &str,
-        parameters: &HashMap<String, String>,
-    ) -> NBResult<NativeFrameModel> {
+    async fn sync(&self, route: &str, parameters: &HashMap<String, String>) -> NBResult<()> {
         let result = self.fetch(route, parameters).await;
         match &result {
             Ok(_) => logging::log_sync_success(&self.logger, &self.sdk_config, route),
             Err(error) => logging::log_sync_failure(&self.logger, &self.sdk_config, route, error),
         }
-        return result;
+        if result.is_ok() {
+            self.emit(route);
+        }
+        return result.map(|_| ());
     }
 
-    fn get(&self, route: &str) -> NBResult<NativeFrameModel> {
-        return source::get_frame(self.cache.as_ref(), route, self.environment.development_mode());
+    fn get(&self, route: &str) -> watch::Receiver<FrameUpdate> {
+        let initial = self.read(route);
+        let mut channels = self.channels.lock().unwrap();
+        return channels
+            .entry(route.to_string())
+            .or_insert_with(|| watch::channel(initial).0)
+            .subscribe();
     }
 
-    fn clear(&self, route: &str) -> NBResult<()> {
-        return source::clear(self.cache.as_ref(), route);
+    async fn clear(&self, route: &str) -> NBResult<()> {
+        return source::clear(self.cache.as_ref(), route).await;
     }
 
-    fn clear_all(&self, routes: &[String]) -> NBResult<()> {
-        return source::clear_all(self.cache.as_ref(), routes);
+    async fn clear_all(&self, routes: &[String]) -> NBResult<()> {
+        return source::clear_all(self.cache.as_ref(), routes).await;
     }
 }

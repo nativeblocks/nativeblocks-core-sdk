@@ -17,7 +17,6 @@ pub(in crate::frame) mod error_code {
     pub(in crate::frame) const FRAME_NOT_CACHED: &str = "NB0101";
     pub(in crate::frame) const FRAME_PRODUCTION_SYNC: &str = "NB0102";
     pub(in crate::frame) const FRAME_DEV_SYNC: &str = "NB0103";
-    pub(in crate::frame) const FRAME_COMMUNITY_SYNC: &str = "NB0104";
     pub(in crate::frame) const FRAME_CHECKSUM: &str = "NB0105";
 }
 

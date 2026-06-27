@@ -33,3 +33,10 @@ pub(crate) fn get_or_create(
     map.insert(environment.instance_name().to_string(), client.clone());
     return Ok(client);
 }
+
+pub(crate) fn remove(instance_name: &str) {
+    registry()
+        .lock()
+        .expect("config registry poisoned")
+        .remove(instance_name);
+}

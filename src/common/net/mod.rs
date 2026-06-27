@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::de::DeserializeOwned;
 
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
-use crate::common::result::{NBResult, NbError};
+use crate::common::result::{NBResult, NBError};
 
 mod mapper;
 mod graphql;
@@ -21,8 +21,8 @@ pub(crate) const SDK_VERSION_HEADER: &str = "SDK-Version";
 #[uniffi::export(with_foreign)]
 #[async_trait::async_trait]
 pub trait HttpClient: Send + Sync {
-    async fn get(&self, url: String, headers: HashMap<String, String>) -> Result<String, NbError>;
-    async fn post(&self, url: String, headers: HashMap<String, String>, body: String) -> Result<String, NbError>;
+    async fn get(&self, url: String, headers: HashMap<String, String>) -> Result<String, NBError>;
+    async fn post(&self, url: String, headers: HashMap<String, String>, body: String) -> Result<String, NBError>;
 }
 
 pub(crate) fn with_headers(

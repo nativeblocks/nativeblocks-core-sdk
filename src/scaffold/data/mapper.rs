@@ -1,5 +1,7 @@
-use crate::scaffold::dto::{NativeFrameRouteDto, NativeRouteArgumentsDto, NativeScaffoldDataDto};
-use crate::scaffold::model::{
+use crate::scaffold::data::dto::{
+    NativeFrameRouteDto, NativeRouteArgumentsDto, NativeScaffoldDataDto,
+};
+use crate::scaffold::domain::model::{
     FrameTypeModel, NativeFrameRouteModel, NativeRouteArgumentsModel, NativeScaffoldModel,
 };
 

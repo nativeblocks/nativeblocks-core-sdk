@@ -3,9 +3,9 @@ use uuid::Uuid;
 use crate::common::cache::CacheProvider;
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::{HttpClient, map, with_headers};
-use crate::common::result::{ErrorModel, NBResult};
+use crate::common::result::NBResult;
 use crate::config::dto::ProjectConfigDataDto;
-use crate::config::key::{DEFAULT_GATEWAY_TYPE, INSTALL_ID_KEY, error_code, message};
+use crate::config::key::{DEFAULT_GATEWAY_TYPE, INSTALL_ID_KEY};
 use crate::config::mapper::to_model;
 use crate::config::model::{NativeProjectConfigModel, ProjectConfigGatewayModel};
 
@@ -28,9 +28,7 @@ pub(crate) async fn fetch_project_config(
     sdk_config: &SdkConfig,
     install_id: &str,
 ) -> NBResult<NativeProjectConfigModel> {
-    let endpoint = environment.endpoint().ok_or_else(|| {
-        ErrorModel::support(message::CLOUD_ONLY).with_code(error_code::PROJECT_CONFIG)
-    })?;
+    let endpoint = environment.endpoint();
     let headers = with_headers(environment, sdk_config, install_id);
     let body = http.get(endpoint.to_string(), headers).await?;
     let dto: ProjectConfigDataDto = map(&body)?;

@@ -1,13 +1,13 @@
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
-use crate::config::ProjectConfigGatewayModel;
 use crate::common::net::{self, GraphQlRequest, HttpClient, with_headers};
 use crate::common::result::NBResult;
-use crate::scaffold::dto::NativeScaffoldDataDto;
-use crate::scaffold::key::SCAFFOLD_QUERY;
-use crate::scaffold::mapper::to_model;
-use crate::scaffold::model::NativeScaffoldModel;
+use crate::config::ProjectConfigGatewayModel;
+use crate::scaffold::data::dto::NativeScaffoldDataDto;
+use crate::scaffold::data::mapper::to_model;
+use crate::scaffold::data::query::SCAFFOLD_QUERY;
+use crate::scaffold::domain::model::NativeScaffoldModel;
 
-pub(crate) async fn fetch_scaffold(
+pub(super) async fn fetch_scaffold(
     http: &dyn HttpClient,
     environment: &NativeblocksEnvironment,
     sdk_config: &SdkConfig,
