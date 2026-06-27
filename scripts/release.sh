@@ -84,7 +84,7 @@ if want ios; then
   [[ -d "$DIST/ios" ]] && cat > "$DIST/ios/COPY-INSTRUCTIONS.txt" <<'EOF'
 ADD TO YOUR XCODE TARGET:
 
-  dist/ios/NativeblocksCoreSdk.xcframework  ->  drag in, set "Do Not Embed"
+  dist/ios/NativeblocksCoreSdk.xcframework  ->  drag in, set "Embed & Sign"
   dist/ios/NativeblocksCoreEngine.swift     ->  add to the target's sources
 EOF
 fi

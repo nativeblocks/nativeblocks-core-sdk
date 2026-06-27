@@ -1,5 +1,8 @@
 [bindings.kotlin]
 package_name = "io.nativeblocks.core.engine"
+# Namespace is PascalCase (NativeblocksCoreEngine) for the file/identifier names;
+# pin the native lib name so the bindings still load libnativeblocks_core_sdk.
+cdylib_name = "nativeblocks_core_sdk"
 generate_immutable_records = true
 
 [bindings.swift]

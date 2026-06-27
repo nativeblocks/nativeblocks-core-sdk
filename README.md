@@ -23,9 +23,9 @@ per-platform**; the engine never renders, it owns all non-UI logic.
    (rendering + platform code written on top)
 ```
 
-The library is built as `cdylib` (Android `.so`, Flutter), `staticlib` (iOS
-xcframework), and `lib` (the bindgen binary + Rust tests). FFI bindings are
-generated from the compiled library — they are build artifacts, not committed.
+The library is built as `cdylib` (Android `.so`, Flutter, and the iOS
+xcframework `.dylib`) and `lib` (the bindgen binary + Rust tests). FFI bindings
+are generated from the compiled library — they are build artifacts, not committed.
 
 ## Setup
 
@@ -97,7 +97,7 @@ dependencies {
 
 | Add to the Xcode target                    | How                         |
 | ------------------------------------------ | --------------------------- |
-| `dist/ios/NativeblocksCoreSdk.xcframework` | drag in → **Do Not Embed**  |
+| `dist/ios/NativeblocksCoreSdk.xcframework` | drag in → **Embed & Sign**  |
 | `dist/ios/NativeblocksCoreEngine.swift`    | add to the target's sources |
 
 **Flutter** — then run `flutter run`:
