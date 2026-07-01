@@ -13,7 +13,7 @@ pub mod config;
 pub mod frame;
 pub mod global_parameter;
 pub mod instance;
-// pub mod localization; // disabled for now — not needed yet
+pub mod localization;
 pub mod scaffold;
 #[cfg(feature = "script-quickjs")]
 pub mod script;
