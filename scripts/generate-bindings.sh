@@ -21,7 +21,7 @@ esac
 LIB="target/debug/lib${LIB_NAME}.${EXT}"
 
 echo "==> Building Rust library"
-cargo build
+cargo build --features script-quickjs-bindgen
 
 echo "==> Generating Kotlin bindings -> bindings/kotlin"
 cargo run --quiet --bin uniffi-bindgen -- \
