@@ -9,3 +9,11 @@ pub fn dispose_instance(instance_name: String) {
     global_parameter::remove(&instance_name);
     logger::remove(&instance_name);
 }
+
+#[uniffi::export]
+pub fn warmup_instance() {}
+
+#[uniffi::export(async_runtime = "tokio")]
+pub async fn warmup_instance_async() {
+    tokio::task::yield_now().await;
+}
