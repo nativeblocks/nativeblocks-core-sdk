@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct ProjectConfigGatewayModel {
     pub operation: String,
     #[serde(rename = "type")]
@@ -8,7 +8,7 @@ pub(crate) struct ProjectConfigGatewayModel {
     pub value: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct NativeProjectConfigModel {
     pub gateway: String,
     pub endpoint: String,

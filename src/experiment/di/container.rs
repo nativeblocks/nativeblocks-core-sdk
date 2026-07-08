@@ -19,11 +19,11 @@ impl Container {
         sdk_config: SdkConfig,
         http: Arc<dyn HttpClient>,
         cache: Arc<dyn CacheProvider>,
-    ) -> Self {
-        let experiment_repository = build_repository(environment, sdk_config, http, cache).unwrap();
-        return Self {
+    ) -> NBResult<Self> {
+        let experiment_repository = build_repository(environment, sdk_config, http, cache)?;
+        return Ok(Self {
             experiment_repository,
-        };
+        });
     }
 
     pub(crate) fn repository(&self) -> &dyn ExperimentRepository {

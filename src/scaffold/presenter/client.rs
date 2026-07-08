@@ -22,7 +22,7 @@ impl ScaffoldClient {
         cache: Arc<dyn CacheProvider>,
     ) -> Result<Arc<Self>, NBError> {
         environment.validate()?;
-        let container = Arc::new(Container::new(environment, config, http, cache));
+        let container = Arc::new(Container::new(environment, config, http, cache)?);
         return Ok(Arc::new(Self { container }));
     }
 

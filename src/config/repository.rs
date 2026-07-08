@@ -2,12 +2,15 @@ use uuid::Uuid;
 
 use crate::common::cache::CacheProvider;
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::json;
 use crate::common::net::{HttpClient, map, with_headers};
 use crate::common::result::NBResult;
 use crate::config::dto::ProjectConfigDataDto;
-use crate::config::key::{DEFAULT_GATEWAY_TYPE, INSTALL_ID_KEY};
+use crate::config::key::{DEFAULT_GATEWAY_TYPE, INSTALL_ID_KEY, PROJECT_CONFIG_KEY};
 use crate::config::mapper::to_model;
 use crate::config::model::{NativeProjectConfigModel, ProjectConfigGatewayModel};
+
+const PROJECT_CONFIG_TTL_MILLIS: i64 = 1 * 24 * 60 * 60 * 1000;
 
 pub(crate) fn install_id(cache: &dyn CacheProvider) -> NBResult<String> {
     if let Some(bytes) = cache.get_bytes(INSTALL_ID_KEY.to_string())? {
@@ -20,6 +23,24 @@ pub(crate) fn install_id(cache: &dyn CacheProvider) -> NBResult<String> {
     let install_id = Uuid::now_v7().to_string();
     cache.save_bytes(INSTALL_ID_KEY.to_string(), install_id.clone().into_bytes(), None)?;
     return Ok(install_id);
+}
+
+pub(crate) fn read_cached_config(
+    cache: &dyn CacheProvider,
+) -> NBResult<Option<NativeProjectConfigModel>> {
+    return match cache.get_bytes(PROJECT_CONFIG_KEY.to_string())? {
+        Some(bytes) => Ok(Some(json::from_bytes(&bytes)?)),
+        None => Ok(None),
+    };
+}
+
+pub(crate) fn write_cached_config(
+    cache: &dyn CacheProvider,
+    config: &NativeProjectConfigModel,
+) -> NBResult<()> {
+    let bytes = json::to_bytes(config)?;
+    cache.save_bytes(PROJECT_CONFIG_KEY.to_string(), bytes, Some(PROJECT_CONFIG_TTL_MILLIS))?;
+    return Ok(());
 }
 
 pub(crate) async fn fetch_project_config(

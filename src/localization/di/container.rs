@@ -19,12 +19,12 @@ impl Container {
         sdk_config: SdkConfig,
         http: Arc<dyn HttpClient>,
         cache: Arc<dyn CacheProvider>,
-    ) -> Self {
+    ) -> NBResult<Self> {
         let localization_repository =
-            build_repository(environment, sdk_config, http, cache).unwrap();
-        return Self {
+            build_repository(environment, sdk_config, http, cache)?;
+        return Ok(Self {
             localization_repository,
-        };
+        });
     }
 
     pub(crate) fn repository(&self) -> &dyn LocalizationRepository {

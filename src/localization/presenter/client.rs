@@ -29,7 +29,7 @@ impl LocalizationClient {
             config.clone(),
             http,
             cache,
-        ));
+        )?);
         return Ok(Arc::new(Self {
             container,
             environment,
