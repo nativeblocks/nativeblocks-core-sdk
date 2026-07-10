@@ -4,15 +4,15 @@ use serde_json::{Value, json};
 
 use crate::common::cache::CacheProvider;
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
-use crate::common::json;
 use crate::common::net::{self, GatewayTransport, GraphQlRequest, HttpClient, with_headers};
-use crate::common::result::{ErrorModel, NBResult};
+use crate::common::result::NBResult;
 use crate::config::ProjectConfigGatewayModel;
+use crate::frame::data::db_source;
 use crate::frame::data::dto::{NativeFrameDataDto, NativeFrameProductionChecksumDataDto};
 use crate::frame::data::key::{self, error_code};
 use crate::frame::data::mapper;
-use crate::frame::domain::model::NativeFrameModel;
 use crate::frame::data::query;
+use crate::frame::domain::model::NativeFrameModel;
 
 pub(super) async fn sync_cloud(
     http: &dyn HttpClient,
@@ -42,7 +42,7 @@ pub(super) async fn sync_cloud(
         .await;
     }
 
-    return match cached_checksum(cache, route)? {
+    return match db_source::cached_checksum(cache, route)? {
         None => {
             fetch_production_frame(
                 http,
@@ -83,39 +83,10 @@ pub(super) async fn sync_cloud(
                 )
                 .await
             } else {
-                get_frame(cache, route, false)
+                db_source::get_frame(cache, route, false)
             }
         }
     };
-}
-
-pub(super) fn get_frame(
-    cache: &dyn CacheProvider,
-    route: &str,
-    development_mode: bool,
-) -> NBResult<NativeFrameModel> {
-    let cache_key = if development_mode {
-        key::dev_key(route)
-    } else {
-        key::prod_key(route)
-    };
-    return match cache.get_bytes(cache_key)? {
-        Some(bytes) => decode_frame(&bytes),
-        None => Err(ErrorModel::cache(key::message::FRAME_NOT_CACHED).with_code(error_code::FRAME_NOT_CACHED)),
-    };
-}
-
-pub(super) async fn clear(cache: &dyn CacheProvider, route: &str) -> NBResult<()> {
-    cache.remove(key::dev_key(route))?;
-    cache.remove(key::prod_key(route))?;
-    return Ok(());
-}
-
-pub(super) async fn clear_all(cache: &dyn CacheProvider, routes: &[String]) -> NBResult<()> {
-    for route in routes {
-        clear(cache, route).await?;
-    }
-    return Ok(());
 }
 
 async fn fetch_dev_frame(
@@ -143,7 +114,7 @@ async fn fetch_dev_frame(
     )
     .await
     .map_err(|error| error.or_code(error_code::FRAME_DEV_SYNC))?;
-    cache_frame(cache, route, &frame, false)?;
+    db_source::save_frame(cache, route, &frame, false)?;
     return Ok(frame);
 }
 
@@ -172,7 +143,7 @@ async fn fetch_production_frame(
     )
     .await
     .map_err(|error| error.or_code(error_code::FRAME_PRODUCTION_SYNC))?;
-    cache_frame(cache, route, &frame, true)?;
+    db_source::save_frame(cache, route, &frame, true)?;
     return Ok(frame);
 }
 
@@ -200,13 +171,6 @@ async fn fetch_production_checksum(
         .frame_production_checksum
         .and_then(|checksum| checksum.checksum)
         .unwrap_or_default());
-}
-
-fn cached_checksum(cache: &dyn CacheProvider, route: &str) -> NBResult<Option<String>> {
-    return match cache.get_bytes(key::prod_key(route))? {
-        Some(bytes) => Ok(decode_frame(&bytes)?.checksum),
-        None => Ok(None),
-    };
 }
 
 async fn request_frame(
@@ -265,18 +229,3 @@ fn encode_parameters(parameters: &HashMap<String, String>) -> String {
     return serde_json::to_string(parameters).unwrap_or_else(|_| "{}".to_string());
 }
 
-fn cache_frame(
-    cache: &dyn CacheProvider,
-    route: &str,
-    frame: &NativeFrameModel,
-    production: bool,
-) -> NBResult<()> {
-    let cache_key = if production { key::prod_key(route) } else { key::dev_key(route) };
-    let bytes = json::to_bytes(frame)?;
-    cache.save_bytes(cache_key, bytes, None)?;
-    return Ok(());
-}
-
-fn decode_frame(bytes: &[u8]) -> NBResult<NativeFrameModel> {
-    return json::from_bytes(bytes).map_err(|error| error.with_code(error_code::FRAME_NOT_CACHED));
-}

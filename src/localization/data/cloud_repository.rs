@@ -8,11 +8,11 @@ use crate::common::logger::NativeLoggerProvider;
 use crate::common::net::HttpClient;
 use crate::common::result::NBResult;
 use crate::config;
-use crate::localization::data::key::{
-    GATEWAY_LOCALIZATION, GATEWAY_LOCALIZATION_PRODUCTION, GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM,
-};
+use crate::localization::data::key::{GATEWAY_LOCALIZATION, GATEWAY_LOCALIZATION_PRODUCTION, GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM};
+use crate::localization::data::cloud_source;
+use crate::localization::data::db_source;
 use crate::localization::data::logging;
-use crate::localization::data::source;
+use crate::localization::data::memory_source::MemoryLocalizationSource;
 use crate::localization::domain::model::NativeLocalizationModel;
 use crate::localization::domain::repository::LocalizationRepository;
 
@@ -24,7 +24,7 @@ pub(crate) struct CloudLocalizationRepository {
     config_client: Arc<config::Client>,
     logger: Arc<Mutex<NativeLoggerProvider>>,
     language_code: watch::Sender<Option<String>>,
-    localization: Mutex<Option<NativeLocalizationModel>>,
+    memory: MemoryLocalizationSource,
 }
 
 impl CloudLocalizationRepository {
@@ -44,7 +44,7 @@ impl CloudLocalizationRepository {
             config_client,
             logger,
             language_code: watch::channel(None).0,
-            localization: Mutex::new(None),
+            memory: MemoryLocalizationSource::new(),
         };
     }
 
@@ -58,7 +58,7 @@ impl CloudLocalizationRepository {
             .config_client
             .gateway(GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM)
             .await?;
-        return source::sync_cloud(
+        return cloud_source::sync_cloud(
             self.http.as_ref(),
             &self.environment,
             &self.sdk_config,
@@ -80,7 +80,7 @@ impl LocalizationRepository for CloudLocalizationRepository {
         let result = self.fetch(language_code).await;
         match &result {
             Ok(localization) => {
-                *self.localization.lock().unwrap() = Some(localization.clone());
+                self.memory.save_localization(language_code, localization.clone());
                 logging::log_sync_success(&self.logger, &self.sdk_config, language_code);
             }
             Err(error) => {
@@ -91,24 +91,26 @@ impl LocalizationRepository for CloudLocalizationRepository {
     }
 
     async fn get(&self, language_code: &str) -> NBResult<NativeLocalizationModel> {
-        if let Some(localization) = self.localization.lock().unwrap().clone() {
+        let cached = self.memory.get_localization(language_code);
+        if let Some(localization) = cached {
             return Ok(localization);
         }
-        let result = source::get_localization(
+
+        let from_db = db_source::get_localization(
             self.cache.as_ref(),
             language_code,
             self.environment.development_mode(),
         );
-        match &result {
+        match &from_db {
             Ok(localization) => {
-                *self.localization.lock().unwrap() = Some(localization.clone());
+                self.memory.save_localization(language_code, localization.clone());
                 logging::log_load_success(&self.logger, &self.sdk_config, language_code);
             }
             Err(error) => {
                 logging::log_load_failure(&self.logger, &self.sdk_config, language_code, error)
             }
         }
-        return result;
+        return from_db;
     }
 
     fn set_language_code(&self, language_code: &str) {
@@ -117,7 +119,6 @@ impl LocalizationRepository for CloudLocalizationRepository {
             current.as_deref() != Some(language_code)
         };
         if changed {
-            *self.localization.lock().unwrap() = None;
             let _ = self.language_code.send(Some(language_code.to_string()));
             logging::log_language_set(&self.logger, &self.sdk_config, language_code);
         }
@@ -128,11 +129,10 @@ impl LocalizationRepository for CloudLocalizationRepository {
     }
 
     fn translate(&self, key: &str) -> Option<String> {
-        return self
-            .localization
-            .lock()
-            .unwrap()
-            .as_ref()
-            .and_then(|localization| localization.localizations.get(key).cloned());
+        let language_code = self.language_code.borrow().clone();
+        if language_code.is_none() {
+            return None;
+        }
+        return self.memory.translate(&language_code.unwrap(), key);
     }
 }

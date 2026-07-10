@@ -2,10 +2,10 @@ use serde_json::json;
 
 use crate::common::cache::CacheProvider;
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
-use crate::common::json;
 use crate::common::net::{self, GatewayTransport, GraphQlRequest, HttpClient, with_headers};
-use crate::common::result::{ErrorModel, NBResult};
+use crate::common::result::NBResult;
 use crate::config::ProjectConfigGatewayModel;
+use crate::localization::data::db_source;
 use crate::localization::data::dto::{
     NativeLocalizationDataDto, NativeLocalizationProductionChecksumDataDto,
 };
@@ -40,7 +40,7 @@ pub(super) async fn sync_cloud(
         .await;
     }
 
-    return match cached_checksum(cache, language_code)? {
+    return match db_source::cached_checksum(cache, language_code)? {
         None => {
             fetch_production_localization(
                 http,
@@ -78,26 +78,9 @@ pub(super) async fn sync_cloud(
                 )
                 .await
             } else {
-                get_localization(cache, language_code, false)
+                db_source::get_localization(cache, language_code, false)
             }
         }
-    };
-}
-
-pub(super) fn get_localization(
-    cache: &dyn CacheProvider,
-    language_code: &str,
-    development_mode: bool,
-) -> NBResult<NativeLocalizationModel> {
-    let cache_key = if development_mode {
-        key::dev_key(language_code)
-    } else {
-        key::prod_key(language_code)
-    };
-    return match cache.get_bytes(cache_key)? {
-        Some(bytes) => decode_localization(&bytes),
-        None => Err(ErrorModel::cache(key::message::LOCALIZATION_NOT_CACHED)
-            .with_code(error_code::LOCALIZATION_NOT_CACHED)),
     };
 }
 
@@ -124,7 +107,7 @@ async fn fetch_dev_localization(
     )
     .await
     .map_err(|error| error.or_code(error_code::LOCALIZATION_DEV_SYNC))?;
-    cache_localization(cache, language_code, &localization, false)?;
+    db_source::save_localization(cache, language_code, &localization, false)?;
     return Ok(localization);
 }
 
@@ -151,7 +134,7 @@ async fn fetch_production_localization(
     )
     .await
     .map_err(|error| error.or_code(error_code::LOCALIZATION_PRODUCTION_SYNC))?;
-    cache_localization(cache, language_code, &localization, true)?;
+    db_source::save_localization(cache, language_code, &localization, true)?;
     return Ok(localization);
 }
 
@@ -179,13 +162,6 @@ async fn fetch_production_checksum(
         .localization_production_checksum
         .and_then(|checksum| checksum.checksum)
         .unwrap_or_default());
-}
-
-fn cached_checksum(cache: &dyn CacheProvider, language_code: &str) -> NBResult<Option<String>> {
-    return match cache.get_bytes(key::prod_key(language_code))? {
-        Some(bytes) => Ok(decode_localization(&bytes)?.checksum),
-        None => Ok(None),
-    };
 }
 
 async fn request_localization(
@@ -231,23 +207,3 @@ fn build_transport(
     };
 }
 
-fn cache_localization(
-    cache: &dyn CacheProvider,
-    language_code: &str,
-    localization: &NativeLocalizationModel,
-    production: bool,
-) -> NBResult<()> {
-    let cache_key = if production {
-        key::prod_key(language_code)
-    } else {
-        key::dev_key(language_code)
-    };
-    let bytes = json::to_bytes(localization)?;
-    cache.save_bytes(cache_key, bytes, None)?;
-    return Ok(());
-}
-
-fn decode_localization(bytes: &[u8]) -> NBResult<NativeLocalizationModel> {
-    return json::from_bytes(bytes)
-        .map_err(|error| error.with_code(error_code::LOCALIZATION_NOT_CACHED));
-}

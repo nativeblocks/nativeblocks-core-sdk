@@ -11,7 +11,9 @@ use crate::common::result::NBResult;
 use crate::config;
 use crate::frame::data::key::{GATEWAY_FRAME, GATEWAY_FRAME_PRODUCTION, GATEWAY_FRAME_PRODUCTION_CHECKSUM};
 use crate::frame::data::logging;
-use crate::frame::data::source;
+use crate::frame::data::cloud_source;
+use crate::frame::data::db_source;
+use crate::frame::data::memory_source::MemoryFrameSource;
 use crate::frame::domain::model::NativeFrameModel;
 use crate::frame::domain::repository::FrameRepository;
 
@@ -25,6 +27,7 @@ pub(crate) struct CloudFrameRepository {
     config_client: Arc<config::Client>,
     logger: Arc<Mutex<NativeLoggerProvider>>,
     channels: Mutex<HashMap<String, watch::Sender<FrameUpdate>>>,
+    memory: MemoryFrameSource,
 }
 
 impl CloudFrameRepository {
@@ -44,11 +47,21 @@ impl CloudFrameRepository {
             config_client,
             logger,
             channels: Mutex::new(HashMap::new()),
+            memory: MemoryFrameSource::new(),
         };
     }
 
     fn read(&self, route: &str) -> FrameUpdate {
-        return source::get_frame(self.cache.as_ref(), route, self.environment.development_mode());
+        let cached = self.memory.get_frame(route);
+        if let Some(frame) = cached {
+            return Ok(frame);
+        }
+
+        let from_db = db_source::get_frame(self.cache.as_ref(), route, self.environment.development_mode());
+        if let Ok(frame) = &from_db {
+            self.memory.save_frame(route, frame.clone());
+        }
+        return from_db;
     }
 
     fn emit(&self, route: &str) {
@@ -69,7 +82,7 @@ impl CloudFrameRepository {
         let frame = self.config_client.gateway(GATEWAY_FRAME).await?;
         let production = self.config_client.gateway(GATEWAY_FRAME_PRODUCTION).await?;
         let checksum = self.config_client.gateway(GATEWAY_FRAME_PRODUCTION_CHECKSUM).await?;
-        return source::sync_cloud(
+        return cloud_source::sync_cloud(
             self.http.as_ref(),
             &self.environment,
             &self.sdk_config,
@@ -95,6 +108,11 @@ impl FrameRepository for CloudFrameRepository {
         match &result {
             Ok(_) => logging::log_sync_success(&self.logger, &self.sdk_config, route),
             Err(error) => logging::log_sync_failure(&self.logger, &self.sdk_config, route, error),
+        }
+
+        // fetch already wrote the DB; keep the memory source in step with it.
+        if let Ok(frame) = &result {
+            self.memory.save_frame(route, frame.clone());
         }
 
         if result.is_ok() {
@@ -123,10 +141,12 @@ impl FrameRepository for CloudFrameRepository {
     }
 
     async fn clear(&self, route: &str) -> NBResult<()> {
-        return source::clear(self.cache.as_ref(), route).await;
+        self.memory.clear(route);
+        return db_source::clear(self.cache.as_ref(), route).await;
     }
 
     async fn clear_all(&self, routes: &[String]) -> NBResult<()> {
-        return source::clear_all(self.cache.as_ref(), routes).await;
+        self.memory.clear_all(routes);
+        return db_source::clear_all(self.cache.as_ref(), routes).await;
     }
 }
