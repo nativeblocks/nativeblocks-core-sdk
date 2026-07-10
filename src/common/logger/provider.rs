@@ -43,6 +43,10 @@ impl NativeLoggerProvider {
         self.loggers.keys().cloned().collect()
     }
 
+    pub fn has_loggers(&self) -> bool {
+        return !self.loggers.is_empty();
+    }
+
     pub fn dispatch(
         &self,
         config: &SdkConfig,

@@ -2,11 +2,12 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NativeFrameModel {
     pub checksum: Option<String>,
     pub variables: HashMap<String, NativeVariableModel>,
     pub blocks: HashMap<String, Vec<NativeBlockModel>>,
+    pub root_id: Option<String>,
     pub actions: HashMap<String, Vec<NativeActionModel>>,
 }
 
@@ -30,7 +31,6 @@ pub struct NativeBlockModel {
     pub data: HashMap<String, NativeBlockDataModel>,
     pub properties: HashMap<String, NativeBlockPropertyModel>,
     pub slots: HashMap<String, NativeBlockSlotModel>,
-    pub sub_blocks: Option<HashMap<String, NativeBlockModel>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
@@ -59,7 +59,7 @@ pub struct NativeActionModel {
     pub id: String,
     pub key: String,
     pub event: String,
-    pub triggers: Vec<NativeActionTriggerModel>,
+    pub triggers: HashMap<String, Vec<NativeActionTriggerModel>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]

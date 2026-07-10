@@ -4,14 +4,13 @@ use crate::common::cache::CacheProvider;
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::HttpClient;
 use crate::common::result::NBError;
-use crate::experiment::di::container::Container;
+use crate::di;
 use crate::experiment::domain::model::NativeExperimentModel;
-use crate::global_parameter;
 
 #[derive(uniffi::Object)]
 pub struct ExperimentClient {
-    container: Arc<Container>,
-    environment: NativeblocksEnvironment,
+    container: Arc<di::Container>,
+    services: Arc<di::Services>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -23,12 +22,9 @@ impl ExperimentClient {
         http: Arc<dyn HttpClient>,
         cache: Arc<dyn CacheProvider>,
     ) -> Result<Arc<Self>, NBError> {
-        environment.validate()?;
-        let container = Arc::new(Container::new(environment.clone(), config, http, cache)?);
-        return Ok(Arc::new(Self {
-            container,
-            environment,
-        }));
+        let container = di::get_or_create(&environment, &config)?;
+        let services = container.services(http, cache);
+        return Ok(Arc::new(Self { container, services }));
     }
 
     pub async fn get_experiment(
@@ -36,10 +32,10 @@ impl ExperimentClient {
         key: String,
         cache_ttl: Option<i64>,
     ) -> Result<NativeExperimentModel, NBError> {
-        let globals = global_parameter::get_or_create(self.environment.instance_name()).get();
+        let globals = self.container.global_parameters().get();
         return self
-            .container
-            .repository()
+            .services
+            .experiment_repository()
             .fetch(&key, cache_ttl, &globals)
             .await
             .map_err(NBError::from);

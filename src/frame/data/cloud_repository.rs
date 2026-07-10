@@ -9,9 +9,7 @@ use crate::common::logger::NativeLoggerProvider;
 use crate::common::net::HttpClient;
 use crate::common::result::NBResult;
 use crate::config;
-use crate::frame::data::key::{
-    GATEWAY_FRAME, GATEWAY_FRAME_PRODUCTION, GATEWAY_FRAME_PRODUCTION_CHECKSUM,
-};
+use crate::frame::data::key::{GATEWAY_FRAME, GATEWAY_FRAME_PRODUCTION, GATEWAY_FRAME_PRODUCTION_CHECKSUM};
 use crate::frame::data::logging;
 use crate::frame::data::source;
 use crate::frame::domain::model::NativeFrameModel;
@@ -55,8 +53,11 @@ impl CloudFrameRepository {
 
     fn emit(&self, route: &str) {
         let value = self.read(route);
-        if let Some(sender) = self.channels.lock().unwrap().get(route) {
-            let _ = sender.send(value);
+        let mut channels = self.channels.lock().unwrap();
+        if let Some(sender) = channels.get(route) {
+            if sender.send(value).is_err() {
+                channels.remove(route);
+            }
         }
     }
 
@@ -67,10 +68,7 @@ impl CloudFrameRepository {
     ) -> NBResult<NativeFrameModel> {
         let frame = self.config_client.gateway(GATEWAY_FRAME).await?;
         let production = self.config_client.gateway(GATEWAY_FRAME_PRODUCTION).await?;
-        let checksum = self
-            .config_client
-            .gateway(GATEWAY_FRAME_PRODUCTION_CHECKSUM)
-            .await?;
+        let checksum = self.config_client.gateway(GATEWAY_FRAME_PRODUCTION_CHECKSUM).await?;
         return source::sync_cloud(
             self.http.as_ref(),
             &self.environment,
@@ -91,13 +89,25 @@ impl CloudFrameRepository {
 #[async_trait::async_trait]
 impl FrameRepository for CloudFrameRepository {
     async fn sync(&self, route: &str, parameters: &HashMap<String, String>) -> NBResult<()> {
+        let had_cached_frame = self.read(route).is_ok();
+
         let result = self.fetch(route, parameters).await;
         match &result {
             Ok(_) => logging::log_sync_success(&self.logger, &self.sdk_config, route),
             Err(error) => logging::log_sync_failure(&self.logger, &self.sdk_config, route, error),
         }
+
         if result.is_ok() {
-            self.emit(route);
+            if self.environment.development_mode() {
+                // Dev: sync ui in dev mode each time the db updated.
+                self.emit(route);
+            } else if !had_cached_frame {
+                // Prod: first download of this route
+                self.emit(route);
+            } else {
+                // Prod: cache already served the UI: the DB updates silently
+                // and the next visit renders the new frame.
+            }
         }
         return result.map(|_| ());
     }
@@ -105,6 +115,7 @@ impl FrameRepository for CloudFrameRepository {
     fn get(&self, route: &str) -> watch::Receiver<FrameUpdate> {
         let initial = self.read(route);
         let mut channels = self.channels.lock().unwrap();
+        channels.retain(|_, sender| !sender.is_closed());
         return channels
             .entry(route.to_string())
             .or_insert_with(|| watch::channel(initial).0)

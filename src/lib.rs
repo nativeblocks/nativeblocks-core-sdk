@@ -9,6 +9,7 @@ uniffi::setup_scaffolding!("NativeblocksCoreEngine");
 
 pub mod common;
 pub mod config;
+pub(crate) mod di;
 pub mod experiment;
 pub mod frame;
 pub mod global_parameter;

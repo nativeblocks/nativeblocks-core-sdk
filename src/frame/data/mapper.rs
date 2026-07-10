@@ -12,6 +12,8 @@ use crate::frame::domain::model::{
     NativeVariableModel,
 };
 
+const ROOT_KEY_TYPE: &str = "ROOT";
+
 pub(super) fn to_model(dto: Option<&NativeFrameDto>) -> NativeFrameModel {
     let dto = match dto {
         Some(dto) => dto,
@@ -20,6 +22,7 @@ pub(super) fn to_model(dto: Option<&NativeFrameDto>) -> NativeFrameModel {
                 checksum: None,
                 variables: HashMap::new(),
                 blocks: HashMap::new(),
+                root_id: None,
                 actions: HashMap::new(),
             };
         }
@@ -32,14 +35,13 @@ pub(super) fn to_model(dto: Option<&NativeFrameDto>) -> NativeFrameModel {
         .map(|variable| (text(&variable.key), map_variable(variable)))
         .collect();
 
-    let mut blocks: HashMap<String, Vec<NativeBlockModel>> = HashMap::new();
-    for block in dto.blocks.iter().flatten() {
-        let model = map_block(block);
-        blocks.entry(model.parent_id.clone()).or_default().push(model);
-    }
-    for children in blocks.values_mut() {
-        children.sort_by_key(|block| block.position);
-    }
+    let blocks = group_blocks(dto);
+    let root_id = blocks
+        .values()
+        .flatten()
+        .filter(|block| block.key_type == ROOT_KEY_TYPE)
+        .min_by_key(|block| block.position)
+        .map(|block| block.id.clone());
 
     let mut actions: HashMap<String, Vec<NativeActionModel>> = HashMap::new();
     for action in dto.actions.iter().flatten() {
@@ -51,8 +53,21 @@ pub(super) fn to_model(dto: Option<&NativeFrameDto>) -> NativeFrameModel {
         checksum: dto.checksum.clone(),
         variables,
         blocks,
+        root_id,
         actions,
     };
+}
+
+fn group_blocks(dto: &NativeFrameDto) -> HashMap<String, Vec<NativeBlockModel>> {
+    let mut map: HashMap<String, Vec<NativeBlockModel>> = HashMap::new();
+    for block in dto.blocks.iter().flatten() {
+        let model = map_block(block);
+        map.entry(model.parent_id.clone()).or_default().push(model);
+    }
+    for children in map.values_mut() {
+        children.sort_by_key(|block| block.position);
+    }
+    return map;
 }
 
 fn map_variable(dto: &NativeVariableDto) -> NativeVariableModel {
@@ -91,7 +106,6 @@ fn map_block(dto: &NativeBlockDto) -> NativeBlockModel {
             .flatten()
             .map(|slot| (text(&slot.slot), map_block_slot(slot)))
             .collect(),
-        sub_blocks: None,
     };
 }
 
@@ -124,13 +138,17 @@ fn map_action(dto: &NativeActionDto) -> NativeActionModel {
         id: text(&dto.id),
         key: text(&dto.key),
         event: text(&dto.event),
-        triggers: dto
-            .triggers
-            .iter()
-            .flatten()
-            .map(map_trigger)
-            .collect(),
+        triggers: group_triggers(dto),
     };
+}
+
+fn group_triggers(dto: &NativeActionDto) -> HashMap<String, Vec<NativeActionTriggerModel>> {
+    let mut map: HashMap<String, Vec<NativeActionTriggerModel>> = HashMap::new();
+    for trigger in dto.triggers.iter().flatten() {
+        let model = map_trigger(trigger);
+        map.entry(model.parent_id.clone()).or_default().push(model);
+    }
+    return map;
 }
 
 fn map_trigger(dto: &NativeActionTriggerDto) -> NativeActionTriggerModel {

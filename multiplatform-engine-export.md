@@ -18,7 +18,7 @@ time. The UI layers are NOT shared — each platform renders natively against th
 
 **Web React is explicitly out of the shared-engine scope** and keeps its own TypeScript engine,
 because a browser cannot consume an `.aar`/`.framework`. (A future `wasm32` build of the same
-Rust core *could* reach web, but that is not a goal of this plan.)
+Rust core _could_ reach web, but that is not a goal of this plan.)
 
 ### Why Rust (and not KMP / Zig / Go)
 
@@ -35,7 +35,7 @@ The choice was driven by four hard constraints, in priority order:
    streams, SQLite, and concurrent event-driven state. These are exactly Rust's strengths and
    exactly where **Zig is weakest today** (no `async`/`await` in the language, thin ecosystem,
    manual concurrency). So between the two systems languages, Zig's size edge does not buy back
-   its missing async + libraries for *this* engine. **Rust over Zig.**
+   its missing async + libraries for _this_ engine. **Rust over Zig.**
 3. **Distribution is `.aar` + `.framework`.** This already excludes web from the shared engine,
    which removes the one unique advantage a native core had over KMP (WASM/web reach). Flutter
    (`flutter_rust_bridge`) and RN (`uniffi-react-native`) both wrap native artifacts cleanly.
@@ -53,22 +53,22 @@ The choice was driven by four hard constraints, in priority order:
 ## Why the codebase is ready for this
 
 A scan of all 84 files in `core` shows the business logic is cleanly separated from the UI. The
-domain models, use cases, and repository *interfaces* have **zero platform imports** — they are
+domain models, use cases, and repository _interfaces_ have **zero platform imports** — they are
 the behavioral spec the Rust core must reproduce. Platform coupling is concentrated in ~14 files.
 
-| Layer | Files | Today | In the Rust plan |
-|---|---|---|---|
-| `frame/domain/model/*` | 8 | plain data classes, no platform imports | → Rust `structs` + `serde` (the wire contract) |
-| `frame/domain/useCase/*` | 4 | pure Kotlin + coroutines | → Rust modules / async fns |
-| `frame/domain/repository/*` | 5 | interfaces | → Rust `trait`s |
-| `network/*` | logic | Apollo + OkHttp + Ktor | → `reqwest`/`ureq` + `rustls` + `graphql-client` |
-| `cache/ICacheProvider` | 1 | interface | → Rust `trait`, host-provided or in-core |
-| `cache/LocalCacheProvider` | 1 | `SharedPreferences` | → in-core file/kv store, or host callback |
-| `frame/data/source/local/*` | 10 | Room (SQLite) | → `rusqlite` (bundled SQLite) |
-| `di/*` | 6 | Koin | → plain Rust construction / a small registry |
-| `NativeFrameViewModel` | 1 | `androidx.lifecycle.ViewModel` | → **actor + `watch` channel** (see [State](#4-frame-state-the-viewmodel-replacement)) |
-| `NativeScriptAction` | 1 | Rhino (JVM) | → **QuickJS** embedded in Rust (`rquickjs`) |
-| UI: `NativeFrame`, `NativeblocksFrame`, `BlockProps`, providers, `RootBlock`, util | ~12 | Compose | ⛔ **stays per-platform** (not ported) |
+| Layer                                                                                | Files | Today                                   | In the Rust plan                                                                      |
+| ------------------------------------------------------------------------------------ | ----- | --------------------------------------- | ------------------------------------------------------------------------------------- |
+| `frame/domain/model/*`                                                               | 8     | plain data classes, no platform imports | → Rust `structs` + `serde` (the wire contract)                                        |
+| `frame/domain/useCase/*`                                                             | 4     | pure Kotlin + coroutines                | → Rust modules / async fns                                                            |
+| `frame/domain/repository/*`                                                          | 5     | interfaces                              | → Rust `trait`s                                                                       |
+| `network/*`                                                                          | logic | Apollo + OkHttp + Ktor                  | → `reqwest`/`ureq` + `rustls` + `graphql-client`                                      |
+| `cache/ICacheProvider`                                                               | 1     | interface                               | → Rust `trait`, host-provided or in-core                                              |
+| `cache/LocalCacheProvider`                                                           | 1     | `SharedPreferences`                     | → in-core file/kv store, or host callback                                             |
+| `frame/data/source/local/*`                                                          | 10    | Room (SQLite)                           | → `rusqlite` (bundled SQLite)                                                         |
+| `di/*`                                                                               | 6     | Koin                                    | → plain Rust construction / a small registry                                          |
+| `NativeFrameViewModel`                                                               | 1     | `androidx.lifecycle.ViewModel`          | → **actor + `watch` channel** (see [State](#4-frame-state-the-viewmodel-replacement)) |
+| `NativeScriptAction`                                                                 | 1     | Rhino (JVM)                             | → **QuickJS** embedded in Rust (`rquickjs`)                                           |
+| UI: `NativeFrame`, `NativeblocksFrame`, `BlockContext`, providers, `RootBlock`, util | ~12   | Compose                                 | ⛔ **stays per-platform** (not ported)                                                |
 
 ---
 
@@ -98,7 +98,7 @@ the behavioral spec the Rust core must reproduce. Platform coupling is concentra
 ```
 
 - **`engine`** (Rust) is the single source of truth for all non-UI logic.
-- **UI layers** register block/action *renderers* and subscribe to the engine's state stream.
+- **UI layers** register block/action _renderers_ and subscribe to the engine's state stream.
   They are not shared; each platform renders natively. This is the explicit requirement.
 - The engine never renders. It outputs **state**; the UI turns state into widgets.
 
@@ -107,8 +107,8 @@ the behavioral spec the Rust core must reproduce. Platform coupling is concentra
 ## The headless boundary (engine ⇄ UI contract)
 
 This is the contract that makes "one engine, many UIs" work, and it is **language-agnostic** —
-the same contract held for the KMP draft. The engine outputs *state* (a serializable tree) and
-accepts *events*.
+the same contract held for the KMP draft. The engine outputs _state_ (a serializable tree) and
+accepts _events_.
 
 **Engine → UI: an observable frame state.** Today's `NativeFrameViewModel` already exposes
 exactly the right streams; the Rust core reproduces them as `watch` channels:
@@ -140,7 +140,8 @@ per-variable read pattern would die by a thousand crossings. Coarse snapshots al
 the planned per-variable signals work on the UI side (see `variable-engine-signals` notes).
 
 **What stays UI-side (not in the engine):**
-- `BlockProps` / `ActionProps` — they carry `@Composable` callbacks; each UI builds its own
+
+- `BlockContext` / `ActionProps` — they carry `@Composable` callbacks; each UI builds its own
   props type from the plain models.
 - Block providers (`NativeBlockProvider`) — they hold `@Composable` lambdas; registration is
   per-platform.
@@ -153,6 +154,7 @@ the planned per-variable signals work on the UI side (see `variable-engine-signa
 ## The four pillars (chosen Rust crates)
 
 ### 1. HTTP calling
+
 - Client: **`reqwest`** (async, high-level) or **`ureq`** (blocking, tiny — favors app size).
 - TLS: **`rustls`** (pure-Rust) — avoids OpenSSL cross-compilation pain on mobile.
 - GraphQL: **`graphql-client`** or **`cynic`** — the current SDK is Apollo/GraphQL, so the
@@ -161,6 +163,7 @@ the planned per-variable signals work on the UI side (see `variable-engine-signa
   **`serde_json_path`** or `jsonpath-rust`.
 
 ### 2. Flow / data streaming
+
 - **`tokio::sync::watch`** is a near-exact `StateFlow` replacement (holds latest value, notifies
   on change) — this is how the engine publishes each of the five state streams above.
 - `futures::Stream` + `async-stream` for derived streams; `tokio::sync::{mpsc, broadcast}` for
@@ -169,18 +172,20 @@ the planned per-variable signals work on the UI side (see `variable-engine-signa
   callback interfaces push updates to Kotlin `Flow` / Swift `AsyncSequence`.
 
 ### 3. SQLite caching
+
 - **`rusqlite` with the `bundled` feature** — statically compiles SQLite from source: identical
   version on every platform, no system dependency. The 4 Room DAOs (`FrameDao`,
   `FrameProductionDao`, `LocalizationDao`, `LocalizationProductionDao` — ~5 queries each) become
   small Rust query functions.
-- **App-size lever:** to shave the bundled amalgamation, link the *system* SQLite instead (present
+- **App-size lever:** to shave the bundled amalgamation, link the _system_ SQLite instead (present
   on both iOS and Android) via `rusqlite` without `bundled`. Decide by measurement.
 - Immutable snapshots (today's `kotlinx.collections.immutable`): the **`im`** crate.
 
 ### 4. Frame state (the ViewModel replacement)
+
 The ViewModel is gone, so the engine owns state + concurrency. Idiomatic Rust replacement:
 
-- **Actor pattern:** one async task *owns* the state struct (the blocks/variables/actions maps),
+- **Actor pattern:** one async task _owns_ the state struct (the blocks/variables/actions maps),
   receives events over an `mpsc` channel, mutates, and publishes snapshots via a `watch` channel.
   The `watch` sender **is** the `StateFlow`. This is a clean, race-free `NativeFrameViewModel`.
 - The **borrow checker makes concurrent event handling safe by construction** — important once
@@ -193,7 +198,7 @@ The ViewModel is gone, so the engine owns state + concurrency. Idiomatic Rust re
 ## Scripting: QuickJS embedded in Rust
 
 Decision: **QuickJS replaces Rhino** (smaller, modern, embeddable C engine; chosen earlier in
-this thread). Because QuickJS is C and the engine is Rust, it embeds *natively* via **`rquickjs`**
+this thread). Because QuickJS is C and the engine is Rust, it embeds _natively_ via **`rquickjs`**
 — no FFI between the engine and its JS runtime.
 
 The `NativeScriptAction` model must be preserved: scripts call **synchronous host functions**
@@ -212,13 +217,13 @@ behavior that must update over-the-wire without an app-store release lives in th
 FFI = Foreign Function Interface: how Swift/Kotlin/Dart call the compiled Rust library across a
 C-style boundary. **You do not hand-write it — generators do:**
 
-| Target | Generator | Notes |
-|---|---|---|
-| Kotlin (Android) | **UniFFI** | produces the `.aar`-consumable bindings + JNI glue |
-| Swift (iOS) | **UniFFI** | produces `.framework`-consumable Swift bindings |
-| Flutter | **flutter_rust_bridge** | best-in-class; async + native `Stream`→Dart `Stream` |
-| React Native | **uniffi-react-native** (Callstack) or JSI | wraps the same core |
-| Web (future, optional) | `wasm-bindgen` | not in scope now |
+| Target                 | Generator                                  | Notes                                                |
+| ---------------------- | ------------------------------------------ | ---------------------------------------------------- |
+| Kotlin (Android)       | **UniFFI**                                 | produces the `.aar`-consumable bindings + JNI glue   |
+| Swift (iOS)            | **UniFFI**                                 | produces `.framework`-consumable Swift bindings      |
+| Flutter                | **flutter_rust_bridge**                    | best-in-class; async + native `Stream`→Dart `Stream` |
+| React Native           | **uniffi-react-native** (Callstack) or JSI | wraps the same core                                  |
+| Web (future, optional) | `wasm-bindgen`                             | not in scope now                                     |
 
 UniFFI also supports **callback interfaces** (a.k.a. foreign traits): the mechanism for
 "the outer layer provides components and the core calls them" (next section).
@@ -231,9 +236,9 @@ slice before betting the SDK on it (see [Phase 0](#phase-0--de-risk-before-commi
 
 ## Host-provided components (callback traits)
 
-The core stays portable by keeping platform I/O in the host and calling *up* through traits. The
-core *owns* the deterministic, portable work (SQLite cache, file cache, checksums, variable
-resolution, action sequencing — all pure or local-I/O). It *delegates* truly platform-specific
+The core stays portable by keeping platform I/O in the host and calling _up_ through traits. The
+core _owns_ the deterministic, portable work (SQLite cache, file cache, checksums, variable
+resolution, action sequencing — all pure or local-I/O). It _delegates_ truly platform-specific
 concerns via UniFFI callback interfaces:
 
 ```rust
@@ -280,7 +285,7 @@ engine/                              (Rust workspace — the shared core)
     flutter/        flutter_rust_bridge codegen
     react-native/   uniffi-react-native
 
-ui-compose/   (Android) Compose renderer — consumes the .aar; keeps NativeFrame, BlockProps, providers
+ui-compose/   (Android) Compose renderer — consumes the .aar; keeps NativeFrame, BlockContext, providers
 ui-swiftui/   (iOS)     SwiftUI renderer — consumes the .framework
 (flutter/RN/web UIs live in their own repos)
 ```
@@ -295,9 +300,10 @@ half** (`provideBlock`, `provideFallbackBlock`, `provideActionContractor`, `prov
 ## Phased migration plan
 
 ### Phase 0 — De-risk before committing
+
 - **Measure iOS size** of a same-shape KMP `.framework` vs. a Rust `.xcframework` with your real
   dependency set (rustls, rusqlite, rquickjs). This confirms Rust's size advantage is real for
-  *your* build, and is the last checkpoint before ruling out KMP.
+  _your_ build, and is the last checkpoint before ruling out KMP.
 - **Prototype the hard boundary:** one async streaming call Rust→Kotlin/Swift/Dart via UniFFI +
   flutter_rust_bridge, proving the `watch`→`Flow`/`Stream` bridge end-to-end.
 - Write the **engine spec + cross-platform conformance test suite** (golden tests for sync
@@ -306,21 +312,25 @@ half** (`provideBlock`, `provideFallbackBlock`, `provideActionContractor`, `prov
   parity guarantee — valuable even if you stop here.
 
 ### Phase 1 — Strangler-fig the first slice
+
 - Port **one pure slice — checksum + cache** — into `nb-cache` + `nb-models`. Ship it behind the
   conformance suite, consumed by the existing Android SDK via the `.aar`. Prove the full
   build/CI/binding pipeline on every target before porting more.
 
 ### Phase 2 — Port the engine core
+
 - Move network (`nb-net`), repositories/use cases, variable/JSONPath resolution, and the
   `FrameEngine` (actor + watch) into the Rust core. Swap Apollo→`graphql-client`, Room→`rusqlite`.
 - Embed QuickJS (`nb-script`); promote `NativeblocksScriptTest` into the conformance suite.
 - Android and iOS now consume the Rust core; their UI layers are unchanged.
 
 ### Phase 3 — Flutter + React Native
+
 - `flutter_rust_bridge` + a Dart `FrameEngine` proxy and widget-tree renderer; port a few
   reference blocks to validate the contract end-to-end. Same for RN via `uniffi-react-native`.
 
 ### Phase 4 — Retire the duplicated engines; optional hot-update
+
 - Decommission the Kotlin and Swift engine logic once parity holds.
 - Evaluate a **QuickJS-based hot-update layer** for over-the-wire logic updates (the native core
   itself can't be hot-shipped; dynamic behavior lives in JS, pushed like frame definitions).
@@ -360,4 +370,4 @@ Each phase ships independently and keeps existing platforms working throughout.
   and [`js-engine-comparison.md`](./js-engine-comparison.md) — scripting constraints (→ QuickJS).
 - `core/src/main/java/io/nativeblocks/core/{cache,network,frame/data}/*` — the logic the Rust
   crates replace (rusqlite, reqwest/rustls/graphql-client).
-</content>
+  </content>

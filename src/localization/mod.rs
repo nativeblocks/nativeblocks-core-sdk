@@ -1,5 +1,5 @@
 mod data;
-mod di;
+pub(crate) mod di;
 mod domain;
 mod presenter;
 
@@ -8,3 +8,5 @@ pub use presenter::{
     LocalizationClient, LocalizationState, LocalizationStateManager, LocalizationStateObserver,
 };
 pub(crate) use presenter::dispose;
+
+pub(crate) use domain::repository::LocalizationRepository;

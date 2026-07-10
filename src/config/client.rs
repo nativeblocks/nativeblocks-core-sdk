@@ -19,7 +19,7 @@ pub(crate) struct Client {
 }
 
 impl Client {
-    pub(super) fn new(
+    pub(crate) fn new(
         http: Arc<dyn HttpClient>,
         environment: NativeblocksEnvironment,
         sdk_config: SdkConfig,

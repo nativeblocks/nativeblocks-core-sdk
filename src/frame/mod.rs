@@ -1,7 +1,9 @@
 mod data;
-mod di;
+pub(crate) mod di;
 mod domain;
 mod presenter;
+
+pub(crate) use domain::repository::FrameRepository;
 
 pub use domain::model::{
     NativeActionModel, NativeActionTriggerDataModel, NativeActionTriggerModel,
@@ -9,5 +11,8 @@ pub use domain::model::{
     NativeBlockModel, NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameModel,
     NativeVariableModel,
 };
-pub use presenter::{FrameClient, FrameState, FrameStateManager, FrameStateObserver};
+pub use presenter::{
+    ActionContext, BlockObserver, BlockContext, FrameClient, FrameState, FrameStateManager,
+    FrameStateObserver, HostActionDispatcher,
+};
 pub(crate) use presenter::dispose;
