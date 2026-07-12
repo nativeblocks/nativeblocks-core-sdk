@@ -1,4 +1,4 @@
-use crate::common::cache::CacheProvider;
+use crate::common::cache::{self, CacheProvider};
 use crate::common::json;
 use crate::common::result::{ErrorModel, NBResult};
 use crate::localization::data::key::{self, error_code};
@@ -14,8 +14,8 @@ pub(super) fn get_localization(
     } else {
         key::prod_key(language_code)
     };
-    return match cache.get_bytes(cache_key)? {
-        Some(bytes) => decode_localization(&bytes),
+    return match cache::read_or_cleanup(cache, cache_key)? {
+        Some(localization) => Ok(localization),
         None => Err(ErrorModel::cache(key::message::LOCALIZATION_NOT_CACHED)
             .with_code(error_code::LOCALIZATION_NOT_CACHED)),
     };
@@ -38,20 +38,7 @@ pub(super) fn save_localization(
 }
 
 pub(super) fn cached_checksum(cache: &dyn CacheProvider, language_code: &str) -> NBResult<Option<String>> {
-    let bytes = cache.get_bytes(key::prod_key(language_code))?;
-    if bytes.is_none() {
-        return Ok(None);
-    }
-    // An unreadable cached localization (schema drift from an older SDK
-    // build) counts as not cached: reporting None makes the caller do a
-    // full fetch, which overwrites the stale bytes with the current shape.
-    return match decode_localization(&bytes.unwrap()) {
-        Ok(localization) => Ok(localization.checksum),
-        Err(_) => Ok(None),
-    };
-}
-
-fn decode_localization(bytes: &[u8]) -> NBResult<NativeLocalizationModel> {
-    return json::from_bytes(bytes)
-        .map_err(|error| error.with_code(error_code::LOCALIZATION_NOT_CACHED));
+    let localization: Option<NativeLocalizationModel> =
+        cache::read_or_cleanup(cache, key::prod_key(language_code))?;
+    return Ok(localization.and_then(|localization| localization.checksum));
 }

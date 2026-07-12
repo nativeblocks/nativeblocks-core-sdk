@@ -1,4 +1,7 @@
-use crate::common::result::NBError;
+use serde::de::DeserializeOwned;
+
+use crate::common::json;
+use crate::common::result::{NBError, NBResult};
 
 #[uniffi::export(with_foreign)]
 pub trait CacheProvider: Send + Sync {
@@ -8,4 +11,22 @@ pub trait CacheProvider: Send + Sync {
     fn clear(&self) -> Result<(), NBError>;
     fn has(&self, key: String) -> Result<bool, NBError>;
     fn dispose(&self) -> Result<(), NBError>;
+}
+
+pub(crate) fn read_or_cleanup<T: DeserializeOwned>(
+    cache: &dyn CacheProvider,
+    key: String,
+) -> NBResult<Option<T>> {
+    let bytes = cache.get_bytes(key.clone())?;
+    if bytes.is_none() {
+        return Ok(None);
+    }
+
+    let decoded = json::from_bytes(&bytes.unwrap());
+    if let Ok(value) = decoded {
+        return Ok(Some(value));
+    }
+
+    let _ = cache.remove(key);
+    return Ok(None);
 }

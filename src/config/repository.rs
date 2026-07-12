@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::common::cache::CacheProvider;
+use crate::common::cache::{self, CacheProvider};
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
 use crate::common::json;
 use crate::common::net::{HttpClient, map, with_headers};
@@ -28,10 +28,7 @@ pub(crate) fn install_id(cache: &dyn CacheProvider) -> NBResult<String> {
 pub(crate) fn read_cached_config(
     cache: &dyn CacheProvider,
 ) -> NBResult<Option<NativeProjectConfigModel>> {
-    return match cache.get_bytes(PROJECT_CONFIG_KEY.to_string())? {
-        Some(bytes) => Ok(Some(json::from_bytes(&bytes)?)),
-        None => Ok(None),
-    };
+    return cache::read_or_cleanup(cache, PROJECT_CONFIG_KEY.to_string());
 }
 
 pub(crate) fn write_cached_config(

@@ -1,4 +1,4 @@
-use crate::common::cache::CacheProvider;
+use crate::common::cache::{self, CacheProvider};
 use crate::common::json;
 use crate::common::result::{ErrorModel, NBResult};
 use crate::frame::data::key::{self, error_code};
@@ -14,8 +14,8 @@ pub(super) fn get_frame(
     } else {
         key::prod_key(route)
     };
-    return match cache.get_bytes(cache_key)? {
-        Some(bytes) => decode_frame(&bytes),
+    return match cache::read_or_cleanup(cache, cache_key)? {
+        Some(frame) => Ok(frame),
         None => Err(ErrorModel::cache(key::message::FRAME_NOT_CACHED).with_code(error_code::FRAME_NOT_CACHED)),
     };
 }
@@ -33,17 +33,8 @@ pub(super) fn save_frame(
 }
 
 pub(super) fn cached_checksum(cache: &dyn CacheProvider, route: &str) -> NBResult<Option<String>> {
-    let bytes = cache.get_bytes(key::prod_key(route))?;
-    if bytes.is_none() {
-        return Ok(None);
-    }
-    // An unreadable cached frame (schema drift from an older SDK build)
-    // counts as not cached: reporting None makes the caller do a full
-    // fetch, which overwrites the stale bytes with the current shape.
-    return match decode_frame(&bytes.unwrap()) {
-        Ok(frame) => Ok(frame.checksum),
-        Err(_) => Ok(None),
-    };
+    let frame: Option<NativeFrameModel> = cache::read_or_cleanup(cache, key::prod_key(route))?;
+    return Ok(frame.and_then(|frame| frame.checksum));
 }
 
 pub(super) async fn clear(cache: &dyn CacheProvider, route: &str) -> NBResult<()> {
@@ -57,8 +48,4 @@ pub(super) async fn clear_all(cache: &dyn CacheProvider, routes: &[String]) -> N
         clear(cache, route).await?;
     }
     return Ok(());
-}
-
-fn decode_frame(bytes: &[u8]) -> NBResult<NativeFrameModel> {
-    return json::from_bytes(bytes).map_err(|error| error.with_code(error_code::FRAME_NOT_CACHED));
 }

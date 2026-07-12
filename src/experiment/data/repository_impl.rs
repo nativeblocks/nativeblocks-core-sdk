@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use crate::common::cache::CacheProvider;
+use crate::common::cache::{self, CacheProvider};
 use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
 use crate::common::json;
 use crate::common::logger::NativeLoggerProvider;
@@ -72,10 +72,7 @@ impl ExperimentRepositoryImpl {
         if !self.cache.has(cache_key.clone())? {
             return Ok(None);
         }
-        return match self.cache.get_bytes(cache_key)? {
-            Some(bytes) => Ok(Some(json::from_bytes(&bytes)?)),
-            None => Ok(None),
-        };
+        return cache::read_or_cleanup(self.cache.as_ref(), cache_key);
     }
 
     fn cache_experiment(
