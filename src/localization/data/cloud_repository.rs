@@ -48,54 +48,10 @@ impl CloudLocalizationRepository {
         };
     }
 
-    async fn fetch(&self, language_code: &str) -> NBResult<NativeLocalizationModel> {
-        let localization = self.config_client.gateway(GATEWAY_LOCALIZATION).await?;
-        let production = self
-            .config_client
-            .gateway(GATEWAY_LOCALIZATION_PRODUCTION)
-            .await?;
-        let checksum = self
-            .config_client
-            .gateway(GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM)
-            .await?;
-        return cloud_source::sync_cloud(
-            self.http.as_ref(),
-            &self.environment,
-            &self.sdk_config,
-            self.cache.as_ref(),
-            localization.gateway,
-            production.gateway,
-            checksum.gateway,
-            &localization.endpoint,
-            &localization.install_id,
-            language_code,
-        )
-        .await;
-    }
-}
-
-#[async_trait::async_trait]
-impl LocalizationRepository for CloudLocalizationRepository {
-    async fn sync(&self, language_code: &str) -> NBResult<()> {
-        let result = self.fetch(language_code).await;
-        match &result {
-            Ok(localization) => {
-                self.memory.save_localization(language_code, localization.clone());
-                logging::log_sync_success(&self.logger, &self.sdk_config, language_code);
-            }
-            Err(error) => {
-                logging::log_sync_failure(&self.logger, &self.sdk_config, language_code, error)
-            }
+    fn from_cache(&self, language_code: &str) -> Option<NativeLocalizationModel> {
+        if let Some(localization) = self.memory.get_localization(language_code) {
+            return Some(localization);
         }
-        return result.map(|_| ());
-    }
-
-    async fn get(&self, language_code: &str) -> NBResult<NativeLocalizationModel> {
-        let cached = self.memory.get_localization(language_code);
-        if let Some(localization) = cached {
-            return Ok(localization);
-        }
-
         let from_db = db_source::get_localization(
             self.cache.as_ref(),
             language_code,
@@ -110,7 +66,60 @@ impl LocalizationRepository for CloudLocalizationRepository {
                 logging::log_load_failure(&self.logger, &self.sdk_config, language_code, error)
             }
         }
-        return from_db;
+        return from_db.ok();
+    }
+
+    async fn from_network(&self, language_code: &str) -> NBResult<NativeLocalizationModel> {
+        let result = self.download_localization(language_code).await;
+        match &result {
+            Ok(localization) => {
+                self.memory.save_localization(language_code, localization.clone());
+                logging::log_sync_success(&self.logger, &self.sdk_config, language_code);
+            }
+            Err(error) => {
+                logging::log_sync_failure(&self.logger, &self.sdk_config, language_code, error)
+            }
+        }
+        return result;
+    }
+
+    async fn download_localization(&self, language_code: &str) -> NBResult<NativeLocalizationModel> {
+        let localization_gateway = self.config_client.gateway(GATEWAY_LOCALIZATION).await?;
+        let production_gateway = self
+            .config_client
+            .gateway(GATEWAY_LOCALIZATION_PRODUCTION)
+            .await?;
+        let checksum_gateway = self
+            .config_client
+            .gateway(GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM)
+            .await?;
+        return cloud_source::sync_cloud(
+            self.http.as_ref(),
+            &self.environment,
+            &self.sdk_config,
+            self.cache.as_ref(),
+            localization_gateway.gateway,
+            production_gateway.gateway,
+            checksum_gateway.gateway,
+            &localization_gateway.endpoint,
+            &localization_gateway.install_id,
+            language_code,
+        )
+        .await;
+    }
+}
+
+#[async_trait::async_trait]
+impl LocalizationRepository for CloudLocalizationRepository {
+    async fn load(&self, language_code: &str) -> NBResult<NativeLocalizationModel> {
+        if let Some(localization) = self.from_cache(language_code) {
+            return Ok(localization);
+        }
+        return self.from_network(language_code).await;
+    }
+
+    async fn sync(&self, language_code: &str) -> NBResult<()> {
+        return self.from_network(language_code).await.map(|_| ());
     }
 
     fn set_language_code(&self, language_code: &str) {
@@ -129,10 +138,7 @@ impl LocalizationRepository for CloudLocalizationRepository {
     }
 
     fn translate(&self, key: &str) -> Option<String> {
-        let language_code = self.language_code.borrow().clone();
-        if language_code.is_none() {
-            return None;
-        }
-        return self.memory.translate(&language_code.unwrap(), key);
+        let language_code = self.language_code.borrow().clone()?;
+        return self.memory.translate(&language_code, key);
     }
 }

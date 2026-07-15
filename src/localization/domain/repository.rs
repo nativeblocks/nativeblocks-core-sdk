@@ -5,9 +5,9 @@ use crate::localization::domain::model::NativeLocalizationModel;
 
 #[async_trait::async_trait]
 pub(crate) trait LocalizationRepository: Send + Sync {
-    async fn sync(&self, language_code: &str) -> NBResult<()>;
+    async fn load(&self, language_code: &str) -> NBResult<NativeLocalizationModel>;
 
-    async fn get(&self, language_code: &str) -> NBResult<NativeLocalizationModel>;
+    async fn sync(&self, language_code: &str) -> NBResult<()>;
 
     fn set_language_code(&self, language_code: &str);
 

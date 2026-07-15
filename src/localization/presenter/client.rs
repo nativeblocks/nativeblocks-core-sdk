@@ -10,7 +10,6 @@ use crate::localization::presenter::state_manager::LocalizationStateManager;
 
 #[derive(uniffi::Object)]
 pub struct LocalizationClient {
-    container: Arc<di::Container>,
     services: Arc<di::Services>,
 }
 
@@ -25,14 +24,11 @@ impl LocalizationClient {
     ) -> Result<Arc<Self>, NBError> {
         let container = di::get_or_create(&environment, &config)?;
         let services = container.services(http, cache);
-        return Ok(Arc::new(Self { container, services }));
+        return Ok(Arc::new(Self { services }));
     }
 
     pub fn state_manager(&self) -> Arc<LocalizationStateManager> {
-        return LocalizationStateManager::new(
-            self.services.localization_repository(),
-            self.container.environment().instance_name().to_string(),
-        );
+        return LocalizationStateManager::new(self.services.localization_repository());
     }
 
     pub async fn sync_localization(&self, language_code: String) -> Result<(), NBError> {
@@ -51,7 +47,7 @@ impl LocalizationClient {
         return self
             .services
             .localization_repository()
-            .get(&language_code)
+            .load(&language_code)
             .await
             .map_err(NBError::from);
     }

@@ -29,22 +29,16 @@ struct State {
 pub struct LocalizationStateManager {
     me: Weak<LocalizationStateManager>,
     repository: Arc<dyn LocalizationRepository>,
-    #[allow(dead_code)]
-    instance_name: String,
     state: Mutex<State>,
     observer: Mutex<Option<Arc<dyn LocalizationStateObserver>>>,
     observe_task: Mutex<Option<JoinHandle<()>>>,
 }
 
 impl LocalizationStateManager {
-    pub(crate) fn new(
-        repository: Arc<dyn LocalizationRepository>,
-        instance_name: String,
-    ) -> Arc<Self> {
+    pub(crate) fn new(repository: Arc<dyn LocalizationRepository>) -> Arc<Self> {
         return Arc::new_cyclic(|me| Self {
             me: me.clone(),
             repository,
-            instance_name,
             state: Mutex::new(State {
                 localization_state: LocalizationState::Loading {},
                 localizations: HashMap::new(),
@@ -128,9 +122,7 @@ impl LocalizationStateManager {
         self.emit_language_code(Some(language_code.to_string()));
         self.set_state(LocalizationState::Loading {});
 
-        let _ = self.repository.sync(language_code).await;
-
-        match self.repository.get(language_code).await {
+        match self.repository.load(language_code).await {
             Ok(localization) => self.apply(localization.localizations),
             Err(error) => {
                 let state = if error.error_type == ErrorType::Cache {

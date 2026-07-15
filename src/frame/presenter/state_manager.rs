@@ -104,7 +104,7 @@ impl FrameStateManager {
         *self.state.lock().unwrap() = State::fresh();
         self.observe_cache(route.clone(), args);
         let globals = self.globals.get();
-        let _ = self.repository.sync(&route, &globals).await;
+        let _ = self.repository.load(&route, &globals).await;
     }
 
     pub fn observe(&self, observer: Arc<dyn FrameStateObserver>) {
@@ -155,7 +155,7 @@ impl FrameStateManager {
 
 impl FrameStateManager {
     fn observe_cache(&self, route: String, args: HashMap<String, String>) {
-        let mut frame_receiver = self.repository.get(&route);
+        let mut frame_receiver = self.repository.subscribe(&route);
         let weak_manager = self.me.clone();
         let task = tokio::spawn(async move {
             loop {

@@ -31,10 +31,6 @@ impl Container {
         };
     }
 
-    pub(crate) fn environment(&self) -> &NativeblocksEnvironment {
-        return &self.environment;
-    }
-
     pub(crate) fn sdk_config(&self) -> &SdkConfig {
         return &self.sdk_config;
     }
@@ -59,7 +55,6 @@ impl Container {
 }
 
 pub(crate) struct Services {
-    config_client: Arc<config::Client>,
     frame_repository: Arc<dyn FrameRepository>,
     localization_repository: Arc<dyn LocalizationRepository>,
     experiment_repository: Arc<dyn ExperimentRepository>,
@@ -112,17 +107,11 @@ impl Services {
         );
 
         return Self {
-            config_client,
             frame_repository,
             localization_repository,
             experiment_repository,
             scaffold_repository,
         };
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn config_client(&self) -> Arc<config::Client> {
-        return self.config_client.clone();
     }
 
     pub(crate) fn frame_repository(&self) -> Arc<dyn FrameRepository> {

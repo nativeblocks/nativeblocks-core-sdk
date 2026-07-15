@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use crate::frame::domain::model::NativeFrameModel;
 
 pub(crate) struct MemoryFrameSource {
-    frames: Mutex<HashMap<String, NativeFrameModel>>,
+    frames: Mutex<HashMap<String, Arc<NativeFrameModel>>>,
 }
 
 impl MemoryFrameSource {
@@ -14,11 +14,11 @@ impl MemoryFrameSource {
         };
     }
 
-    pub(crate) fn get_frame(&self, route: &str) -> Option<NativeFrameModel> {
+    pub(crate) fn get_frame(&self, route: &str) -> Option<Arc<NativeFrameModel>> {
         return self.frames.lock().unwrap().get(route).cloned();
     }
 
-    pub(crate) fn save_frame(&self, route: &str, frame: NativeFrameModel) {
+    pub(crate) fn save_frame(&self, route: &str, frame: Arc<NativeFrameModel>) {
         self.frames.lock().unwrap().insert(route.to_string(), frame);
     }
 

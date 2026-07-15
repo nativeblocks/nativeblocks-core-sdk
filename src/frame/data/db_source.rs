@@ -16,8 +16,13 @@ pub(super) fn get_frame(
     };
     return match cache::read_or_cleanup(cache, cache_key)? {
         Some(frame) => Ok(frame),
-        None => Err(ErrorModel::cache(key::message::FRAME_NOT_CACHED).with_code(error_code::FRAME_NOT_CACHED)),
+        None => Err(not_cached()),
     };
+}
+
+pub(super) fn not_cached() -> ErrorModel {
+    return ErrorModel::cache(key::message::FRAME_NOT_CACHED)
+        .with_code(error_code::FRAME_NOT_CACHED);
 }
 
 pub(super) fn save_frame(
