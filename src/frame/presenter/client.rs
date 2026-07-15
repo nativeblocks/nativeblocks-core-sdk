@@ -33,7 +33,6 @@ impl FrameClient {
         let logger = FrameLogger::new(
             self.container.logger(),
             self.container.sdk_config().clone(),
-            self.container.environment().development_mode(),
         );
         return FrameStateManager::new(
             self.services.frame_repository(),

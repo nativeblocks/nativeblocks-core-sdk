@@ -189,7 +189,7 @@ async fn request_frame(
     let transport = build_transport(gateway, graphql_endpoint, route, parameters, query);
     let data: NativeFrameDataDto = net::request(http, headers, transport.as_ref()).await?;
     let frame = if production { data.frame_production } else { data.frame };
-    return Ok(mapper::to_model(frame.as_ref()));
+    return Ok(mapper::to_model(frame));
 }
 
 fn build_transport(
@@ -228,4 +228,3 @@ fn graphql_variables(route: &str, parameters: &HashMap<String, String>) -> Value
 fn encode_parameters(parameters: &HashMap<String, String>) -> String {
     return serde_json::to_string(parameters).unwrap_or_else(|_| "{}".to_string());
 }
-
