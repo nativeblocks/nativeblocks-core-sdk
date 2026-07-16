@@ -1,8 +1,8 @@
 use serde_json::json;
 
 use crate::common::cache::CacheProvider;
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
-use crate::common::net::{self, GatewayTransport, GraphQlRequest, HttpClient, with_headers};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
+use crate::common::net::{self, with_headers, GatewayTransport, GraphQlRequest, HttpClient};
 use crate::common::result::NBResult;
 use crate::config::ProjectConfigGatewayModel;
 use crate::localization::data::db_source;
@@ -201,9 +201,9 @@ fn build_transport(
             Box::new(net::RestTransport::new(gateway.value.clone(), variables))
         }
         net::GATEWAY_TYPE_GRAPHQL | _ => {
-            let request = GraphQlRequest::new(query).with_variables(json!({ "languageCode": language_code }));
+            let request =
+                GraphQlRequest::new(query).with_variables(json!({ "languageCode": language_code }));
             Box::new(net::GraphQlTransport::new(graphql_endpoint, request))
         }
     };
 }
-

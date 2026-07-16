@@ -18,8 +18,7 @@ pub(super) const LOCALIZATION_PRODUCTION_QUERY: &str = r#"query localizationsPro
     }
 }"#;
 
-pub(super) const LOCALIZATION_PRODUCTION_CHECKSUM_QUERY: &str =
-    r#"query localizationProductionChecksum($languageCode: String!) {
+pub(super) const LOCALIZATION_PRODUCTION_CHECKSUM_QUERY: &str = r#"query localizationProductionChecksum($languageCode: String!) {
     localizationProductionChecksum(languageCode: $languageCode) {
         checksum
         languageCode

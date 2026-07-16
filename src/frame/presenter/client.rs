@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::common::cache::CacheProvider;
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::HttpClient;
 use crate::common::result::NBError;
 use crate::di;
@@ -26,14 +26,14 @@ impl FrameClient {
     ) -> Result<Arc<Self>, NBError> {
         let container = di::get_or_create(&environment, &config)?;
         let services = container.services(http, cache);
-        return Ok(Arc::new(Self { container, services }));
+        return Ok(Arc::new(Self {
+            container,
+            services,
+        }));
     }
 
     pub fn state_manager(&self) -> Arc<FrameStateManager> {
-        let logger = FrameLogger::new(
-            self.container.logger(),
-            self.container.sdk_config().clone(),
-        );
+        let logger = FrameLogger::new(self.container.logger(), self.container.sdk_config().clone());
         return FrameStateManager::new(
             self.services.frame_repository(),
             self.container.global_parameters(),
@@ -41,7 +41,11 @@ impl FrameClient {
         );
     }
 
-    pub async fn sync_frame(&self, route: String, parameters: HashMap<String, String>) -> Result<(), NBError> {
+    pub async fn sync_frame(
+        &self,
+        route: String,
+        parameters: HashMap<String, String>,
+    ) -> Result<(), NBError> {
         return self
             .services
             .frame_repository()

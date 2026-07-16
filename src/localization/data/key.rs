@@ -20,5 +20,6 @@ pub(in crate::localization) mod error_code {
 }
 
 pub(in crate::localization) mod message {
-    pub(in crate::localization) const LOCALIZATION_NOT_CACHED: &str = "Please make sure internet connection is available";
+    pub(in crate::localization) const LOCALIZATION_NOT_CACHED: &str =
+        "Please make sure internet connection is available";
 }

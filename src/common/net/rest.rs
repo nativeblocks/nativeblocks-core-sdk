@@ -14,7 +14,10 @@ pub(crate) struct RestTransport {
 
 impl RestTransport {
     pub(crate) fn new(url: impl Into<String>, variables: Vec<(String, String)>) -> Self {
-        return Self { url: url.into(), variables };
+        return Self {
+            url: url.into(),
+            variables,
+        };
     }
 
     fn full_url(&self) -> String {
@@ -29,7 +32,11 @@ impl RestTransport {
 
 #[async_trait::async_trait]
 impl GatewayTransport for RestTransport {
-    async fn send(&self, client: &dyn HttpClient, headers: HashMap<String, String>) -> NBResult<String> {
+    async fn send(
+        &self,
+        client: &dyn HttpClient,
+        headers: HashMap<String, String>,
+    ) -> NBResult<String> {
         return Ok(client.get(self.full_url(), headers).await?);
     }
 }

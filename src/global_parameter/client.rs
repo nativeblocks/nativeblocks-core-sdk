@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::logger::{keys, LoggerEventLevel};
 use crate::common::result::NBError;
 use crate::di;

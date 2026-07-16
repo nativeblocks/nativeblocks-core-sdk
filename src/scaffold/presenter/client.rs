@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::common::cache::CacheProvider;
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::HttpClient;
 use crate::common::result::NBError;
 use crate::di;

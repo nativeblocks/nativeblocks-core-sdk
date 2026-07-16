@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::Mutex as AsyncMutex;
 
 use crate::common::cache::CacheProvider;
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::HttpClient;
 use crate::common::result::NBResult;
 use crate::config::model::{NativeProjectConfigModel, ResolvedGatewayModel};
@@ -39,7 +39,11 @@ impl Client {
         let install_id = self.install_id()?;
         let config = self.project_config(&install_id).await?;
         let gateway = repository::resolve_gateway(&config, operation);
-        return Ok(ResolvedGatewayModel {gateway, endpoint: config.endpoint, install_id});
+        return Ok(ResolvedGatewayModel {
+            gateway,
+            endpoint: config.endpoint,
+            install_id,
+        });
     }
 
     fn install_id(&self) -> NBResult<String> {
@@ -60,7 +64,13 @@ impl Client {
             *guard = Some(config.clone());
             return Ok(config);
         }
-        let config = repository::fetch_project_config(self.http.as_ref(), &self.environment, &self.sdk_config, install_id).await?;
+        let config = repository::fetch_project_config(
+            self.http.as_ref(),
+            &self.environment,
+            &self.sdk_config,
+            install_id,
+        )
+        .await?;
         repository::write_cached_config(self.cache.as_ref(), &config)?;
         *guard = Some(config.clone());
         return Ok(config);

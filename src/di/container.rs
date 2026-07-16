@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::common::cache::CacheProvider;
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::logger::{self, NativeLoggerProvider};
 use crate::common::net::HttpClient;
 use crate::config;
@@ -43,7 +43,11 @@ impl Container {
         return self.global_parameters.clone();
     }
 
-    pub(crate) fn services(&self, http: Arc<dyn HttpClient>, cache: Arc<dyn CacheProvider>) -> Arc<Services> {
+    pub(crate) fn services(
+        &self,
+        http: Arc<dyn HttpClient>,
+        cache: Arc<dyn CacheProvider>,
+    ) -> Arc<Services> {
         let mut guard = self.services.lock().unwrap();
         if let Some(existing) = guard.as_ref() {
             return existing.clone();
@@ -62,7 +66,11 @@ pub(crate) struct Services {
 }
 
 impl Services {
-    fn build(container: &Container, http: Arc<dyn HttpClient>, cache: Arc<dyn CacheProvider>) -> Self {
+    fn build(
+        container: &Container,
+        http: Arc<dyn HttpClient>,
+        cache: Arc<dyn CacheProvider>,
+    ) -> Self {
         let environment = container.environment.clone();
         let sdk_config = container.sdk_config.clone();
         let logger = container.logger.clone();

@@ -15,11 +15,23 @@ impl MemoryLocalizationSource {
     }
 
     pub(super) fn get_localization(&self, language_code: &str) -> Option<NativeLocalizationModel> {
-        return self.localizations.lock().unwrap().get(language_code).cloned();
+        return self
+            .localizations
+            .lock()
+            .unwrap()
+            .get(language_code)
+            .cloned();
     }
 
-    pub(super) fn save_localization(&self, language_code: &str, localization: NativeLocalizationModel) {
-        self.localizations.lock().unwrap().insert(language_code.to_string(), localization);
+    pub(super) fn save_localization(
+        &self,
+        language_code: &str,
+        localization: NativeLocalizationModel,
+    ) {
+        self.localizations
+            .lock()
+            .unwrap()
+            .insert(language_code.to_string(), localization);
     }
 
     pub(super) fn translate(&self, language_code: &str, key: &str) -> Option<String> {

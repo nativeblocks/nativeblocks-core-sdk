@@ -1,5 +1,5 @@
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 use crate::common::result::{ErrorModel, NBResult};
 

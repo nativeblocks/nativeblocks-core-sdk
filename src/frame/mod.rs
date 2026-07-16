@@ -11,5 +11,5 @@ pub use domain::model::{
     NativeBlockModel, NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameModel,
     NativeVariableModel,
 };
-pub use presenter::{FrameClient, FrameState, FrameStateManager, FrameStateObserver};
 pub(crate) use presenter::dispose;
+pub use presenter::{FrameClient, FrameState, FrameStateManager, FrameStateObserver};

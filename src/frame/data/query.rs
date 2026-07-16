@@ -115,8 +115,7 @@ pub(super) const FRAME_PRODUCTION_QUERY: &str = r#"query frameProduction($route:
     }
 }"#;
 
-pub(super) const FRAME_PRODUCTION_CHECKSUM_QUERY: &str =
-    r#"query frameProductionChecksum($route: String!, $parameter: FrameParameterInput) {
+pub(super) const FRAME_PRODUCTION_CHECKSUM_QUERY: &str = r#"query frameProductionChecksum($route: String!, $parameter: FrameParameterInput) {
     frameProductionChecksum(route: $route, parameter: $parameter) {
         checksum
         route

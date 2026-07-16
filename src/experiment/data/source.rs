@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
-use crate::common::net::{self, GatewayTransport, GraphQlRequest, HttpClient, with_headers};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
+use crate::common::net::{self, with_headers, GatewayTransport, GraphQlRequest, HttpClient};
 use crate::common::result::NBResult;
 use crate::config::ProjectConfigGatewayModel;
 use crate::experiment::data::dto::NativeExperimentDataDto;

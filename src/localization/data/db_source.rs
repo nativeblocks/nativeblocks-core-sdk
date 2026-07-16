@@ -37,7 +37,10 @@ pub(super) fn save_localization(
     return Ok(());
 }
 
-pub(super) fn cached_checksum(cache: &dyn CacheProvider, language_code: &str) -> NBResult<Option<String>> {
+pub(super) fn cached_checksum(
+    cache: &dyn CacheProvider,
+    language_code: &str,
+) -> NBResult<Option<String>> {
     let localization: Option<NativeLocalizationModel> =
         cache::read_or_cleanup(cache, key::prod_key(language_code))?;
     return Ok(localization.and_then(|localization| localization.checksum));

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use crate::common::environment::SdkConfig;
+use crate::common::environment::model::SdkConfig;
 
 use super::{Logger, LoggerEventLevel};
 
@@ -27,11 +27,7 @@ pub struct NativeLoggerProvider {
 }
 
 impl NativeLoggerProvider {
-    pub fn provide_logger(
-        &mut self,
-        logger_type: impl Into<String>,
-        logger: Box<dyn Logger>,
-    ) {
+    pub fn provide_logger(&mut self, logger_type: impl Into<String>, logger: Box<dyn Logger>) {
         self.loggers.insert(logger_type.into(), logger);
     }
 
@@ -71,7 +67,8 @@ impl NativeLoggerProvider {
 }
 
 fn registry() -> &'static Mutex<HashMap<String, Arc<Mutex<NativeLoggerProvider>>>> {
-    static REGISTRY: OnceLock<Mutex<HashMap<String, Arc<Mutex<NativeLoggerProvider>>>>> = OnceLock::new();
+    static REGISTRY: OnceLock<Mutex<HashMap<String, Arc<Mutex<NativeLoggerProvider>>>>> =
+        OnceLock::new();
     REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
 }
 

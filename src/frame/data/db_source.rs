@@ -31,7 +31,11 @@ pub(super) fn save_frame(
     frame: &NativeFrameModel,
     production: bool,
 ) -> NBResult<()> {
-    let cache_key = if production { key::prod_key(route) } else { key::dev_key(route) };
+    let cache_key = if production {
+        key::prod_key(route)
+    } else {
+        key::dev_key(route)
+    };
     let bytes = json::to_bytes(frame)?;
     cache.save_bytes(cache_key, bytes, None)?;
     return Ok(());

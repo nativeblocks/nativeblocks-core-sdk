@@ -2,7 +2,13 @@ use super::*;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-type BlockUpdate = (String, String, Option<String>, Option<String>, Option<String>);
+type BlockUpdate = (
+    String,
+    String,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+);
 
 #[derive(Default)]
 struct MockBridge {
@@ -44,7 +50,9 @@ fn arithmetic() {
 #[test]
 fn if_else() {
     assert_eq!(
-        run("if (10 > 5) { 10 * 2; } else { 5 * 2; }").value.as_deref(),
+        run("if (10 > 5) { 10 * 2; } else { 5 * 2; }")
+            .value
+            .as_deref(),
         Some("20")
     );
 }
@@ -52,7 +60,9 @@ fn if_else() {
 #[test]
 fn json() {
     assert_eq!(
-        run(r#"JSON.stringify({name:"Dao", age:30})"#).value.as_deref(),
+        run(r#"JSON.stringify({name:"Dao", age:30})"#)
+            .value
+            .as_deref(),
         Some(r#"{"name":"Dao","age":30}"#)
     );
 }
@@ -69,21 +79,34 @@ fn function_is_blocked() {
 
 #[test]
 fn infinite_loop_times_out() {
-    let result = evaluate("while (true) {}".to_string(), Arc::new(MockBridge::default()), 200);
+    let result = evaluate(
+        "while (true) {}".to_string(),
+        Arc::new(MockBridge::default()),
+        200,
+    );
     assert_eq!(result.error.as_deref(), Some("Execution timed out"));
 }
 
 #[test]
 fn variable_round_trip() {
     let bridge = Arc::new(MockBridge::default());
-    bridge.variables.lock().unwrap().insert("count".into(), "3".into());
+    bridge
+        .variables
+        .lock()
+        .unwrap()
+        .insert("count".into(), "3".into());
     evaluate(
         r#"updateVariable("count", getVariable("count") * 2);"#.to_string(),
         bridge.clone(),
         2000,
     );
     assert_eq!(
-        bridge.variables.lock().unwrap().get("count").map(String::as_str),
+        bridge
+            .variables
+            .lock()
+            .unwrap()
+            .get("count")
+            .map(String::as_str),
         Some("6")
     );
 }

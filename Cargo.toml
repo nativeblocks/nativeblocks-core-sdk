@@ -24,13 +24,13 @@ script-quickjs = ["dep:rquickjs"]
 script-quickjs-bindgen = ["script-quickjs", "rquickjs/bindgen"]
 
 [dependencies]
-uniffi = { version = "0.31", features = ["cli", "tokio"] }
+uniffi = { version = "0.32.0", features = ["cli", "tokio"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 async-trait = "0.1"
 tokio = { version = "1", default-features = false, features = ["sync", "rt-multi-thread"] }
 uuid = { version = "1", features = ["v7"] }
-rquickjs = { version = "0.9", optional = true }
+rquickjs = { version = "0.12.1", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

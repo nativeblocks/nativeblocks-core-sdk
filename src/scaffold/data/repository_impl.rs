@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::logger::NativeLoggerProvider;
 use crate::common::net::HttpClient;
 use crate::common::result::NBResult;

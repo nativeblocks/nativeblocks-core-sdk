@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 
 use crate::common::cache::CacheProvider;
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
-use crate::common::net::{self, GatewayTransport, GraphQlRequest, HttpClient, with_headers};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
+use crate::common::net::{self, with_headers, GatewayTransport, GraphQlRequest, HttpClient};
 use crate::common::result::NBResult;
 use crate::config::ProjectConfigGatewayModel;
 use crate::frame::data::db_source;
@@ -165,7 +165,9 @@ async fn fetch_production_checksum(
         parameters,
         query::FRAME_PRODUCTION_CHECKSUM_QUERY,
     );
-    let data: NativeFrameProductionChecksumDataDto = net::request(http, headers, transport.as_ref()).await
+    let data: NativeFrameProductionChecksumDataDto =
+        net::request(http, headers, transport.as_ref())
+            .await
             .map_err(|error| error.or_code(error_code::FRAME_CHECKSUM))?;
     return Ok(data
         .frame_production_checksum
@@ -188,7 +190,11 @@ async fn request_frame(
     let headers = with_headers(environment, sdk_config, install_id);
     let transport = build_transport(gateway, graphql_endpoint, route, parameters, query);
     let data: NativeFrameDataDto = net::request(http, headers, transport.as_ref()).await?;
-    let frame = if production { data.frame_production } else { data.frame };
+    let frame = if production {
+        data.frame_production
+    } else {
+        data.frame
+    };
     return Ok(mapper::to_model(frame));
 }
 
@@ -203,12 +209,16 @@ fn build_transport(
         net::GATEWAY_TYPE_REST => {
             let mut variables = vec![(key::PARAM_ROUTE.to_string(), route.to_string())];
             if !parameters.is_empty() {
-                variables.push((key::PARAM_PARAMETERS.to_string(), encode_parameters(parameters)));
+                variables.push((
+                    key::PARAM_PARAMETERS.to_string(),
+                    encode_parameters(parameters),
+                ));
             }
             Box::new(net::RestTransport::new(gateway.value.clone(), variables))
         }
         net::GATEWAY_TYPE_GRAPHQL | _ => {
-            let request = GraphQlRequest::new(query).with_variables(graphql_variables(route, parameters));
+            let request =
+                GraphQlRequest::new(query).with_variables(graphql_variables(route, parameters));
             Box::new(net::GraphQlTransport::new(graphql_endpoint, request))
         }
     };

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use crate::common::cache::{self, CacheProvider};
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::json;
 use crate::common::logger::NativeLoggerProvider;
 use crate::common::net::HttpClient;
@@ -82,7 +82,8 @@ impl ExperimentRepositoryImpl {
         cache_ttl: Option<i64>,
     ) -> NBResult<()> {
         let bytes = json::to_bytes(experiment)?;
-        self.cache.save_bytes(key::cache_key(key), bytes, cache_ttl)?;
+        self.cache
+            .save_bytes(key::cache_key(key), bytes, cache_ttl)?;
         return Ok(());
     }
 }
@@ -97,9 +98,7 @@ impl ExperimentRepository for ExperimentRepositoryImpl {
     ) -> NBResult<NativeExperimentModel> {
         let result = self.load(key, cache_ttl, globals).await;
         match &result {
-            Ok(experiment) => {
-                logging::log_success(&self.logger, &self.sdk_config, key, experiment)
-            }
+            Ok(experiment) => logging::log_success(&self.logger, &self.sdk_config, key, experiment),
             Err(error) => logging::log_failure(&self.logger, &self.sdk_config, key, error),
         }
         return result;

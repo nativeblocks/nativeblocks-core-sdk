@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::common::cache::CacheProvider;
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::net::HttpClient;
 use crate::common::result::NBError;
 use crate::di;
@@ -24,7 +24,10 @@ impl ExperimentClient {
     ) -> Result<Arc<Self>, NBError> {
         let container = di::get_or_create(&environment, &config)?;
         let services = container.services(http, cache);
-        return Ok(Arc::new(Self { container, services }));
+        return Ok(Arc::new(Self {
+            container,
+            services,
+        }));
     }
 
     pub async fn get_experiment(

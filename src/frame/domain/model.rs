@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-  
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NativeFrameModel {
     pub checksum: Option<String>,

@@ -3,14 +3,16 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
 
 use crate::common::cache::CacheProvider;
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::logger::NativeLoggerProvider;
 use crate::common::net::HttpClient;
 use crate::common::result::NBResult;
 use crate::config;
-use crate::localization::data::key::{GATEWAY_LOCALIZATION, GATEWAY_LOCALIZATION_PRODUCTION, GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM};
 use crate::localization::data::cloud_source;
 use crate::localization::data::db_source;
+use crate::localization::data::key::{
+    GATEWAY_LOCALIZATION, GATEWAY_LOCALIZATION_PRODUCTION, GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM,
+};
 use crate::localization::data::logging;
 use crate::localization::data::memory_source::MemoryLocalizationSource;
 use crate::localization::domain::model::NativeLocalizationModel;
@@ -59,7 +61,8 @@ impl CloudLocalizationRepository {
         );
         match &from_db {
             Ok(localization) => {
-                self.memory.save_localization(language_code, localization.clone());
+                self.memory
+                    .save_localization(language_code, localization.clone());
                 logging::log_load_success(&self.logger, &self.sdk_config, language_code);
             }
             Err(error) => {
@@ -73,7 +76,8 @@ impl CloudLocalizationRepository {
         let result = self.download_localization(language_code).await;
         match &result {
             Ok(localization) => {
-                self.memory.save_localization(language_code, localization.clone());
+                self.memory
+                    .save_localization(language_code, localization.clone());
                 logging::log_sync_success(&self.logger, &self.sdk_config, language_code);
             }
             Err(error) => {
@@ -83,7 +87,10 @@ impl CloudLocalizationRepository {
         return result;
     }
 
-    async fn download_localization(&self, language_code: &str) -> NBResult<NativeLocalizationModel> {
+    async fn download_localization(
+        &self,
+        language_code: &str,
+    ) -> NBResult<NativeLocalizationModel> {
         let localization_gateway = self.config_client.gateway(GATEWAY_LOCALIZATION).await?;
         let production_gateway = self
             .config_client

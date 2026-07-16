@@ -1,9 +1,9 @@
 use uuid::Uuid;
 
 use crate::common::cache::{self, CacheProvider};
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::json;
-use crate::common::net::{HttpClient, map, with_headers};
+use crate::common::net::{map, with_headers, HttpClient};
 use crate::common::result::NBResult;
 use crate::config::dto::ProjectConfigDataDto;
 use crate::config::key::{DEFAULT_GATEWAY_TYPE, INSTALL_ID_KEY, PROJECT_CONFIG_KEY};
@@ -21,7 +21,11 @@ pub(crate) fn install_id(cache: &dyn CacheProvider) -> NBResult<String> {
         }
     }
     let install_id = Uuid::now_v7().to_string();
-    cache.save_bytes(INSTALL_ID_KEY.to_string(), install_id.clone().into_bytes(), None)?;
+    cache.save_bytes(
+        INSTALL_ID_KEY.to_string(),
+        install_id.clone().into_bytes(),
+        None,
+    )?;
     return Ok(install_id);
 }
 
@@ -36,7 +40,11 @@ pub(crate) fn write_cached_config(
     config: &NativeProjectConfigModel,
 ) -> NBResult<()> {
     let bytes = json::to_bytes(config)?;
-    cache.save_bytes(PROJECT_CONFIG_KEY.to_string(), bytes, Some(PROJECT_CONFIG_TTL_MILLIS))?;
+    cache.save_bytes(
+        PROJECT_CONFIG_KEY.to_string(),
+        bytes,
+        Some(PROJECT_CONFIG_TTL_MILLIS),
+    )?;
     return Ok(());
 }
 

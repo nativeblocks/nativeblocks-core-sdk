@@ -1,5 +1,5 @@
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
-use crate::common::net::{self, GraphQlRequest, HttpClient, with_headers};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
+use crate::common::net::{self, with_headers, GraphQlRequest, HttpClient};
 use crate::common::result::NBResult;
 use crate::config::ProjectConfigGatewayModel;
 use crate::scaffold::data::dto::NativeScaffoldDataDto;
@@ -26,9 +26,12 @@ fn build_transport(
     graphql_endpoint: &str,
 ) -> Box<dyn net::GatewayTransport> {
     return match gateway.gateway_type.as_str() {
-        net::GATEWAY_TYPE_REST => Box::new(net::RestTransport::new(gateway.value.clone(), Vec::new())),
-        net::GATEWAY_TYPE_GRAPHQL | _ => {
-            Box::new(net::GraphQlTransport::new(graphql_endpoint, GraphQlRequest::new(SCAFFOLD_QUERY)))
+        net::GATEWAY_TYPE_REST => {
+            Box::new(net::RestTransport::new(gateway.value.clone(), Vec::new()))
         }
+        net::GATEWAY_TYPE_GRAPHQL | _ => Box::new(net::GraphQlTransport::new(
+            graphql_endpoint,
+            GraphQlRequest::new(SCAFFOLD_QUERY),
+        )),
     };
 }

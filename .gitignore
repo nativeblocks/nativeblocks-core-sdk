@@ -10,7 +10,7 @@ Cargo.lock
 *.pdb
 **/mutants.out*/
 rustc-ice-*.txt
-#.idea/
+.idea/
 
 .DS_Store
 

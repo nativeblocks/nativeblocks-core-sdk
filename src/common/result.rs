@@ -17,7 +17,7 @@ impl ErrorType {
             ErrorType::Network => "NETWORK",
             ErrorType::Cache => "CACHE",
             ErrorType::Support => "SUPPORT",
-        }
+        };
     }
 }
 
@@ -33,11 +33,9 @@ pub enum NBError {
 impl std::fmt::Display for NBError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let NBError::Failure {
-            reason,
-            error_type,
-            ..
+            reason, error_type, ..
         } = self;
-        return write!(f, "[{}] {}", error_type.as_str(), reason)
+        return write!(f, "[{}] {}", error_type.as_str(), reason);
     }
 }
 
@@ -55,7 +53,11 @@ impl From<ErrorModel> for NBError {
 
 impl From<NBError> for ErrorModel {
     fn from(error: NBError) -> Self {
-        let NBError::Failure { reason, error_type, error_code } = error;
+        let NBError::Failure {
+            reason,
+            error_type,
+            error_code,
+        } = error;
         return ErrorModel {
             message: reason,
             error_type,
@@ -107,7 +109,10 @@ impl ErrorModel {
     pub fn to_logger_parameters(&self) -> HashMap<String, String> {
         let mut map = HashMap::new();
         map.insert(param_key::ERROR_MESSAGE.to_string(), self.message.clone());
-        map.insert(param_key::ERROR_TYPE.to_string(), self.error_type.as_str().to_string());
+        map.insert(
+            param_key::ERROR_TYPE.to_string(),
+            self.error_type.as_str().to_string(),
+        );
         if let Some(code) = &self.error_code {
             map.insert(param_key::ERROR_TAG.to_string(), code.clone());
         }

@@ -4,7 +4,7 @@ mod provider;
 
 use std::collections::HashMap;
 
-pub use provider::{NativeLoggerProvider, get_or_create, remove};
+pub use provider::{get_or_create, remove, NativeLoggerProvider};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
 pub enum LoggerEventLevel {

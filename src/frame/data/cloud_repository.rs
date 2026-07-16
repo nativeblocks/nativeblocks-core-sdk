@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
 
 use crate::common::cache::CacheProvider;
-use crate::common::environment::{NativeblocksEnvironment, SdkConfig};
+use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::common::logger::NativeLoggerProvider;
 use crate::common::net::HttpClient;
 use crate::common::result::NBResult;
@@ -12,7 +12,9 @@ use crate::config;
 use crate::frame::data::channels::FrameChannels;
 use crate::frame::data::cloud_source;
 use crate::frame::data::db_source;
-use crate::frame::data::key::{GATEWAY_FRAME, GATEWAY_FRAME_PRODUCTION, GATEWAY_FRAME_PRODUCTION_CHECKSUM};
+use crate::frame::data::key::{
+    GATEWAY_FRAME, GATEWAY_FRAME_PRODUCTION, GATEWAY_FRAME_PRODUCTION_CHECKSUM,
+};
 use crate::frame::data::logging;
 use crate::frame::data::memory_source::MemoryFrameSource;
 use crate::frame::domain::model::NativeFrameModel;
@@ -54,17 +56,18 @@ impl CloudFrameRepository {
         if let Some(frame) = self.memory.get_frame(route) {
             return Some(frame);
         }
-        let frame = db_source::get_frame(self.cache.as_ref(), route, self.environment.development_mode()).ok()?;
+        let frame = db_source::get_frame(
+            self.cache.as_ref(),
+            route,
+            self.environment.development_mode(),
+        )
+        .ok()?;
         let frame = Arc::new(frame);
         self.memory.save_frame(route, frame.clone());
         return Some(frame);
     }
 
-    async fn from_network(
-        &self,
-        route: &str,
-        parameters: &HashMap<String, String>,
-    ) -> FrameUpdate {
+    async fn from_network(&self, route: &str, parameters: &HashMap<String, String>) -> FrameUpdate {
         let result = self.download_frame(route, parameters).await;
         match &result {
             Ok(_) => logging::log_sync_success(&self.logger, &self.sdk_config, route),
@@ -82,7 +85,10 @@ impl CloudFrameRepository {
     ) -> NBResult<NativeFrameModel> {
         let frame = self.config_client.gateway(GATEWAY_FRAME).await?;
         let production = self.config_client.gateway(GATEWAY_FRAME_PRODUCTION).await?;
-        let checksum = self.config_client.gateway(GATEWAY_FRAME_PRODUCTION_CHECKSUM).await?;
+        let checksum = self
+            .config_client
+            .gateway(GATEWAY_FRAME_PRODUCTION_CHECKSUM)
+            .await?;
         return cloud_source::sync_cloud(
             self.http.as_ref(),
             &self.environment,
@@ -122,10 +128,12 @@ impl FrameRepository for CloudFrameRepository {
     }
 
     fn subscribe(&self, route: &str) -> watch::Receiver<FrameUpdate> {
-        return self.channels.subscribe(route, || match self.memory.get_frame(route) {
-            Some(frame) => Ok(frame),
-            None => Err(db_source::not_cached()),
-        });
+        return self
+            .channels
+            .subscribe(route, || match self.memory.get_frame(route) {
+                Some(frame) => Ok(frame),
+                None => Err(db_source::not_cached()),
+            });
     }
 
     async fn clear(&self, route: &str) -> NBResult<()> {

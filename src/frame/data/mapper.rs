@@ -50,7 +50,7 @@ pub(super) fn to_model(dto: Option<NativeFrameDto>) -> NativeFrameModel {
         blocks,
         root_id,
         actions,
-    }
+    };
 }
 
 fn keyed<D, M>(
@@ -65,7 +65,7 @@ fn keyed<D, M>(
         let model = map(item);
         out.insert(key(&model).clone(), model);
     }
-    return out
+    return out;
 }
 
 fn grouped<D, M>(
@@ -85,7 +85,7 @@ fn grouped<D, M>(
             }
         }
     }
-    return out
+    return out;
 }
 
 fn map_variable(dto: NativeVariableDto) -> NativeVariableModel {
@@ -93,7 +93,7 @@ fn map_variable(dto: NativeVariableDto) -> NativeVariableModel {
         key: text(dto.key),
         value: text(dto.value),
         variable_type: text(dto.variable_type),
-    }
+    };
 }
 
 fn map_block(dto: NativeBlockDto) -> NativeBlockModel {
@@ -109,7 +109,7 @@ fn map_block(dto: NativeBlockDto) -> NativeBlockModel {
         data: keyed(dto.data, map_block_data, |model| &model.key),
         properties: keyed(dto.properties, map_block_property, |model| &model.key),
         slots: keyed(dto.slots, map_block_slot, |model| &model.slot),
-    }
+    };
 }
 
 fn map_block_data(dto: NativeBlockDataDto) -> NativeBlockDataModel {
@@ -117,7 +117,7 @@ fn map_block_data(dto: NativeBlockDataDto) -> NativeBlockDataModel {
         key: text(dto.key),
         value: text(dto.value),
         data_type: text(dto.data_type),
-    }
+    };
 }
 
 fn map_block_property(dto: NativeBlockPropertyDto) -> NativeBlockPropertyModel {
@@ -127,13 +127,13 @@ fn map_block_property(dto: NativeBlockPropertyDto) -> NativeBlockPropertyModel {
         value_tablet: text(dto.value_tablet),
         value_desktop: text(dto.value_desktop),
         property_type: text(dto.property_type),
-    }
+    };
 }
 
 fn map_block_slot(dto: NativeBlockSlotDto) -> NativeBlockSlotModel {
     return NativeBlockSlotModel {
         slot: text(dto.slot),
-    }
+    };
 }
 
 fn map_action(dto: NativeActionDto) -> NativeActionModel {
@@ -141,8 +141,13 @@ fn map_action(dto: NativeActionDto) -> NativeActionModel {
         id: text(dto.id),
         key: text(dto.key),
         event: text(dto.event),
-        triggers: dto.triggers.unwrap_or_default().into_iter().map(map_trigger).collect(),
-    }
+        triggers: dto
+            .triggers
+            .unwrap_or_default()
+            .into_iter()
+            .map(map_trigger)
+            .collect(),
+    };
 }
 
 fn map_trigger(dto: NativeActionTriggerDto) -> NativeActionTriggerModel {
@@ -155,7 +160,7 @@ fn map_trigger(dto: NativeActionTriggerDto) -> NativeActionTriggerModel {
         key_type: text(dto.key_type),
         properties: keyed(dto.properties, map_trigger_property, |model| &model.key),
         data: keyed(dto.data, map_trigger_data, |model| &model.key),
-    }
+    };
 }
 
 fn map_trigger_property(dto: NativeActionTriggerPropertyDto) -> NativeActionTriggerPropertyModel {
@@ -163,7 +168,7 @@ fn map_trigger_property(dto: NativeActionTriggerPropertyDto) -> NativeActionTrig
         key: text(dto.key),
         value: text(dto.value),
         property_type: text(dto.property_type),
-    }
+    };
 }
 
 fn map_trigger_data(dto: NativeActionTriggerDataDto) -> NativeActionTriggerDataModel {
@@ -171,9 +176,9 @@ fn map_trigger_data(dto: NativeActionTriggerDataDto) -> NativeActionTriggerDataM
         key: text(dto.key),
         value: text(dto.value),
         data_type: text(dto.data_type),
-    }
+    };
 }
 
 fn text(value: Option<String>) -> String {
-    return value.unwrap_or_default()
+    return value.unwrap_or_default();
 }

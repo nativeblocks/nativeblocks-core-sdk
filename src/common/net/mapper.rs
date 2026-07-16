@@ -10,7 +10,9 @@ pub(crate) fn map<D: DeserializeOwned>(response: &str) -> NBResult<D> {
     if let Some(errors) = dto.errors.as_ref().filter(|e| !e.is_empty()) {
         return Err(map_errors(errors));
     }
-    return dto.data.ok_or_else(|| ErrorModel::network("Please try again"));
+    return dto
+        .data
+        .ok_or_else(|| ErrorModel::network("Please try again"));
 }
 
 fn map_errors(errors: &[BaseErrorDto]) -> ErrorModel {

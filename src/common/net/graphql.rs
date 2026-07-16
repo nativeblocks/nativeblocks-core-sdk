@@ -59,13 +59,20 @@ pub(crate) struct GraphQlTransport {
 
 impl GraphQlTransport {
     pub(crate) fn new(endpoint: impl Into<String>, request: GraphQlRequest) -> Self {
-        return Self { endpoint: endpoint.into(), request };
+        return Self {
+            endpoint: endpoint.into(),
+            request,
+        };
     }
 }
 
 #[async_trait::async_trait]
 impl GatewayTransport for GraphQlTransport {
-    async fn send(&self, client: &dyn HttpClient, headers: HashMap<String, String>) -> NBResult<String> {
+    async fn send(
+        &self,
+        client: &dyn HttpClient,
+        headers: HashMap<String, String>,
+    ) -> NBResult<String> {
         let body = serde_json::to_string(&self.request)
             .map_err(|e| ErrorModel::network(format!("Failed to encode request: {e}")))?;
         return Ok(client.post(self.endpoint.clone(), headers, body).await?);

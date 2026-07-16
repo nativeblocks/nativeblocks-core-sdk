@@ -21,5 +21,6 @@ pub(in crate::frame) mod error_code {
 }
 
 pub(in crate::frame) mod message {
-    pub(in crate::frame) const FRAME_NOT_CACHED: &str = "Please make sure internet connection is available";
+    pub(in crate::frame) const FRAME_NOT_CACHED: &str =
+        "Please make sure internet connection is available";
 }

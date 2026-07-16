@@ -10,7 +10,6 @@ pub(crate) type FrameUpdate = NBResult<Arc<NativeFrameModel>>;
 
 #[async_trait::async_trait]
 pub(crate) trait FrameRepository: Send + Sync {
-
     async fn load(&self, route: &str, parameters: &HashMap<String, String>) -> NBResult<()>;
 
     async fn sync(&self, route: &str, parameters: &HashMap<String, String>) -> NBResult<()>;

@@ -33,7 +33,12 @@ impl ScriptEngine {
         return Arc::new(Self);
     }
 
-    pub fn evaluate(&self, script: String, bridge: Arc<dyn ScriptBridge>, timeout_ms: u64) -> ScriptResult {
+    pub fn evaluate(
+        &self,
+        script: String,
+        bridge: Arc<dyn ScriptBridge>,
+        timeout_ms: u64,
+    ) -> ScriptResult {
         return evaluate(script, bridge, timeout_ms);
     }
 }
@@ -77,7 +82,10 @@ fn evaluate(script: String, bridge: Arc<dyn ScriptBridge>, timeout_ms: u64) -> S
     });
 }
 
-fn bind_host_functions(ctx: &rquickjs::Ctx, bridge: &Arc<dyn ScriptBridge>) -> rquickjs::Result<()> {
+fn bind_host_functions(
+    ctx: &rquickjs::Ctx,
+    bridge: &Arc<dyn ScriptBridge>,
+) -> rquickjs::Result<()> {
     let globals = ctx.globals();
 
     let get = bridge.clone();

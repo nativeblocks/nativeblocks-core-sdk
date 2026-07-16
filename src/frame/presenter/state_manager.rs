@@ -4,7 +4,9 @@ use std::sync::{Arc, Mutex, Weak};
 use tokio::task::JoinHandle;
 
 use crate::common::result::ErrorType;
-use crate::frame::domain::model::{NativeActionModel, NativeBlockModel, NativeFrameModel, NativeVariableModel};
+use crate::frame::domain::model::{
+    NativeActionModel, NativeBlockModel, NativeFrameModel, NativeVariableModel,
+};
 use crate::frame::domain::repository::{FrameRepository, FrameUpdate};
 use crate::frame::presenter::logging::FrameLogger;
 use crate::global_parameter::GlobalParameterProvider;
@@ -47,11 +49,19 @@ impl State {
     }
 
     fn blocks(&self) -> HashMap<String, NativeBlockModel> {
-        return self.frame.as_ref().map(|frame| frame.blocks.clone()).unwrap_or_default();
+        return self
+            .frame
+            .as_ref()
+            .map(|frame| frame.blocks.clone())
+            .unwrap_or_default();
     }
 
     fn actions(&self) -> HashMap<String, Vec<NativeActionModel>> {
-        return self.frame.as_ref().map(|frame| frame.actions.clone()).unwrap_or_default();
+        return self
+            .frame
+            .as_ref()
+            .map(|frame| frame.actions.clone())
+            .unwrap_or_default();
     }
 
     fn snapshot(&self) -> FrameSnapshot {
@@ -111,7 +121,11 @@ impl FrameStateManager {
         *self.observer.lock().unwrap() = Some(observer.clone());
         let snapshot = {
             let state = self.state.lock().unwrap();
-            if state.is_fresh() { None } else { Some(state.snapshot()) }
+            if state.is_fresh() {
+                None
+            } else {
+                Some(state.snapshot())
+            }
         };
         if let Some(snapshot) = snapshot {
             observer.on_frame_changed(snapshot);
@@ -160,7 +174,9 @@ impl FrameStateManager {
         let task = tokio::spawn(async move {
             loop {
                 let frame_result = frame_receiver.borrow_and_update().clone();
-                let Some(manager) = weak_manager.upgrade() else { break };
+                let Some(manager) = weak_manager.upgrade() else {
+                    break;
+                };
                 manager.apply_frame(frame_result, &args);
                 if frame_receiver.changed().await.is_err() {
                     break;
@@ -179,7 +195,9 @@ impl FrameStateManager {
                 let state = if error.error_type == ErrorType::Cache {
                     FrameState::Loading {}
                 } else {
-                    FrameState::Error { message: error.message }
+                    FrameState::Error {
+                        message: error.message,
+                    }
                 };
                 self.set_state(state);
                 return;

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use crate::common::environment::SdkConfig;
-use crate::common::logger::{LoggerEventLevel, NativeLoggerProvider, keys};
+use crate::common::environment::model::SdkConfig;
+use crate::common::logger::{keys, LoggerEventLevel, NativeLoggerProvider};
 use crate::common::result::ErrorModel;
 
 pub(super) fn log_sync_success(
