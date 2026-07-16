@@ -1,0 +1,38 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
+pub struct ScaffoldModel {
+    pub frames: Vec<FrameRouteModel>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
+pub struct FrameRouteModel {
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub frame_type: Option<FrameTypeModel>,
+    pub route: Option<String>,
+    pub platform: Option<String>,
+    pub route_arguments: Option<Vec<RouteArgumentsModel>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, uniffi::Record)]
+pub struct RouteArgumentsModel {
+    pub name: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
+pub enum FrameTypeModel {
+    Frame,
+    BottomSheet,
+    Dialog,
+}
+
+impl FrameTypeModel {
+    pub fn from_string(value: &str) -> Self {
+        return match value {
+            "BOTTOM_SHEET" => FrameTypeModel::BottomSheet,
+            "DIALOG" => FrameTypeModel::Dialog,
+            _ => FrameTypeModel::Frame,
+        };
+    }
+}

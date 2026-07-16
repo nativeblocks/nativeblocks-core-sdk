@@ -1,38 +1,60 @@
+use std::any::{Any, TypeId};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use crate::common::cache::CacheProvider;
-use crate::common::environment::model::{NativeblocksEnvironment, SdkConfig};
-use crate::common::logger::{self, NativeLoggerProvider};
-use crate::common::net::HttpClient;
-use crate::config;
-use crate::experiment::ExperimentRepository;
-use crate::frame::FrameRepository;
-use crate::global_parameter::GlobalParameterProvider;
-use crate::localization::LocalizationRepository;
-use crate::scaffold::ScaffoldRepository;
+use crate::library::cache::CacheProvider;
+use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
+use crate::library::net::network::HttpClient;
+use crate::plugin::config::build_client;
+use crate::plugin::global_parameter::GlobalParameterProvider;
+use crate::plugin::logger::{self, NativeLoggerProvider};
+use crate::plugin::{config, global_parameter};
 
 pub(crate) struct Container {
     environment: NativeblocksEnvironment,
     sdk_config: SdkConfig,
+    http: Arc<dyn HttpClient>,
+    cache: Arc<dyn CacheProvider>,
     logger: Arc<Mutex<NativeLoggerProvider>>,
     global_parameters: Arc<GlobalParameterProvider>,
-    services: Mutex<Option<Arc<Services>>>,
+    config_client: Mutex<Option<Arc<config::Client>>>,
+    components: Mutex<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
 }
 
 impl Container {
-    pub(crate) fn new(environment: NativeblocksEnvironment, sdk_config: SdkConfig) -> Self {
+    pub(crate) fn new(
+        environment: NativeblocksEnvironment,
+        sdk_config: SdkConfig,
+        http: Arc<dyn HttpClient>,
+        cache: Arc<dyn CacheProvider>,
+    ) -> Self {
         let logger = logger::get_or_create(environment.instance_name());
         return Self {
             environment,
             sdk_config,
+            http,
+            cache,
             logger,
-            global_parameters: Arc::new(GlobalParameterProvider::new()),
-            services: Mutex::new(None),
+            global_parameters: global_parameter::build_provider(),
+            config_client: Mutex::new(None),
+            components: Mutex::new(HashMap::new()),
         };
+    }
+
+    pub(crate) fn environment(&self) -> &NativeblocksEnvironment {
+        return &self.environment;
     }
 
     pub(crate) fn sdk_config(&self) -> &SdkConfig {
         return &self.sdk_config;
+    }
+
+    pub(crate) fn http(&self) -> Arc<dyn HttpClient> {
+        return self.http.clone();
+    }
+
+    pub(crate) fn cache(&self) -> Arc<dyn CacheProvider> {
+        return self.cache.clone();
     }
 
     pub(crate) fn logger(&self) -> Arc<Mutex<NativeLoggerProvider>> {
@@ -43,98 +65,41 @@ impl Container {
         return self.global_parameters.clone();
     }
 
-    pub(crate) fn services(
-        &self,
-        http: Arc<dyn HttpClient>,
-        cache: Arc<dyn CacheProvider>,
-    ) -> Arc<Services> {
-        let mut guard = self.services.lock().unwrap();
+    pub(crate) fn config_client(&self) -> Arc<config::Client> {
+        let mut guard = self.config_client.lock().unwrap();
         if let Some(existing) = guard.as_ref() {
             return existing.clone();
         }
-        let services = Arc::new(Services::build(self, http, cache));
-        *guard = Some(services.clone());
-        return services;
-    }
-}
-
-pub(crate) struct Services {
-    frame_repository: Arc<dyn FrameRepository>,
-    localization_repository: Arc<dyn LocalizationRepository>,
-    experiment_repository: Arc<dyn ExperimentRepository>,
-    scaffold_repository: Arc<dyn ScaffoldRepository>,
-}
-
-impl Services {
-    fn build(
-        container: &Container,
-        http: Arc<dyn HttpClient>,
-        cache: Arc<dyn CacheProvider>,
-    ) -> Self {
-        let environment = container.environment.clone();
-        let sdk_config = container.sdk_config.clone();
-        let logger = container.logger.clone();
-
-        let config_client = Arc::new(config::Client::new(
-            http.clone(),
-            environment.clone(),
-            sdk_config.clone(),
-            cache.clone(),
-        ));
-
-        let frame_repository = crate::frame::di::build_repository(
-            environment.clone(),
-            sdk_config.clone(),
-            http.clone(),
-            cache.clone(),
-            config_client.clone(),
-            logger.clone(),
+        let client = build_client(
+            self.environment.clone(),
+            self.sdk_config.clone(),
+            self.http.clone(),
+            self.cache.clone(),
         );
-        let localization_repository = crate::localization::di::build_repository(
-            environment.clone(),
-            sdk_config.clone(),
-            http.clone(),
-            cache.clone(),
-            config_client.clone(),
-            logger.clone(),
-        );
-        let experiment_repository = crate::experiment::di::build_repository(
-            environment.clone(),
-            sdk_config.clone(),
-            http.clone(),
-            cache.clone(),
-            config_client.clone(),
-            logger.clone(),
-        );
-        let scaffold_repository = crate::scaffold::di::build_repository(
-            environment,
-            sdk_config,
-            http,
-            config_client.clone(),
-            logger,
-        );
-
-        return Self {
-            frame_repository,
-            localization_repository,
-            experiment_repository,
-            scaffold_repository,
-        };
+        *guard = Some(client.clone());
+        return client;
     }
 
-    pub(crate) fn frame_repository(&self) -> Arc<dyn FrameRepository> {
-        return self.frame_repository.clone();
+    pub(crate) fn component<T>(&self, build: impl FnOnce() -> Arc<T>) -> Arc<T>
+    where
+        T: Any + Send + Sync,
+    {
+        let mut components = self.components.lock().expect("di container poisoned");
+        if let Some(existing) = components.get(&TypeId::of::<T>()) {
+            return existing
+                .clone()
+                .downcast::<T>()
+                .expect("di component type mismatch");
+        }
+        let value = build();
+        components.insert(TypeId::of::<T>(), value.clone());
+        return value;
     }
 
-    pub(crate) fn localization_repository(&self) -> Arc<dyn LocalizationRepository> {
-        return self.localization_repository.clone();
-    }
-
-    pub(crate) fn experiment_repository(&self) -> Arc<dyn ExperimentRepository> {
-        return self.experiment_repository.clone();
-    }
-
-    pub(crate) fn scaffold_repository(&self) -> Arc<dyn ScaffoldRepository> {
-        return self.scaffold_repository.clone();
+    pub(crate) fn dispose(&self) {
+        self.components
+            .lock()
+            .expect("di container poisoned")
+            .clear();
     }
 }
