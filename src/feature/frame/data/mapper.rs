@@ -20,7 +20,7 @@ pub(super) fn to_model(dto: Option<NativeFrameDto>) -> NativeFrameModel {
             checksum: None,
             variables: HashMap::new(),
             blocks: HashMap::new(),
-            root_id: None,
+            root_key: None,
             actions: HashMap::new(),
         };
     };
@@ -34,13 +34,19 @@ pub(super) fn to_model(dto: Option<NativeFrameDto>) -> NativeFrameModel {
     } = dto;
 
     let variables = keyed(variables, map_variable, |model| &model.key);
-    let blocks = keyed(blocks, map_block, |model| &model.id);
 
-    let root_id = blocks
+    let block_dtos = blocks.unwrap_or_default();
+    let key_by_id = key_by_id(&block_dtos);
+    let blocks = keyed(
+        Some(block_dtos),
+        |dto| map_block(dto, &key_by_id),
+        |model| &model.key,
+    );
+
+    let root_key = blocks
         .values()
-        .filter(|block| block.key_type == ROOT_KEY_TYPE)
-        .min_by_key(|block| block.position)
-        .map(|block| block.id.clone());
+        .find(|block| block.key_type == ROOT_KEY_TYPE)
+        .map(|block| block.key.clone());
 
     let actions = grouped(actions, map_action, |model| &model.key);
 
@@ -48,7 +54,7 @@ pub(super) fn to_model(dto: Option<NativeFrameDto>) -> NativeFrameModel {
         checksum,
         variables,
         blocks,
-        root_id,
+        root_key,
         actions,
     };
 }
@@ -96,10 +102,24 @@ fn map_variable(dto: NativeVariableDto) -> NativeVariableModel {
     };
 }
 
-fn map_block(dto: NativeBlockDto) -> NativeBlockModel {
+fn key_by_id(blocks: &[NativeBlockDto]) -> HashMap<String, String> {
+    let mut out = HashMap::with_capacity(blocks.len());
+    for dto in blocks {
+        let (Some(id), Some(key)) = (&dto.id, &dto.key) else {
+            continue;
+        };
+        out.insert(id.clone(), key.clone());
+    }
+    return out;
+}
+
+fn map_block(dto: NativeBlockDto, key_by_id: &HashMap<String, String>) -> NativeBlockModel {
+    let parent_id = text(dto.parent_id);
+    let parent_key = key_by_id.get(&parent_id).cloned().unwrap_or_default();
     return NativeBlockModel {
         id: text(dto.id),
-        parent_id: text(dto.parent_id),
+        parent_key,
+        parent_id,
         version: dto.integration_version.unwrap_or(-1),
         slot: text(dto.slot),
         key_type: text(dto.key_type),

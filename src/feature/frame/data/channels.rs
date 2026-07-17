@@ -3,10 +3,10 @@ use std::sync::{Arc, Mutex};
 
 use tokio::sync::watch;
 
-use crate::feature::frame::domain::repository::FrameUpdate;
+use crate::feature::frame::domain::repository::FrameResult;
 
 pub(crate) struct FrameChannels {
-    senders: Mutex<HashMap<String, watch::Sender<FrameUpdate>>>,
+    senders: Mutex<HashMap<String, watch::Sender<FrameResult>>>,
 }
 
 impl FrameChannels {
@@ -19,8 +19,8 @@ impl FrameChannels {
     pub(crate) fn subscribe(
         &self,
         route: &str,
-        initial: impl FnOnce() -> FrameUpdate,
-    ) -> watch::Receiver<FrameUpdate> {
+        initial: impl FnOnce() -> FrameResult,
+    ) -> watch::Receiver<FrameResult> {
         let mut senders = self.senders.lock().unwrap();
         senders.retain(|_, sender| !sender.is_closed());
         return senders
@@ -29,7 +29,7 @@ impl FrameChannels {
             .subscribe();
     }
 
-    pub(crate) fn publish(&self, route: &str, value: FrameUpdate) {
+    pub(crate) fn publish(&self, route: &str, value: FrameResult) {
         let mut senders = self.senders.lock().unwrap();
         let Some(sender) = senders.get(route) else {
             return;
@@ -47,7 +47,7 @@ impl FrameChannels {
     }
 }
 
-fn is_same_frame(next: &FrameUpdate, current: &FrameUpdate) -> bool {
+fn is_same_frame(next: &FrameResult, current: &FrameResult) -> bool {
     return match (next, current) {
         (Ok(next), Ok(current)) => Arc::ptr_eq(next, current),
         _ => false,

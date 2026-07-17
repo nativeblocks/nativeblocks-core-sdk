@@ -6,7 +6,7 @@ use tokio::sync::watch;
 use crate::feature::frame::domain::model::NativeFrameModel;
 use crate::library::result::NBResult;
 
-pub(crate) type FrameUpdate = NBResult<Arc<NativeFrameModel>>;
+pub(crate) type FrameResult = NBResult<Arc<NativeFrameModel>>;
 
 #[async_trait::async_trait]
 pub(crate) trait FrameRepository: Send + Sync {
@@ -14,7 +14,7 @@ pub(crate) trait FrameRepository: Send + Sync {
 
     async fn sync(&self, route: &str, parameters: &HashMap<String, String>) -> NBResult<()>;
 
-    fn subscribe(&self, route: &str) -> watch::Receiver<FrameUpdate>;
+    fn subscribe(&self, route: &str) -> watch::Receiver<FrameResult>;
 
     async fn clear(&self, route: &str) -> NBResult<()>;
 

@@ -12,7 +12,7 @@ use crate::feature::frame::data::key::{
 use crate::feature::frame::data::logging;
 use crate::feature::frame::data::memory_source::MemoryFrameSource;
 use crate::feature::frame::domain::model::NativeFrameModel;
-use crate::feature::frame::domain::repository::{FrameRepository, FrameUpdate};
+use crate::feature::frame::domain::repository::{FrameRepository, FrameResult};
 use crate::library::cache::CacheProvider;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::library::net::network::HttpClient;
@@ -67,7 +67,7 @@ impl CloudFrameRepository {
         return Some(frame);
     }
 
-    async fn from_network(&self, route: &str, parameters: &HashMap<String, String>) -> FrameUpdate {
+    async fn from_network(&self, route: &str, parameters: &HashMap<String, String>) -> FrameResult {
         let result = self.download_frame(route, parameters).await;
         match &result {
             Ok(_) => logging::log_sync_success(&self.logger, &self.sdk_config, route),
@@ -127,7 +127,7 @@ impl FrameRepository for CloudFrameRepository {
         return Ok(());
     }
 
-    fn subscribe(&self, route: &str) -> watch::Receiver<FrameUpdate> {
+    fn subscribe(&self, route: &str) -> watch::Receiver<FrameResult> {
         return self
             .channels
             .subscribe(route, || match self.memory.get_frame(route) {

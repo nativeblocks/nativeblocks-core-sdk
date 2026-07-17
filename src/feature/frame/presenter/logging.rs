@@ -1,12 +1,11 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-
-use crate::feature::frame::presenter::state_manager::FrameState;
+use crate::feature::frame::presenter::state_manager::model::RenderingState;
 use crate::library::environment::model::SdkConfig;
 use crate::plugin::logger::keys::parameter::{ERROR_MESSAGE, FRAME_ROUTE, STATE};
-use crate::plugin::logger::keys::state::{FRAME_LOADING, FRAME_LOAD_FAILED, FRAME_LOAD_SUCCEED};
+use crate::plugin::logger::keys::state::{FRAME_LOAD_FAILED, FRAME_LOAD_SUCCEED, FRAME_LOADING};
 use crate::plugin::logger::keys::tag::FRAME_STATE;
 use crate::plugin::logger::{LoggerEventLevel, NativeLoggerProvider};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 pub(crate) struct FrameLogger {
     provider: Arc<Mutex<NativeLoggerProvider>>,
@@ -34,13 +33,13 @@ impl FrameLogger {
         *self.route.lock().unwrap() = Some(route.to_string());
     }
 
-    pub(crate) fn frame_state_changed(&self, frame_state: &FrameState) {
+    pub(crate) fn frame_state_changed(&self, frame_state: &RenderingState) {
         if !self.enabled() {
             return;
         }
         let mut params = HashMap::new();
         match frame_state {
-            FrameState::Loading {} => {
+            RenderingState::Loading {} => {
                 params.insert(STATE.to_string(), FRAME_LOADING.to_string());
                 self.dispatch(
                     LoggerEventLevel::Debug,
@@ -49,7 +48,7 @@ impl FrameLogger {
                     params,
                 );
             }
-            FrameState::Ready {} => {
+            RenderingState::Ready {} => {
                 params.insert(STATE.to_string(), FRAME_LOAD_SUCCEED.to_string());
                 self.dispatch(
                     LoggerEventLevel::Info,
@@ -58,7 +57,7 @@ impl FrameLogger {
                     params,
                 );
             }
-            FrameState::Error { message } => {
+            RenderingState::Error { message } => {
                 params.insert(STATE.to_string(), FRAME_LOAD_FAILED.to_string());
                 params.insert(ERROR_MESSAGE.to_string(), message.clone());
                 self.dispatch(
@@ -69,6 +68,18 @@ impl FrameLogger {
                 );
             }
         }
+    }
+
+    pub(crate) fn variable_changed(&self, key: &str, dirty_count: usize) {
+        if !self.enabled() {
+            return;
+        }
+        self.dispatch(
+            LoggerEventLevel::Debug,
+            FRAME_STATE,
+            format!("Variable '{key}' changed -> {dirty_count} block(s) invalidated"),
+            HashMap::new(),
+        );
     }
 
     fn dispatch(

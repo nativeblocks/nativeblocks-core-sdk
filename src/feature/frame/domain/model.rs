@@ -7,7 +7,7 @@ pub struct NativeFrameModel {
     pub checksum: Option<String>,
     pub variables: HashMap<String, NativeVariableModel>,
     pub blocks: HashMap<String, NativeBlockModel>,
-    pub root_id: Option<String>,
+    pub root_key: Option<String>,
     pub actions: HashMap<String, Vec<NativeActionModel>>,
 }
 
@@ -22,6 +22,7 @@ pub struct NativeVariableModel {
 pub struct NativeBlockModel {
     pub id: String,
     pub parent_id: String,
+    pub parent_key: String,
     pub version: i32,
     pub slot: String,
     pub key_type: String,

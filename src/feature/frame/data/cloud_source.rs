@@ -8,13 +8,13 @@ use crate::feature::frame::data::query;
 use crate::feature::frame::domain::model::NativeFrameModel;
 use crate::library::cache::CacheProvider;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
-use crate::library::net::network::{request, with_headers, GatewayTransport, HttpClient};
+use crate::library::net::network::{GatewayTransport, HttpClient, request, with_headers};
 use crate::library::net::{
-    GraphQlRequest, GraphQlTransport, RestTransport, GATEWAY_TYPE_GRAPHQL, GATEWAY_TYPE_REST,
+    GATEWAY_TYPE_GRAPHQL, GATEWAY_TYPE_REST, GraphQlRequest, GraphQlTransport, RestTransport,
 };
 use crate::library::result::NBResult;
 use crate::plugin::config::ProjectConfigGatewayModel;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 pub(super) async fn sync_cloud(
     http: &dyn HttpClient,
