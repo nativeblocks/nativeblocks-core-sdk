@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::library::environment::model::SdkConfig;
 use crate::plugin::global_parameter::GlobalParameterProvider;
-use crate::plugin::logger::{keys, LoggerEventLevel, NativeLoggerProvider};
+use crate::plugin::logger::{LoggerEventLevel, NativeLoggerProvider, keys};
 
 #[derive(uniffi::Object)]
 pub struct GlobalParameterClient {

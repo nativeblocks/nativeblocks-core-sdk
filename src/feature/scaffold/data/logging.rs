@@ -3,7 +3,7 @@ use std::sync::Mutex;
 
 use crate::library::environment::model::SdkConfig;
 use crate::library::result::ErrorModel;
-use crate::plugin::logger::{keys, LoggerEventLevel, NativeLoggerProvider};
+use crate::plugin::logger::{LoggerEventLevel, NativeLoggerProvider, keys};
 
 pub(super) fn log_success(
     logger: &Mutex<NativeLoggerProvider>,

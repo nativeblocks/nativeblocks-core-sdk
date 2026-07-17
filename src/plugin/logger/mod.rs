@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use crate::library::result::ErrorModel;
 
-pub use provider::{get_or_create, remove, NativeLoggerProvider};
+pub use provider::{NativeLoggerProvider, get_or_create, remove};
 
 pub(crate) fn error_parameters(error: &ErrorModel) -> HashMap<String, String> {
     let mut params = HashMap::new();

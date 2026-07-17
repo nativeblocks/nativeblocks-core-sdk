@@ -3,7 +3,7 @@ use crate::feature::scaffold::data::mapper::to_model;
 use crate::feature::scaffold::data::query::SCAFFOLD_QUERY;
 use crate::feature::scaffold::domain::model::ScaffoldModel;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
-use crate::library::net::{self, with_headers, GraphQlRequest, HttpClient};
+use crate::library::net::{self, GraphQlRequest, HttpClient, with_headers};
 use crate::library::result::NBResult;
 use crate::plugin::config::ProjectConfigGatewayModel;
 

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::feature::experiment::data::dto::NativeExperimentDataDto;
 use crate::feature::experiment::data::key;
@@ -8,7 +8,7 @@ use crate::feature::experiment::data::mapper::to_model;
 use crate::feature::experiment::data::query::EXPERIMENT_QUERY;
 use crate::feature::experiment::domain::model::NativeExperimentModel;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
-use crate::library::net::{self, with_headers, GatewayTransport, GraphQlRequest, HttpClient};
+use crate::library::net::{self, GatewayTransport, GraphQlRequest, HttpClient, with_headers};
 use crate::library::result::NBResult;
 use crate::plugin::config::ProjectConfigGatewayModel;
 

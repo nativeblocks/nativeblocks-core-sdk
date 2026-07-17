@@ -3,7 +3,7 @@ use uuid::Uuid;
 use crate::library::cache::util;
 use crate::library::cache::{self, CacheProvider};
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
-use crate::library::net::{map, with_headers, HttpClient};
+use crate::library::net::{HttpClient, map, with_headers};
 use crate::library::result::NBResult;
 use crate::plugin::config::dto::ProjectConfigDataDto;
 use crate::plugin::config::key::{DEFAULT_GATEWAY_TYPE, INSTALL_ID_KEY, PROJECT_CONFIG_KEY};

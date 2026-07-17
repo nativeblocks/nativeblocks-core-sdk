@@ -10,7 +10,7 @@ use crate::feature::localization::data::query;
 use crate::feature::localization::domain::model::NativeLocalizationModel;
 use crate::library::cache::CacheProvider;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
-use crate::library::net::network::{request, with_headers, GatewayTransport, HttpClient};
+use crate::library::net::network::{GatewayTransport, HttpClient, request, with_headers};
 use crate::library::net::{self, GraphQlRequest};
 use crate::library::result::NBResult;
 use crate::plugin::config::ProjectConfigGatewayModel;
