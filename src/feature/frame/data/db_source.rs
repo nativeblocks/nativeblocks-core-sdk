@@ -1,7 +1,8 @@
+use rkyv::rancor::Error as RkyvError;
+
 use crate::feature::frame::data::key::{self, error_code};
 use crate::feature::frame::domain::model::NativeFrameModel;
-use crate::library::cache::util;
-use crate::library::cache::{self, CacheProvider};
+use crate::library::cache::CacheProvider;
 use crate::library::result::{ErrorModel, NBResult};
 
 pub(super) fn get_frame(
@@ -14,7 +15,7 @@ pub(super) fn get_frame(
     } else {
         key::prod_key(route)
     };
-    return match cache::read_or_cleanup(cache, cache_key)? {
+    return match read_frame(cache, cache_key)? {
         Some(frame) => Ok(frame),
         None => Err(not_cached()),
     };
@@ -36,14 +37,32 @@ pub(super) fn save_frame(
     } else {
         key::dev_key(route)
     };
-    let bytes = util::to_bytes(frame)?;
+    let bytes = rkyv::to_bytes::<RkyvError>(frame)
+        .map_err(|error| ErrorModel::cache(error.to_string()))?
+        .to_vec();
     cache.save_bytes(cache_key, bytes, None)?;
     return Ok(());
 }
 
 pub(super) fn cached_checksum(cache: &dyn CacheProvider, route: &str) -> NBResult<Option<String>> {
-    let frame: Option<NativeFrameModel> = cache::read_or_cleanup(cache, key::prod_key(route))?;
+    let frame = read_frame(cache, key::prod_key(route))?;
     return Ok(frame.and_then(|frame| frame.checksum));
+}
+
+fn read_frame(cache: &dyn CacheProvider, key: String) -> NBResult<Option<NativeFrameModel>> {
+    let Some(bytes) = cache.get_bytes(key.clone())? else {
+        return Ok(None);
+    };
+    let mut aligned = rkyv::util::AlignedVec::<16>::new();
+    aligned.extend_from_slice(&bytes);
+
+    return match rkyv::from_bytes::<NativeFrameModel, RkyvError>(aligned.as_slice()) {
+        Ok(frame) => Ok(Some(frame)),
+        Err(_) => {
+            let _ = cache.remove(key);
+            Ok(None)
+        }
+    };
 }
 
 pub(super) async fn clear(cache: &dyn CacheProvider, route: &str) -> NBResult<()> {
