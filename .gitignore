@@ -20,8 +20,7 @@ rustc-ice-*.txt
 platforms/android/*/.kotlin
 platforms/android/*/local.properties
 platforms/android/*/secrets.properties
-platforms/android/*/build
-platforms/android/*/core/build
+platforms/android/*/**/build
 platforms/android/*/.gradle
 platforms/android/*/*.gpg
 
