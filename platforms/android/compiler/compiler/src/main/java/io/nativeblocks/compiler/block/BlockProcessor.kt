@@ -128,7 +128,7 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                     }
                 } else {
                     val extraParam = param.getExtraParam()
-                    if (extraParam.key == "blockProps" && extraParam.type == "io.nativeblocks.core.api.provider.block.BlockProps")
+                    if (extraParam.key == "blockProps" && extraParam.type == "io.nativeblocks.runtime.api.provider.block.BlockProps")
                         extraParams.add(extraParam)
                 }
             }

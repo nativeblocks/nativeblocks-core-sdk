@@ -17,7 +17,7 @@ internal class BlockProviderVisitor(
 ) : KSVisitorVoid() {
 
     private val importNativeblocksManager =
-        ClassName("io.nativeblocks.core.api", "NativeblocksManager")
+        ClassName("io.nativeblocks.runtime.api", "NativeblocksManager")
 
     init {
         val func = FunSpec.builder("provideBlocks")

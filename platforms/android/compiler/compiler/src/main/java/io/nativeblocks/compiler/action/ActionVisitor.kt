@@ -37,16 +37,16 @@ internal class ActionVisitor(
 ) : KSVisitorVoid() {
 
     override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
-        val importINativeAction = ClassName("io.nativeblocks.core.api.provider.action", "INativeAction")
-        val importActionProps = ClassName("io.nativeblocks.core.api.provider.action", "ActionProps")
-        val importNativeBlockModel = ClassName("io.nativeblocks.core.api.provider.model", "NativeBlockModel")
-        val importNativeActionModel = ClassName("io.nativeblocks.core.api.provider.model", "NativeActionModel")
-        val importNativeActionTriggerModel = ClassName("io.nativeblocks.core.api.provider.model", "NativeActionTriggerModel")
-        val importNativeActionTriggerThen = ClassName("io.nativeblocks.core.api.provider.model", "NativeActionTriggerThen")
-        val importNativeActionTriggerPropertyModel = ClassName("io.nativeblocks.core.api.provider.model", "NativeActionTriggerPropertyModel")
-        val importNativeActionTriggerDataModel = ClassName("io.nativeblocks.core.api.provider.model", "NativeActionTriggerDataModel")
+        val importINativeAction = ClassName("io.nativeblocks.runtime.api.provider.action", "INativeAction")
+        val importActionProps = ClassName("io.nativeblocks.runtime.api.provider.action", "ActionProps")
+        val importNativeBlockModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeBlockModel")
+        val importNativeActionModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionModel")
+        val importNativeActionTriggerModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionTriggerModel")
+        val importNativeActionTriggerThen = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionTriggerThen")
+        val importNativeActionTriggerPropertyModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionTriggerPropertyModel")
+        val importNativeActionTriggerDataModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionTriggerDataModel")
         val importCoroutinesLaunch = ClassName("kotlinx.coroutines", "launch")
-        val importNativeblocksManager = ClassName("io.nativeblocks.core.api", "NativeblocksManager")
+        val importNativeblocksManager = ClassName("io.nativeblocks.runtime.api", "NativeblocksManager")
         val importActionKlass = ClassName(consumerPackageName, klass.simpleName.asString())
 
         val func = FunSpec.builder("handle")

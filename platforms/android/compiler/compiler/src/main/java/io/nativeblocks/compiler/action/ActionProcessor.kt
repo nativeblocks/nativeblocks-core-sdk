@@ -148,7 +148,7 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
                         }
                     } else {
                         val extraParam = param.getExtraParam()
-                        if (extraParam.key == "actionProps" && extraParam.type == "io.nativeblocks.core.api.provider.action.ActionProps")
+                        if (extraParam.key == "actionProps" && extraParam.type == "io.nativeblocks.runtime.api.provider.action.ActionProps")
                             extraParams.add(extraParam)
                     }
                 }
