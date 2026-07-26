@@ -14,15 +14,15 @@
 # stays unreachable.
 #
 # The generated bindings are already sealed to `package` visibility by
-# core/scripts/seal-bindings.sh, so no FFI type can appear in the host's public
+# runtime/scripts/seal-bindings.sh, so no FFI type can appear in the host's public
 # API. This script VERIFIES that (see "Sealing check") rather than trusting it:
 # the only thing the host interface may say about the FFI module is its import
 # line, which is then dropped along with the module itself.
 #
 # Prereqs:
 #   - xccache  (gem install xccache)
-#   - Frameworks/NativeblocksRuntimeCFFI.xcframework, copied from core/dist/ios/
-#     after running core/scripts/build-ios.sh
+#   - Frameworks/NativeblocksRuntimeCFFI.xcframework, copied from runtime/dist/ios/
+#     after running runtime/scripts/build-ios.sh
 #
 # Usage:  ./build_xcframework.sh
 set -euo pipefail
@@ -55,7 +55,7 @@ command -v xccache >/dev/null || {
 
 if [ ! -d "$VENDORED_CFFI" ]; then
   echo "❌ $VENDORED_CFFI not found."
-  echo "   Run core/scripts/build-ios.sh, then copy core/dist/ios/$C_MODULE.xcframework here."
+  echo "   Run runtime/scripts/build-ios.sh, then copy runtime/dist/ios/$C_MODULE.xcframework here."
   exit 1
 fi
 
@@ -63,7 +63,7 @@ for slice in "${SLICES[@]}"; do
   if ! ls "$VENDORED_CFFI/$slice"/*.a >/dev/null 2>&1; then
     echo "❌ $VENDORED_CFFI/$slice holds no static library (.a)."
     echo "   The Rust side has to be a staticlib for it to link INTO the framework."
-    echo "   Re-run core/scripts/build-ios.sh."
+    echo "   Re-run runtime/scripts/build-ios.sh."
     exit 1
   fi
 done
@@ -135,7 +135,7 @@ for slice in "${SLICES[@]}"; do
     if [ -n "$leaks" ]; then
       echo "❌ $FFI_MODULE leaked into the public interface of $slice:"
       echo "$leaks"
-      echo "   Re-run core/scripts/seal-bindings.sh and rebuild."
+      echo "   Re-run runtime/scripts/seal-bindings.sh and rebuild."
       exit 1
     fi
     # Sealed clean: the import is the only mention, and the module it names is
@@ -192,7 +192,7 @@ for slice in "${SLICES[@]}"; do
 
   # The Rust entry points must be defined here, not expected from elsewhere.
   # Zero usually means the archive was built with a stripping profile — see
-  # [profile.ios-static] in core/Cargo.toml.
+  # [profile.ios-static] in runtime/Cargo.toml.
   if [ "$rust_defined" = "0" ]; then
     echo "   ❌ $slice contains no Rust entry points — the static library did not merge"
     exit 1

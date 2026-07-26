@@ -1,5 +1,5 @@
 [package]
-name = "core_runtime"
+name = "nativeblocks-runtime"
 version = "1.0.0"
 edition = "2024"
 

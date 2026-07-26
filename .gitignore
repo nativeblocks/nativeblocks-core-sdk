@@ -1,8 +1,8 @@
-# Rust build output (core/)
-/core/target
-/core/debug
-/core/dist
-/core/bindings
+# Rust build output (runtime/)
+/runtime/target
+/runtime/debug
+/runtime/dist
+/runtime/bindings
 
 # Rust
 Cargo.lock
@@ -17,6 +17,7 @@ rustc-ice-*.txt
 .idea/
 .DS_Store
 
+platforms/android/*/.kotlin
 platforms/android/*/local.properties
 platforms/android/*/secrets.properties
 platforms/android/*/build

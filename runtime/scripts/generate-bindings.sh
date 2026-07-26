@@ -12,7 +12,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Matches [lib] name in Cargo.toml (the shipped artifact name, not the
-# crate/package name `core_runtime`).
+# crate/package name `nativeblocks-runtime`).
 LIB_NAME="nativeblocks_runtime"
 
 case "$(uname -s)" in
