@@ -11,9 +11,9 @@ use crate::plugin::config::repository;
 
 pub(crate) struct Client {
     http: Arc<dyn HttpClient>,
+    cache: Arc<dyn CacheProvider>,
     environment: NativeblocksEnvironment,
     sdk_config: SdkConfig,
-    cache: Arc<dyn CacheProvider>,
     install_id: Mutex<Option<String>>,
     config: AsyncMutex<Option<NativeProjectConfigModel>>,
 }
@@ -21,15 +21,15 @@ pub(crate) struct Client {
 impl Client {
     pub(crate) fn new(
         http: Arc<dyn HttpClient>,
+        cache: Arc<dyn CacheProvider>,
         environment: NativeblocksEnvironment,
         sdk_config: SdkConfig,
-        cache: Arc<dyn CacheProvider>,
     ) -> Self {
         return Self {
             http,
+            cache,
             environment,
             sdk_config,
-            cache,
             install_id: Mutex::new(None),
             config: AsyncMutex::new(None),
         };
@@ -57,22 +57,45 @@ impl Client {
 
     async fn project_config(&self, install_id: &str) -> NBResult<NativeProjectConfigModel> {
         let mut guard = self.config.lock().await;
+
+        // In-memory copy is authoritative for this process.
         if let Some(config) = guard.as_ref() {
             return Ok(config.clone());
         }
-        if let Some(config) = repository::read_cached_config(self.cache.as_ref())? {
-            *guard = Some(config.clone());
-            return Ok(config);
+
+        // Durable last-known-good config; never TTL-expired.
+        let cached = repository::read_cached_config(self.cache.as_ref())?;
+
+        // Still within the refresh window: serve cache, skip the network.
+        if let Some(config) = &cached {
+            if repository::is_config_fresh(self.cache.as_ref())? {
+                *guard = Some(config.clone());
+                return Ok(config.clone());
+            }
         }
-        let config = repository::fetch_project_config(
+
+        // Stale or first run: try to refresh, but never lose a usable config.
+        match repository::fetch_project_config(
             self.http.as_ref(),
             &self.environment,
             &self.sdk_config,
             install_id,
         )
-        .await?;
-        repository::write_cached_config(self.cache.as_ref(), &config)?;
-        *guard = Some(config.clone());
-        return Ok(config);
+        .await
+        {
+            Ok(config) => {
+                repository::write_cached_config(self.cache.as_ref(), &config)?;
+                *guard = Some(config.clone());
+                Ok(config)
+            }
+            // Backend/offline/expired-key failure: fall back to the cached config.
+            Err(error) => match cached {
+                Some(config) => {
+                    *guard = Some(config.clone());
+                    Ok(config)
+                }
+                None => Err(error),
+            },
+        }
     }
 }

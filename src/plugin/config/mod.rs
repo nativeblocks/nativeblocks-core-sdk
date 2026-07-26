@@ -17,5 +17,5 @@ pub(crate) fn build_client(
     http: Arc<dyn HttpClient>,
     cache: Arc<dyn CacheProvider>,
 ) -> Arc<Client> {
-    return Arc::new(Client::new(http, environment, sdk_config, cache));
+    return Arc::new(Client::new(http, cache, environment, sdk_config));
 }

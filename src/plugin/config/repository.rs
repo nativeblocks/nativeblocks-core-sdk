@@ -6,7 +6,9 @@ use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::library::net::{HttpClient, map, with_headers};
 use crate::library::result::NBResult;
 use crate::plugin::config::dto::ProjectConfigDataDto;
-use crate::plugin::config::key::{DEFAULT_GATEWAY_TYPE, INSTALL_ID_KEY, PROJECT_CONFIG_KEY};
+use crate::plugin::config::key::{
+    DEFAULT_GATEWAY_TYPE, INSTALL_ID_KEY, PROJECT_CONFIG_FRESH_KEY, PROJECT_CONFIG_KEY,
+};
 use crate::plugin::config::model::{NativeProjectConfigModel, ProjectConfigGatewayModel};
 
 const PROJECT_CONFIG_TTL_MILLIS: i64 = 1 * 24 * 60 * 60 * 1000;
@@ -34,14 +36,19 @@ pub(crate) fn read_cached_config(
     return cache::read_or_cleanup(cache, PROJECT_CONFIG_KEY.to_string());
 }
 
+pub(crate) fn is_config_fresh(cache: &dyn CacheProvider) -> NBResult<bool> {
+    return Ok(cache.has(PROJECT_CONFIG_FRESH_KEY.to_string())?);
+}
+
 pub(crate) fn write_cached_config(
     cache: &dyn CacheProvider,
     config: &NativeProjectConfigModel,
 ) -> NBResult<()> {
     let bytes = util::to_bytes(config)?;
+    cache.save_bytes(PROJECT_CONFIG_KEY.to_string(), bytes, None)?;
     cache.save_bytes(
-        PROJECT_CONFIG_KEY.to_string(),
-        bytes,
+        PROJECT_CONFIG_FRESH_KEY.to_string(),
+        b"1".to_vec(),
         Some(PROJECT_CONFIG_TTL_MILLIS),
     )?;
     return Ok(());
