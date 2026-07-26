@@ -5,10 +5,12 @@ edition = "2024"
 
 [lib]
 name = "nativeblocks_runtime"
-# - lib:    used by the uniffi-bindgen binary
-# - cdylib: shared library consumed by Android (.so) and the iOS xcframework
-#           (.dylib). No staticlib: nothing links the .a (see build-ios.sh).
-crate-type = ["lib", "cdylib"]
+# - lib:       used by the uniffi-bindgen binary
+# - cdylib:    shared library consumed by Android (.so)
+# - staticlib: archive linked INTO the iOS framework binary, so the host SDK
+#              ships as one self-contained xcframework with no separate Rust
+#              library for consumers to embed (see build-ios.sh).
+crate-type = ["lib", "cdylib", "staticlib"]
 
 # Binary that drives UniFFI binding generation for Kotlin & Swift.
 [[bin]]
@@ -42,3 +44,23 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+
+# iOS ships a staticlib so the Rust code can be linked INTO the framework binary.
+# A static archive is not a link product, so neither of the release profile's
+# size settings can be inherited:
+#
+#   lto    Fat LTO has no root set for a staticlib — nothing "uses" the crate
+#          from inside the archive — so it internalizes every #[no_mangle]
+#          extern "C" entry point. The .a still builds, still contains the
+#          crate's object, and that object has zero global symbols.
+#   strip  Removes the symbol table an archive needs; a cdylib survives it only
+#          because its exports are recorded separately.
+#
+# Both are silent: you get a plausible-looking 60 MB .a that resolves nothing.
+# Android keeps using [profile.release] — it ships the cdylib, which is a link
+# product and therefore unaffected. Nothing here reaches an app either way: the
+# consuming linker drops every section it does not reference.
+[profile.ios-static]
+inherits = "release"
+lto = false
+strip = false

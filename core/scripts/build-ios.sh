@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Build the iOS artifact: a dynamic .xcframework (device + simulator) plus the
-# Swift binding, staged under dist/ios/ ready to drop into an Xcode project.
+# Build the iOS artifact: a static .xcframework (device + simulator) plus the
+# Swift binding, staged under dist/ios/ ready to drop into the host package.
 #
-# We ship the cdylib (.dylib), not the staticlib (.a). A static archive is an
-# un-dead-stripped bag of every object file (~58 MB/slice); the linked+stripped
-# dynamic library is the same code with unused sections gone (~1.3 MB/slice).
-# Consumers "Embed & Sign" it instead of "Do Not Embed".
+# We ship the staticlib (.a), not the cdylib. The host SDK is distributed as ONE
+# self-contained NativeblocksRuntime.xcframework, so the Rust code has to be
+# linkable INTO that framework's binary rather than sitting beside it as a second
+# artifact consumers must Embed & Sign. A static archive is an un-dead-stripped
+# bag of every object file (~58 MB/slice), but nothing of that reaches the app:
+# the consumer's linker drops the unreferenced sections, landing at roughly the
+# same size the dynamic library would have been.
 #
 # Prereqs (macOS + Xcode):
 #   - rustup target add aarch64-apple-ios aarch64-apple-ios-sim
@@ -19,7 +22,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Artifact name comes from [lib] name in Cargo.toml, not the package name.
-DYLIB="libnativeblocks_runtime.dylib"
+STATICLIB="libnativeblocks_runtime.a"
 OUT="dist/ios"
 # Both names come from uniffi.toml [bindings.swift]. They are deliberately NOT
 # the host's name (NativeblocksRuntime), which stays free for its public API:
@@ -38,27 +41,35 @@ export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios="-isysroot $(xcrun --sdk iphon
 export BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios_sim="-isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) --target=arm64-apple-ios13.0-simulator"
 export IPHONEOS_DEPLOYMENT_TARGET=13.0
 
-echo "==> Building dynamic lib for device + simulator targets (arm64 only)"
-cargo build --release --target aarch64-apple-ios     --features script-quickjs-bindgen
-cargo build --release --target aarch64-apple-ios-sim --features script-quickjs-bindgen
+# Built with the ios-static profile, not release: release turns on lto and strip,
+# either of which silently empties a static archive of its extern "C" entry
+# points. See the comment on [profile.ios-static] in Cargo.toml.
+PROFILE="ios-static"
+
+echo "==> Building static lib for device + simulator targets (arm64 only)"
+cargo build --profile "$PROFILE" --target aarch64-apple-ios     --features script-quickjs-bindgen
+cargo build --profile "$PROFILE" --target aarch64-apple-ios-sim --features script-quickjs-bindgen
+
+DEV_LIB="target/aarch64-apple-ios/$PROFILE/$STATICLIB"
+SIM_LIB="target/aarch64-apple-ios-sim/$PROFILE/$STATICLIB"
+
+# A staticlib built with the wrong profile fails silently: the archive is still
+# ~60 MB and still contains the crate's object, but LTO has internalized every
+# entry point, so it resolves nothing at link time and the error only surfaces
+# in a consumer's app. Check here, where the cause is one line away.
+echo "==> Verifying the archives export the UniFFI entry points"
+for lib in "$DEV_LIB" "$SIM_LIB"; do
+  # `|| true`: nm exits non-zero on members with no symbols, which is normal.
+  count=$(nm -gU "$lib" 2>/dev/null | grep -cE "_(uniffi|ffi)_nativeblocks_runtime" || true)
+  if [ "$count" -eq 0 ]; then
+    echo "❌ $lib exports no UniFFI entry points."
+    echo "   [profile.$PROFILE] must keep lto and strip off — see Cargo.toml."
+    exit 1
+  fi
+  echo "    $(basename "$(dirname "$lib")")/$STATICLIB: $count entry points"
+done
 
 mkdir -p "$OUT/headers"
-
-# Stage the dylibs and rewrite their install name to @rpath so the loader finds
-# them once Xcode embeds them under the app's Frameworks/ dir. Cargo stamps the
-# absolute build path as LC_ID_DYLIB, which would not resolve on-device. Staged
-# under target/ so the intermediates never ship in dist/.
-STAGE="target/ios-dylibs"
-DEV_DYLIB="$STAGE/device/$DYLIB"
-SIM_DYLIB="$STAGE/sim/$DYLIB"
-rm -rf "$STAGE"
-mkdir -p "$STAGE/device" "$STAGE/sim"
-cp "target/aarch64-apple-ios/release/$DYLIB"     "$DEV_DYLIB"
-cp "target/aarch64-apple-ios-sim/release/$DYLIB" "$SIM_DYLIB"
-
-echo "==> Rewriting install names to @rpath (required for embedding)"
-install_name_tool -id "@rpath/$DYLIB" "$DEV_DYLIB"
-install_name_tool -id "@rpath/$DYLIB" "$SIM_DYLIB"
 
 echo "==> Generating Swift bindings + headers dir"
 ./scripts/generate-bindings.sh >/dev/null
@@ -68,12 +79,12 @@ cp "bindings/swift/${C_MOD}.modulemap" "$OUT/headers/module.modulemap"
 echo "==> Assembling xcframework"
 rm -rf "$XCF"
 xcodebuild -create-xcframework \
-  -library "$DEV_DYLIB" -headers "$OUT/headers" \
-  -library "$SIM_DYLIB" -headers "$OUT/headers" \
+  -library "$DEV_LIB" -headers "$OUT/headers" \
+  -library "$SIM_LIB" -headers "$OUT/headers" \
   -output "$XCF"
 
 cp "bindings/swift/${SWIFT_MOD}.swift" "$OUT/"
 
 echo "==> Done. iOS artifacts in $OUT/"
-echo "    - add $XCF to the package as a binaryTarget named $C_MOD (Embed & Sign)"
-echo "    - add $OUT/${SWIFT_MOD}.swift to the $SWIFT_MOD target, NOT to the host target"
+echo "    - copy $XCF into the host package's Frameworks/ (binaryTarget $C_MOD)"
+echo "    - copy $OUT/${SWIFT_MOD}.swift into the $SWIFT_MOD target, NOT the host target"

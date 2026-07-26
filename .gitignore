@@ -17,10 +17,23 @@ rustc-ice-*.txt
 .idea/
 .DS_Store
 
-
 platforms/android/*/local.properties
 platforms/android/*/secrets.properties
 platforms/android/*/build
 platforms/android/*/core/build
 platforms/android/*/.gradle
 platforms/android/*/*.gpg
+
+platforms/ios/*/.build
+platforms/ios/*/.swiftpm
+platforms/ios/*/.xcworkspace
+platforms/ios/*/xcuserdata
+platforms/ios/*/output
+platforms/ios/*/*.hmap
+platforms/ios/*/*.ipa
+platforms/ios/*/*.dSYM.zip
+platforms/ios/*/*.dSYM
+platforms/ios/*/Package
+platforms/ios/*/Package.pins
+platforms/ios/*/Package.resolved
+platforms/ios/*/*.xcodeproj
