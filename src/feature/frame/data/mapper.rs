@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::feature::frame::data::dto::{
+use crate::feature::frame::data::network::dto::{
     NativeActionDto, NativeActionTriggerDataDto, NativeActionTriggerDto,
     NativeActionTriggerPropertyDto, NativeBlockDataDto, NativeBlockDto, NativeBlockPropertyDto,
     NativeBlockSlotDto, NativeFrameDto, NativeVariableDto,
@@ -129,6 +129,7 @@ fn map_block(dto: NativeBlockDto, key_by_id: &HashMap<String, String>) -> Native
         data: keyed(dto.data, map_block_data, |model| &model.key),
         properties: keyed(dto.properties, map_block_property, |model| &model.key),
         slots: keyed(dto.slots, map_block_slot, |model| &model.slot),
+        sub_keys: HashMap::new(),
     };
 }
 

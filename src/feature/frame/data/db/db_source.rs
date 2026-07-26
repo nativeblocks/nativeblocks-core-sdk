@@ -5,7 +5,7 @@ use crate::feature::frame::domain::model::NativeFrameModel;
 use crate::library::cache::CacheProvider;
 use crate::library::result::{ErrorModel, NBResult};
 
-pub(super) fn get_frame(
+pub(in crate::feature::frame::data) fn get_frame(
     cache: &dyn CacheProvider,
     route: &str,
     development_mode: bool,
@@ -21,12 +21,12 @@ pub(super) fn get_frame(
     };
 }
 
-pub(super) fn not_cached() -> ErrorModel {
+pub(in crate::feature::frame::data) fn not_cached() -> ErrorModel {
     return ErrorModel::cache(key::message::FRAME_NOT_CACHED)
         .with_code(error_code::FRAME_NOT_CACHED);
 }
 
-pub(super) fn save_frame(
+pub(in crate::feature::frame::data) fn save_frame(
     cache: &dyn CacheProvider,
     route: &str,
     frame: &NativeFrameModel,
@@ -41,12 +41,18 @@ pub(super) fn save_frame(
         .map_err(|error| ErrorModel::cache(error.to_string()))?
         .to_vec();
     cache.save_bytes(cache_key, bytes, None)?;
+    if production {
+        let checksum = frame.checksum.clone().unwrap_or_default();
+        cache.save_bytes(key::prod_checksum_key(route), checksum.into_bytes(), None)?;
+    }
     return Ok(());
 }
 
-pub(super) fn cached_checksum(cache: &dyn CacheProvider, route: &str) -> NBResult<Option<String>> {
-    let frame = read_frame(cache, key::prod_key(route))?;
-    return Ok(frame.and_then(|frame| frame.checksum));
+pub(in crate::feature::frame::data) fn cached_checksum(cache: &dyn CacheProvider, route: &str) -> NBResult<Option<String>> {
+    let Some(bytes) = cache.get_bytes(key::prod_checksum_key(route))? else {
+        return Ok(None);
+    };
+    return Ok(String::from_utf8(bytes).ok().filter(|checksum| !checksum.is_empty()));
 }
 
 fn read_frame(cache: &dyn CacheProvider, key: String) -> NBResult<Option<NativeFrameModel>> {
@@ -65,13 +71,14 @@ fn read_frame(cache: &dyn CacheProvider, key: String) -> NBResult<Option<NativeF
     };
 }
 
-pub(super) async fn clear(cache: &dyn CacheProvider, route: &str) -> NBResult<()> {
+pub(in crate::feature::frame::data) async fn clear(cache: &dyn CacheProvider, route: &str) -> NBResult<()> {
     cache.remove(key::dev_key(route))?;
     cache.remove(key::prod_key(route))?;
+    cache.remove(key::prod_checksum_key(route))?;
     return Ok(());
 }
 
-pub(super) async fn clear_all(cache: &dyn CacheProvider, routes: &[String]) -> NBResult<()> {
+pub(in crate::feature::frame::data) async fn clear_all(cache: &dyn CacheProvider, routes: &[String]) -> NBResult<()> {
     for route in routes {
         clear(cache, route).await?;
     }

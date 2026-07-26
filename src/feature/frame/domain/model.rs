@@ -4,20 +4,20 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 pub struct NativeFrameModel {
     pub checksum: Option<String>,
+    pub root_key: Option<String>,
     pub variables: HashMap<String, NativeVariableModel>,
     pub blocks: HashMap<String, NativeBlockModel>,
-    pub root_key: Option<String>,
     pub actions: HashMap<String, Vec<NativeActionModel>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeVariableModel {
     pub key: String,
     pub value: String,
     pub variable_type: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeBlockModel {
     pub id: String,
     pub parent_id: String,
@@ -31,6 +31,7 @@ pub struct NativeBlockModel {
     pub data: HashMap<String, NativeBlockDataModel>,
     pub properties: HashMap<String, NativeBlockPropertyModel>,
     pub slots: HashMap<String, NativeBlockSlotModel>,
+    pub sub_keys: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
@@ -42,19 +43,19 @@ pub struct NativeBlockPropertyModel {
     pub property_type: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeBlockDataModel {
     pub key: String,
     pub value: String,
     pub data_type: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeBlockSlotModel {
     pub slot: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeActionModel {
     pub id: String,
     pub key: String,
@@ -62,7 +63,7 @@ pub struct NativeActionModel {
     pub triggers: Vec<NativeActionTriggerModel>,
 }
 
-#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeActionTriggerModel {
     pub name: String,
     pub id: String,
@@ -74,7 +75,7 @@ pub struct NativeActionTriggerModel {
     pub data: HashMap<String, NativeActionTriggerDataModel>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Archive, Serialize, Deserialize, uniffi::Enum)]
 pub enum NativeActionTriggerThen {
     Success,
     Failure,
@@ -93,14 +94,14 @@ impl NativeActionTriggerThen {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeActionTriggerPropertyModel {
     pub key: String,
     pub value: String,
     pub property_type: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeActionTriggerDataModel {
     pub key: String,
     pub value: String,

@@ -1,11 +1,9 @@
 pub(crate) mod cloud_repository;
 
 mod channels;
-mod cloud_source;
-mod db_source;
-mod dto;
+mod db;
 mod key;
 mod logging;
 mod mapper;
-mod memory_source;
-mod query;
+mod memory;
+mod network;

@@ -4,13 +4,13 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
 
 use crate::feature::frame::data::channels::FrameChannels;
-use crate::feature::frame::data::cloud_source;
-use crate::feature::frame::data::db_source;
+use crate::feature::frame::data::db::db_source;
+use crate::feature::frame::data::network::cloud_source::{self, SyncOutcome};
 use crate::feature::frame::data::key::{
     GATEWAY_FRAME, GATEWAY_FRAME_PRODUCTION, GATEWAY_FRAME_PRODUCTION_CHECKSUM,
 };
 use crate::feature::frame::data::logging;
-use crate::feature::frame::data::memory_source::MemoryFrameSource;
+use crate::feature::frame::data::memory::memory_source::MemoryFrameSource;
 use crate::feature::frame::domain::model::NativeFrameModel;
 use crate::feature::frame::domain::repository::{FrameRepository, FrameResult};
 use crate::library::cache::CacheProvider;
@@ -67,22 +67,30 @@ impl CloudFrameRepository {
         return Some(frame);
     }
 
-    async fn from_network(&self, route: &str, parameters: &HashMap<String, String>) -> FrameResult {
+    async fn fetch(
+        &self,
+        route: &str,
+        parameters: &HashMap<String, String>,
+    ) -> NBResult<SyncOutcome> {
         let result = self.download_frame(route, parameters).await;
         match &result {
             Ok(_) => logging::log_sync_success(&self.logger, &self.sdk_config, route),
             Err(error) => logging::log_sync_failure(&self.logger, &self.sdk_config, route, error),
         }
-        let frame = Arc::new(result?);
+        return result;
+    }
+
+    fn store(&self, route: &str, frame: NativeFrameModel) -> Arc<NativeFrameModel> {
+        let frame = Arc::new(frame);
         self.memory.save_frame(route, frame.clone());
-        return Ok(frame);
+        return frame;
     }
 
     async fn download_frame(
         &self,
         route: &str,
         parameters: &HashMap<String, String>,
-    ) -> NBResult<NativeFrameModel> {
+    ) -> NBResult<SyncOutcome> {
         let frame = self.config_client.gateway(GATEWAY_FRAME).await?;
         let production = self.config_client.gateway(GATEWAY_FRAME_PRODUCTION).await?;
         let checksum = self
@@ -114,15 +122,33 @@ impl FrameRepository for CloudFrameRepository {
             let _ = self.sync(route, parameters).await;
             return Ok(());
         }
-        let result = self.from_network(route, parameters).await;
-        self.channels.publish(route, result.clone());
-        return result.map(|_| ());
+        match self.fetch(route, parameters).await {
+            Ok(SyncOutcome::Updated(frame)) => {
+                let frame = self.store(route, frame);
+                self.channels.publish(route, Ok(frame));
+                Ok(())
+            }
+            Ok(SyncOutcome::Unchanged) => {
+                let error = db_source::not_cached();
+                self.channels.publish(route, Err(error.clone()));
+                Err(error)
+            }
+            Err(error) => {
+                self.channels.publish(route, Err(error.clone()));
+                Err(error)
+            }
+        }
     }
 
     async fn sync(&self, route: &str, parameters: &HashMap<String, String>) -> NBResult<()> {
-        let frame = self.from_network(route, parameters).await?;
-        if self.environment.development_mode() {
-            self.channels.publish(route, Ok(frame));
+        match self.fetch(route, parameters).await? {
+            SyncOutcome::Updated(frame) => {
+                let frame = self.store(route, frame);
+                if self.environment.development_mode() {
+                    self.channels.publish(route, Ok(frame));
+                }
+            }
+            SyncOutcome::Unchanged => {}
         }
         return Ok(());
     }

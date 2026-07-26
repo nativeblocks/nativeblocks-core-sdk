@@ -1,4 +1,4 @@
-pub(super) const FRAME_QUERY: &str = r#"query frame($route: String!,$parameter: FrameParameterInput) {
+pub(in crate::feature::frame::data) const FRAME_QUERY: &str = r#"query frame($route: String!,$parameter: FrameParameterInput) {
     frame(route: $route, parameter: $parameter) {
         variables {
             key
@@ -56,7 +56,7 @@ pub(super) const FRAME_QUERY: &str = r#"query frame($route: String!,$parameter: 
     }
 }"#;
 
-pub(super) const FRAME_PRODUCTION_QUERY: &str = r#"query frameProduction($route: String!, $parameter: FrameParameterInput) {
+pub(in crate::feature::frame::data) const FRAME_PRODUCTION_QUERY: &str = r#"query frameProduction($route: String!, $parameter: FrameParameterInput) {
     frameProduction(route: $route, parameter: $parameter) {
         checksum
         variables {
@@ -115,7 +115,7 @@ pub(super) const FRAME_PRODUCTION_QUERY: &str = r#"query frameProduction($route:
     }
 }"#;
 
-pub(super) const FRAME_PRODUCTION_CHECKSUM_QUERY: &str = r#"query frameProductionChecksum($route: String!, $parameter: FrameParameterInput) {
+pub(in crate::feature::frame::data) const FRAME_PRODUCTION_CHECKSUM_QUERY: &str = r#"query frameProductionChecksum($route: String!, $parameter: FrameParameterInput) {
     frameProductionChecksum(route: $route, parameter: $parameter) {
         checksum
         route

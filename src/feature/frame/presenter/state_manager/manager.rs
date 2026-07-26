@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Weak};
 
-use crate::feature::frame::domain::model::NativeBlockModel;
 use crate::feature::frame::domain::repository::{FrameRepository, FrameResult};
 use crate::feature::frame::presenter::logging::FrameLogger;
-use crate::feature::frame::presenter::state_manager::frame_api::FrameStateObserver;
+use crate::feature::frame::presenter::state_manager::api::FrameStateObserver;
 use crate::feature::frame::presenter::state_manager::model::FrameChangeType;
-use crate::feature::frame::presenter::state_manager::state::InternalState;
 use crate::feature::frame::presenter::state_manager::observer::Observer;
+use crate::feature::frame::presenter::state_manager::state::InternalState;
 use crate::library::result::ErrorType;
 use crate::plugin::global_parameter::GlobalParameterProvider;
 
@@ -82,10 +81,23 @@ impl FrameStateManager {
             .emit(FrameChangeType::Diff { frame: diff });
     }
 
-    pub(super) fn change_block(&self, block: &NativeBlockModel) {
+    pub(super) fn change_block_property(
+        &self,
+        block_key: String,
+        property_key: String,
+        value_mobile: String,
+        value_tablet: String,
+        value_desktop: String,
+    ) {
         let diff = {
             let mut internal_state = self.internal_state.lock().unwrap();
-            internal_state.change_block(block)
+            internal_state.change_block_property(
+                block_key,
+                property_key,
+                value_mobile,
+                value_tablet,
+                value_desktop,
+            )
         };
         let Some(diff) = diff else {
             return;
@@ -103,7 +115,7 @@ impl FrameStateManager {
         let full = {
             let mut internal_state = self.internal_state.lock().unwrap();
             *internal_state = match result {
-                Ok(frame) => InternalState::ready(&frame, args, globals),
+                Ok(frame) => InternalState::ready(frame, args, globals),
                 Err(error) => {
                     if error.error_type == ErrorType::Cache {
                         InternalState::fresh()
@@ -112,7 +124,7 @@ impl FrameStateManager {
                     }
                 }
             };
-            internal_state.frame.clone()
+            internal_state.to_frame_full()
         };
         let rendering_state = full.state.clone();
         self.subscription

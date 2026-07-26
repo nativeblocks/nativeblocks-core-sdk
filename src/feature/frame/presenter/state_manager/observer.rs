@@ -1,4 +1,4 @@
-use crate::feature::frame::presenter::state_manager::frame_api::FrameStateObserver;
+use crate::feature::frame::presenter::state_manager::api::FrameStateObserver;
 use crate::feature::frame::presenter::state_manager::model::FrameChangeType;
 use std::sync::{Arc, Mutex};
 use tokio::task::JoinHandle;

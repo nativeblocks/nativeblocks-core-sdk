@@ -13,6 +13,10 @@ pub(super) fn prod_key(route: &str) -> String {
     return format!("FRAME_PROD::{route}");
 }
 
+pub(super) fn prod_checksum_key(route: &str) -> String {
+    return format!("FRAME_PROD_CHECKSUM::{route}");
+}
+
 pub(in crate::feature::frame) mod error_code {
     pub(in crate::feature::frame) const FRAME_NOT_CACHED: &str = "NB0101";
     pub(in crate::feature::frame) const FRAME_PRODUCTION_SYNC: &str = "NB0102";

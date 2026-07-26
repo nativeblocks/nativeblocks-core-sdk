@@ -1,7 +1,7 @@
-mod frame_api;
+mod api;
 mod manager;
 pub mod model;
-mod state;
 pub mod observer;
+mod state;
 
 pub use manager::FrameStateManager;

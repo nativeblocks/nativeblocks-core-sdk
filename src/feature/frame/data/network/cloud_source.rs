@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
-use crate::feature::frame::data::db_source;
-use crate::feature::frame::data::dto::{NativeFrameDataDto, NativeFrameProductionChecksumDataDto};
+use crate::feature::frame::data::db::db_source;
+use crate::feature::frame::data::db::query;
 use crate::feature::frame::data::key::{self, error_code};
 use crate::feature::frame::data::mapper;
-use crate::feature::frame::data::query;
+use crate::feature::frame::data::network::dto::{
+    NativeFrameDataDto, NativeFrameProductionChecksumDataDto,
+};
 use crate::feature::frame::domain::model::NativeFrameModel;
 use crate::library::cache::CacheProvider;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
@@ -16,7 +18,12 @@ use crate::library::result::NBResult;
 use crate::plugin::config::ProjectConfigGatewayModel;
 use serde_json::{Value, json};
 
-pub(super) async fn sync_cloud(
+pub(in crate::feature::frame::data) enum SyncOutcome {
+    Updated(NativeFrameModel),
+    Unchanged,
+}
+
+pub(in crate::feature::frame::data) async fn sync_cloud(
     http: &dyn HttpClient,
     environment: &NativeblocksEnvironment,
     sdk_config: &SdkConfig,
@@ -28,9 +35,9 @@ pub(super) async fn sync_cloud(
     install_id: &str,
     route: &str,
     parameters: &HashMap<String, String>,
-) -> NBResult<NativeFrameModel> {
+) -> NBResult<SyncOutcome> {
     if environment.development_mode() {
-        return fetch_dev_frame(
+        let frame = fetch_dev_frame(
             http,
             environment,
             sdk_config,
@@ -41,11 +48,12 @@ pub(super) async fn sync_cloud(
             route,
             parameters,
         )
-        .await;
+        .await?;
+        return Ok(SyncOutcome::Updated(frame));
     }
 
-    return match db_source::cached_checksum(cache, route)? {
-        None => {
+    let outcome = match db_source::cached_checksum(cache, route)? {
+        None => SyncOutcome::Updated(
             fetch_production_frame(
                 http,
                 environment,
@@ -57,8 +65,8 @@ pub(super) async fn sync_cloud(
                 route,
                 parameters,
             )
-            .await
-        }
+            .await?,
+        ),
         Some(cached) => {
             let remote = fetch_production_checksum(
                 http,
@@ -72,23 +80,26 @@ pub(super) async fn sync_cloud(
             )
             .await?;
             if remote != cached {
-                fetch_production_frame(
-                    http,
-                    environment,
-                    sdk_config,
-                    cache,
-                    frame_production_gateway,
-                    graphql_endpoint,
-                    install_id,
-                    route,
-                    parameters,
+                SyncOutcome::Updated(
+                    fetch_production_frame(
+                        http,
+                        environment,
+                        sdk_config,
+                        cache,
+                        frame_production_gateway,
+                        graphql_endpoint,
+                        install_id,
+                        route,
+                        parameters,
+                    )
+                    .await?,
                 )
-                .await
             } else {
-                db_source::get_frame(cache, route, false)
+                SyncOutcome::Unchanged
             }
         }
     };
+    return Ok(outcome);
 }
 
 async fn fetch_dev_frame(

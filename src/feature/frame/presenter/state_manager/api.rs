@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::feature::frame::domain::model::NativeBlockModel;
 use crate::feature::frame::presenter::state_manager::FrameStateManager;
 use crate::feature::frame::presenter::state_manager::model::FrameChangeType;
 
@@ -32,7 +31,20 @@ impl FrameStateManager {
         self.change_variable(&key, value);
     }
 
-    pub fn update_block(&self, block: NativeBlockModel) {
-        self.change_block(&block);
+    pub fn update_block_property(
+        &self,
+        block_key: String,
+        property_key: String,
+        value_mobile: String,
+        value_tablet: String,
+        value_desktop: String,
+    ) {
+        self.change_block_property(
+            block_key,
+            property_key,
+            value_mobile,
+            value_tablet,
+            value_desktop,
+        );
     }
 }
