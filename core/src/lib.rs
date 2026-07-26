@@ -5,7 +5,7 @@
 #![allow(clippy::match_single_binding)] // versioned cache-migration dispatch placeholder
 #![allow(clippy::wildcard_in_or_patterns)] // explicit default branch documents intent
 
-uniffi::setup_scaffolding!("NativeblocksCoreEngine");
+uniffi::setup_scaffolding!("NativeblocksRuntime");
 
 pub(crate) mod di;
 pub mod feature;
@@ -29,12 +29,12 @@ use crate::plugin::global_parameter::GlobalParameterClient;
 use crate::plugin::logger;
 
 #[derive(uniffi::Object)]
-pub struct NativeblocksEngine {
+pub struct NativeblocksRuntime {
     container: Arc<Container>,
 }
 
 #[uniffi::export]
-impl NativeblocksEngine {
+impl NativeblocksRuntime {
     #[uniffi::constructor]
     pub fn new(
         environment: NativeblocksEnvironment,

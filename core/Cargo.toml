@@ -1,14 +1,14 @@
 [package]
-name = "core_nativeblocks"
+name = "core_runtime"
 version = "1.0.0"
 edition = "2024"
 
 [lib]
-name = "core_nativeblocks"
-# - lib:       used by the uniffi-bindgen binary
-# - cdylib:    shared library consumed by Android (.so) / Flutter (Dart FFI)
-# - staticlib: static library linked into the iOS xcframework
-crate-type = ["lib", "cdylib", "staticlib"]
+name = "nativeblocks_runtime"
+# - lib:    used by the uniffi-bindgen binary
+# - cdylib: shared library consumed by Android (.so) and the iOS xcframework
+#           (.dylib). No staticlib: nothing links the .a (see build-ios.sh).
+crate-type = ["lib", "cdylib"]
 
 # Binary that drives UniFFI binding generation for Kotlin & Swift.
 [[bin]]

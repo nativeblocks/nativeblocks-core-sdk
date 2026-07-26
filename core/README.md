@@ -1,39 +1,12 @@
 # nativeblocks-core-sdk
 
-Client **core SDK** for NativeBlocks, written in Rust. It is the headless engine
-that fetches frames/scaffold/localization, caches them, resolves variables, and
-manages frame state. It ships as a single cross-platform core that mobile apps
-(Android, iOS, Flutter, React Native) consume over FFI — **rendering stays
-per-platform**; the engine never renders, it owns all non-UI logic.
-
-## Architecture
-
-```
-            ┌─────────────────────────────┐
-            │   Rust core (this crate)     │   ← frames, cache, state, logic
-            │   #[uniffi::export] surface  │
-            └──────────────┬──────────────┘
-                           │  UniFFI
-        ┌──────────────────┼──────────────────┐
-        ▼                  ▼                  ▼
-   Kotlin binding     Swift binding       Dart binding
-   (Android)          (iOS)               (Flutter)
-        │                  │                  │
-   Android app        iOS app            Flutter app
-   (rendering + platform code written on top)
-```
-
-The library is built as `cdylib` (Android `.so`, Flutter, and the iOS
-xcframework `.dylib`) and `lib` (the bindgen binary + Rust tests). FFI bindings
-are generated from the compiled library — they are build artifacts, not committed.
+The Rust core of the NativeBlocks runtime. It ships inside the Android and iOS
+host SDKs over UniFFI bindings that are generated, never committed.
 
 ## Setup
 
 ```bash
-# Build (debug) with the default features (reqwest transport + bundled SQLite).
-cargo build
-
-# Run the test suite.
+cargo build     # debug, default features (reqwest transport + bundled SQLite)
 cargo test
 ```
 
@@ -41,8 +14,6 @@ cargo test
 > (`cc`/Clang) on `PATH` (default on macOS/Linux).
 
 ## Deploy
-
-Run one script, then copy the generated folders into your host apps.
 
 ### 1. One-time setup (per machine)
 
@@ -58,54 +29,93 @@ cargo install cargo-ndk                              # + install the Android NDK
 
 ```bash
 ./scripts/release.sh                  # all platforms your machine supports
-# or: ./scripts/release.sh android ios flutter
+# or: ./scripts/release.sh android ios
 ```
 
-This cleans `dist/`, builds the Rust core per platform, generates the bindings,
-and stages everything under `dist/`. Toolchains you don't have are **skipped with
-a hint** (e.g. iOS off macOS), not errors. The layout:
+This cleans `dist/`, builds the core per platform, generates and seals the
+bindings, and stages everything under `dist/`. Toolchains you don't have are
+**skipped with a hint** (e.g. iOS off macOS), not errors.
 
 ```
 dist/
-├── android/  jniLibs/<abi>/libcore.so + java/io/nativeblocks/core/engine/core.kt
-├── ios/      NativeblocksCoreSdk.xcframework/ + NativeblocksCoreEngine.swift
-└── flutter/  android/jniLibs/… + ios/… + lib/core.dart
+├── android/  jniLibs/<abi>/libnativeblocks_runtime.so
+│             java/io/nativeblocks/runtime/ffi/NativeblocksRuntime.kt
+└── ios/      NativeblocksRuntimeCFFI.xcframework/ + NativeblocksRuntimeFFI.swift
 ```
 
-Each `dist/<platform>/COPY-INSTRUCTIONS.txt` repeats the copy steps next to the files.
+Single-platform rebuilds: `scripts/build-android.sh`, `build-ios.sh`. Each
+`dist/<platform>/COPY-INSTRUCTIONS.txt` repeats the copy steps next to the files.
 
-### 3. Copy into the host project
+### 3. Copy into the host SDK
 
-**Android**
+Every release: re-run `./scripts/release.sh` and re-copy — a Rust change moves
+the native libs _and_ the bindings together.
+
+**Android** — both folders go into the **same** Gradle module as the hand-written
+wrapper (the binding is `internal`, which is module-scoped):
 
 | Copy from                | Into                         |
 | ------------------------ | ---------------------------- |
 | `dist/android/jniLibs/*` | `<module>/src/main/jniLibs/` |
 | `dist/android/java/*`    | `<module>/src/main/java/`    |
 
-Add once to the module's `build.gradle.kts`, then `./gradlew :app:installDebug`:
-
 ```kotlin
-dependencies {
-    implementation("net.java.dev.jna:jna:5.14.0@aar")
-}
+// <module>/build.gradle.kts
+kotlin { explicitApi() }
+dependencies { implementation("net.java.dev.jna:jna:5.14.0@aar") }
 ```
 
-**iOS** — then run from Xcode (`⌘R`):
+**iOS** — one SwiftPM package, two targets (the binding is `package`-visible, so
+it must live in the same package as the wrapper). Xcode 15+:
 
-| Add to the Xcode target                    | How                         |
-| ------------------------------------------ | --------------------------- |
-| `dist/ios/NativeblocksCoreSdk.xcframework` | drag in → **Embed & Sign**  |
-| `dist/ios/NativeblocksCoreEngine.swift`    | add to the target's sources |
+| Copy from                                     | Into                                 |
+| --------------------------------------------- | ------------------------------------ |
+| `dist/ios/NativeblocksRuntimeCFFI.xcframework` | `Frameworks/` → **Embed & Sign**    |
+| `dist/ios/NativeblocksRuntimeFFI.swift`       | `Sources/NativeblocksRuntimeFFI/`    |
 
-**Flutter** — then run `flutter run`:
+```swift
+products: [
+    .library(name: "NativeblocksRuntime", targets: ["NativeblocksRuntime"]),  // the only product
+],
+targets: [
+    .target(name: "NativeblocksRuntime", dependencies: ["NativeblocksRuntimeFFI"]),
+    .target(name: "NativeblocksRuntimeFFI", dependencies: ["NativeblocksRuntimeCFFI"]),
+    .binaryTarget(name: "NativeblocksRuntimeCFFI",
+                  path: "Frameworks/NativeblocksRuntimeCFFI.xcframework"),
+]
+```
 
-| Copy from                        | Into                                         |
-| -------------------------------- | -------------------------------------------- |
-| `dist/flutter/android/jniLibs/*` | `<plugin>/android/src/main/jniLibs/`         |
-| `dist/flutter/lib/*`             | `<plugin>/lib/`                              |
-| `dist/flutter/ios/*`             | embed in `<plugin>/ios/` (see internals doc) |
+## Host SDK boundary
 
-> Every release: re-run `./scripts/release.sh` and re-copy — a Rust change moves
-> the native libs _and_ the bindings together. Single-platform rebuilds:
-> `scripts/build-android.sh`, `scripts/build-ios.sh`, `scripts/build-flutter.sh`.
+App developers depend on the host SDK and must never name anything UniFFI
+generated. Two things enforce that, by the compiler rather than by review.
+
+**Names.** Everything generated carries an FFI postfix, leaving the clean names
+free for the host's public API:
+
+| | generated (private) | host (public) |
+| --- | --- | --- |
+| Android | package `io.nativeblocks.runtime.ffi` | `io.nativeblocks.runtime` |
+| iOS | `NativeblocksRuntimeFFI` + `NativeblocksRuntimeCFFI` (C shim) | `NativeblocksRuntime` |
+
+**Sealing.** `generate-bindings.sh` runs `seal-bindings.sh` before anything is
+staged, so no unsealed copy exists: Kotlin top-level declarations → `internal`,
+Swift `public`/`open` → `package`. A wrapper that leaks a generated type then
+*fails to build*:
+
+```kotlin
+public fun frames(): ffi.FrameClient = client
+//     ^ error: public function exposes its internal return type FrameClient
+```
+
+So the wrapper holds generated objects privately and maps to host-owned types on
+the way out. Inbound is the half that is easy to miss: UniFFI generates callback
+interfaces the host implements (`HttpClient`, `CacheProvider`, `Logger`,
+`ScriptBridge`, `FrameStateObserver`). Declare your own public interface and an
+`internal`/`package` adapter for each, so consumers never import the FFI package.
+
+Not closed, but unreachable by accident: Java callers on Android can see
+`…runtime.ffi.*` (Kotlin `internal` is public in bytecode); a consumer can import
+`NativeblocksRuntimeCFFI` directly if the xcframework is in their search path;
+the cdylib exports `uniffi_*`/`ffi_*` C symbols by construction (`dlsym`-only, no
+headers ship).

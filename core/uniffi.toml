@@ -1,9 +1,15 @@
 [bindings.kotlin]
-package_name = "io.nativeblocks.core.engine"
-cdylib_name = "core"
+# Subpackage of the host's own package; sealed to `internal` by seal-bindings.sh.
+package_name = "io.nativeblocks.runtime.ffi"
+# Name JNA loads — must match [lib] name in Cargo.toml (libnativeblocks_runtime.so).
+cdylib_name = "nativeblocks_runtime"
 generate_immutable_records = true
 disable_java_cleaner = true
 
 [bindings.swift]
-module_name = "NativeblocksCoreEngine"
+# Swift module holding the generated bindings, sealed to `package` visibility.
+module_name = "NativeblocksRuntimeFFI"
+# The lower-level C module (header + modulemap + xcframework). Set explicitly:
+# it defaults to "{module_name}FFI", which would read NativeblocksRuntimeFFIFFI.
+ffi_module_name = "NativeblocksRuntimeCFFI"
 generate_immutable_records = true

@@ -15,7 +15,11 @@ cd "$(dirname "$0")/.."
 
 OUT="dist/android"
 JNILIBS="$OUT/jniLibs"
-KT_PKG="io/nativeblocks/core/engine"
+# Mirrors [bindings.kotlin] package_name in uniffi.toml. The `ffi` leaf keeps the
+# generated code out of the host's own io.nativeblocks.runtime package; it is
+# sealed to `internal`, so it must be compiled in the same Gradle module as the
+# wrapper (README.md).
+KT_PKG="io/nativeblocks/runtime/ffi"
 
 echo "==> Cross-compiling release .so for all ABIs"
 # rquickjs has no prebuilt bindings for the Android triples; generate them at
@@ -31,9 +35,9 @@ echo "==> Generating Kotlin bindings"
 
 echo "==> Staging Kotlin binding"
 mkdir -p "$OUT/java/$KT_PKG"
-cp "bindings/kotlin/$KT_PKG/NativeblocksCoreEngine.kt" "$OUT/java/$KT_PKG/"
+cp "bindings/kotlin/$KT_PKG/NativeblocksRuntime.kt" "$OUT/java/$KT_PKG/"
 
 echo "==> Done. Android artifacts in $OUT/"
 echo "    - copy $JNILIBS/* into  <module>/src/main/jniLibs/"
-echo "    - copy $OUT/java/*  into <module>/src/main/java/"
+echo "    - copy $OUT/java/*  into <module>/src/main/java/  (same module as the wrapper)"
 echo "    - add dependency:  net.java.dev.jna:jna:5.14.0@aar"

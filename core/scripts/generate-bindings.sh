@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
-# Regenerate FFI bindings for Kotlin, Swift, and Dart from the Rust core.
+# Regenerate FFI bindings for Kotlin and Swift from the Rust core.
+#
+# Kotlin and Swift are the only FFI surfaces.
 #
 # Prereqs:
 #   - Rust toolchain (cargo)
-#   - Dart generator:  cargo install uniffi-bindgen-dart --version 0.1.3
 #
 # Usage:  ./scripts/generate-bindings.sh
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-LIB_NAME="core_nativeblocks"
+# Matches [lib] name in Cargo.toml (the shipped artifact name, not the
+# crate/package name `core_runtime`).
+LIB_NAME="nativeblocks_runtime"
 
 case "$(uname -s)" in
   Darwin) EXT="dylib" ;;
@@ -31,12 +34,9 @@ echo "==> Generating Swift bindings -> bindings/swift"
 cargo run --quiet --bin uniffi-bindgen -- \
   generate --library "$LIB" --language swift --out-dir bindings/swift
 
-echo "==> Generating Dart bindings -> bindings/dart"
-if command -v uniffi-bindgen-dart >/dev/null 2>&1; then
-  uniffi-bindgen-dart generate --library "$LIB" --out-dir bindings/dart
-else
-  echo "    SKIPPED: uniffi-bindgen-dart not installed." >&2
-  echo "    Run: cargo install uniffi-bindgen-dart --version 0.1.3" >&2
-fi
+# Visibility is narrowed here, before anything is staged or copied into a host
+# SDK, so there is never an unsealed copy of the bindings to pick up by mistake.
+echo "==> Sealing bindings (generated FFI must not become host public API)"
+./scripts/seal-bindings.sh
 
 echo "==> Done."

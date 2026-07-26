@@ -18,11 +18,16 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-DYLIB="libcore_nativeblocks.dylib"
+# Artifact name comes from [lib] name in Cargo.toml, not the package name.
+DYLIB="libnativeblocks_runtime.dylib"
 OUT="dist/ios"
-XCF="$OUT/NativeblocksCoreSdk.xcframework"
-# Swift module name configured in uniffi.toml ([bindings.swift] module_name).
-MOD="NativeblocksCoreEngine"
+# Both names come from uniffi.toml [bindings.swift]. They are deliberately NOT
+# the host's name (NativeblocksRuntime), which stays free for its public API:
+#   SWIFT_MOD  generated Swift bindings, sealed to `package` visibility
+#   C_MOD      low-level C module — header, modulemap and the xcframework
+SWIFT_MOD="NativeblocksRuntimeFFI"
+C_MOD="NativeblocksRuntimeCFFI"
+XCF="$OUT/$C_MOD.xcframework"
 
 # rquickjs ships no prebuilt bindings for the apple-ios triples, so generate
 # them with libclang (--features script-quickjs-bindgen). Point bindgen at the
@@ -57,8 +62,8 @@ install_name_tool -id "@rpath/$DYLIB" "$SIM_DYLIB"
 
 echo "==> Generating Swift bindings + headers dir"
 ./scripts/generate-bindings.sh >/dev/null
-cp "bindings/swift/${MOD}FFI.h"         "$OUT/headers/"
-cp "bindings/swift/${MOD}FFI.modulemap" "$OUT/headers/module.modulemap"
+cp "bindings/swift/${C_MOD}.h"         "$OUT/headers/"
+cp "bindings/swift/${C_MOD}.modulemap" "$OUT/headers/module.modulemap"
 
 echo "==> Assembling xcframework"
 rm -rf "$XCF"
@@ -67,8 +72,8 @@ xcodebuild -create-xcframework \
   -library "$SIM_DYLIB" -headers "$OUT/headers" \
   -output "$XCF"
 
-cp "bindings/swift/${MOD}.swift" "$OUT/"
+cp "bindings/swift/${SWIFT_MOD}.swift" "$OUT/"
 
 echo "==> Done. iOS artifacts in $OUT/"
-echo "    - add $XCF to your target (Embed & Sign)"
-echo "    - add $OUT/${MOD}.swift to your target"
+echo "    - add $XCF to the package as a binaryTarget named $C_MOD (Embed & Sign)"
+echo "    - add $OUT/${SWIFT_MOD}.swift to the $SWIFT_MOD target, NOT to the host target"

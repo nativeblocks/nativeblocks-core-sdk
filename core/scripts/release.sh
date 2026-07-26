@@ -6,11 +6,11 @@
 # each with a COPY-INSTRUCTIONS.txt telling you exactly where the files go.
 #
 # Missing toolchains are SKIPPED with a hint (not a hard failure), so you can run
-# it on Linux (Android + Flutter/Android) or macOS (all platforms).
+# it on Linux (Android only) or macOS (both platforms).
 #
 # Usage:
-#   ./scripts/release.sh                      # build all available platforms
-#   ./scripts/release.sh android ios flutter  # build only the listed ones
+#   ./scripts/release.sh              # build all available platforms
+#   ./scripts/release.sh android ios  # build only the listed ones
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -21,7 +21,17 @@ OS="$(uname -s)"
 
 # ---- pick platforms -------------------------------------------------------
 REQUESTED=("$@")
-[[ ${#REQUESTED[@]} -eq 0 ]] && REQUESTED=(android ios flutter)
+[[ ${#REQUESTED[@]} -eq 0 ]] && REQUESTED=(android ios)
+
+# Reject unknown names rather than cleaning dist/ and then staging nothing.
+for p in "${REQUESTED[@]}"; do
+  case "$p" in
+    android|ios) ;;
+    *)
+      echo "ERROR: unknown platform '$p' (expected: android, ios)" >&2
+      exit 2 ;;
+  esac
+done
 
 want() { printf '%s\n' "${REQUESTED[@]}" | grep -qx "$1"; }
 
@@ -84,23 +94,12 @@ if want ios; then
   [[ -d "$DIST/ios" ]] && cat > "$DIST/ios/COPY-INSTRUCTIONS.txt" <<'EOF'
 ADD TO YOUR XCODE TARGET:
 
-  dist/ios/NativeblocksCoreSdk.xcframework  ->  drag in, set "Embed & Sign"
-  dist/ios/NativeblocksCoreEngine.swift     ->  add to the target's sources
-EOF
-fi
+  dist/ios/NativeblocksRuntimeCFFI.xcframework  ->  binaryTarget "NativeblocksRuntimeCFFI"
+  dist/ios/NativeblocksRuntimeFFI.swift         ->  Sources/NativeblocksRuntimeFFI/
 
-# ---- Flutter --------------------------------------------------------------
-if want flutter; then
-  ready=0
-  if have cargo-ndk && have uniffi-bindgen-dart && target_installed aarch64-linux-android; then ready=1; fi
-  run_platform flutter ./scripts/build-flutter.sh \
-    "install: cargo-ndk + uniffi-bindgen-dart --version 0.1.3 + android triples" "$ready"
-  [[ -d "$DIST/flutter" ]] && cat > "$DIST/flutter/COPY-INSTRUCTIONS.txt" <<'EOF'
-COPY INTO YOUR FLUTTER FFI PLUGIN:
-
-  dist/flutter/android/jniLibs/*  ->  <plugin>/android/src/main/jniLibs/
-  dist/flutter/lib/*              ->  <plugin>/lib/
-  dist/flutter/ios/*              ->  embed in <plugin>/ios/ (see deployment-internals.md)
+The generated Swift is sealed to `package` visibility: put it in its own
+NativeblocksRuntimeFFI target, in the SAME package as the host target. The host
+target (NativeblocksRuntime) is the only product consumers can import.
 EOF
 fi
 
@@ -114,9 +113,8 @@ Built on $OS. Each platform folder has a COPY-INSTRUCTIONS.txt with exact paths.
 | -------- | --------------------- | ------------------------------------------------ |
 | Android  | \`dist/android/\`     | \`jniLibs/\` + \`java/\` of a library module     |
 | iOS      | \`dist/ios/\`         | the \`.xcframework\` + \`.swift\` into the target |
-| Flutter  | \`dist/flutter/\`     | \`jniLibs/\` + \`lib/\` of an FFI plugin         |
 
-See README.md (quick) and docs/deployment-internals.md (details).
+See README.md for the copy steps and the host SDK boundary rules.
 EOF
 
 # ---- summary --------------------------------------------------------------
