@@ -18,7 +18,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-DYLIB="libnativeblocks_core_sdk.dylib"
+DYLIB="libcore_nativeblocks.dylib"
 OUT="dist/ios"
 XCF="$OUT/NativeblocksCoreSdk.xcframework"
 # Swift module name configured in uniffi.toml ([bindings.swift] module_name).

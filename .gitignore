@@ -1,17 +1,14 @@
-/target
-/dist
+# Rust build output (core/)
+/core/target
+/core/debug
+/core/dist
+/core/bindings
 
-debug
-target
-
+# Rust
 Cargo.lock
-
 **/*.rs.bk
 *.pdb
 **/mutants.out*/
 rustc-ice-*.txt
 .idea/
-
 .DS_Store
-
-/bindings

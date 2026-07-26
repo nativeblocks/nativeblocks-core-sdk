@@ -42,9 +42,7 @@ cargo test
 
 ## Deploy
 
-Run one script, then copy the generated folders into your host apps. For _why_
-each step works the way it does, see
-**[docs/deployment-internals.md](docs/deployment-internals.md)**.
+Run one script, then copy the generated folders into your host apps.
 
 ### 1. One-time setup (per machine)
 
@@ -69,9 +67,9 @@ a hint** (e.g. iOS off macOS), not errors. The layout:
 
 ```
 dist/
-├── android/  jniLibs/<abi>/libnativeblocks_core_sdk.so + java/io/nativeblocks/core/engine/nativeblocks_core_sdk.kt
+├── android/  jniLibs/<abi>/libcore.so + java/io/nativeblocks/core/engine/core.kt
 ├── ios/      NativeblocksCoreSdk.xcframework/ + NativeblocksCoreEngine.swift
-└── flutter/  android/jniLibs/… + ios/… + lib/nativeblocks_core_sdk.dart
+└── flutter/  android/jniLibs/… + ios/… + lib/core.dart
 ```
 
 Each `dist/<platform>/COPY-INSTRUCTIONS.txt` repeats the copy steps next to the files.

@@ -1,6 +1,6 @@
 [bindings.kotlin]
 package_name = "io.nativeblocks.core.engine"
-cdylib_name = "nativeblocks_core_sdk"
+cdylib_name = "core"
 generate_immutable_records = true
 disable_java_cleaner = true
 

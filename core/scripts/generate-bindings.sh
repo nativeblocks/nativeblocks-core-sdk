@@ -10,7 +10,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-LIB_NAME="nativeblocks_core_sdk"
+LIB_NAME="core_nativeblocks"
 
 case "$(uname -s)" in
   Darwin) EXT="dylib" ;;

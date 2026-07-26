@@ -31,7 +31,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   export IPHONEOS_DEPLOYMENT_TARGET=13.0
   cargo build --release --target aarch64-apple-ios --features script-quickjs-bindgen
   mkdir -p "$OUT/ios"
-  cp target/aarch64-apple-ios/release/libnativeblocks_core_sdk.a "$OUT/ios/" 2>/dev/null || true
+  cp target/aarch64-apple-ios/release/libcore_nativeblocks.a "$OUT/ios/" 2>/dev/null || true
 fi
 
 echo "==> Generating Dart binding"

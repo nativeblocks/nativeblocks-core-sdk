@@ -1,10 +1,10 @@
 [package]
-name = "nativeblocks_core_sdk"
+name = "core_nativeblocks"
 version = "1.0.0"
 edition = "2024"
 
 [lib]
-name = "nativeblocks_core_sdk"
+name = "core_nativeblocks"
 # - lib:       used by the uniffi-bindgen binary
 # - cdylib:    shared library consumed by Android (.so) / Flutter (Dart FFI)
 # - staticlib: static library linked into the iOS xcframework
