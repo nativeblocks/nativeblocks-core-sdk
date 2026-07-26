@@ -1,0 +1,2 @@
+io.nativeblocks.compiler.block.BlockProcessorProvider
+io.nativeblocks.compiler.action.ActionProcessorProvider

@@ -1,0 +1,104 @@
+package io.nativeblocks.runtime.engine
+
+import io.nativeblocks.runtime.api.provider.logger.LoggerEventLevel
+import io.nativeblocks.runtime.api.provider.model.NativeActionModel
+import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerDataModel
+import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerModel
+import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerPropertyModel
+import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerThen
+import io.nativeblocks.runtime.api.provider.model.NativeBlockDataModel
+import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
+import io.nativeblocks.runtime.api.provider.model.NativeBlockPropertyModel
+import io.nativeblocks.runtime.api.provider.model.NativeBlockSlotModel
+import io.nativeblocks.runtime.api.provider.model.NativeVariableModel
+import io.nativeblocks.runtime.engine.LoggerEventLevel as EngineLoggerEventLevel
+import io.nativeblocks.runtime.engine.NativeActionModel as EngineActionModel
+import io.nativeblocks.runtime.engine.NativeActionTriggerModel as EngineActionTriggerModel
+import io.nativeblocks.runtime.engine.NativeActionTriggerThen as EngineActionTriggerThen
+import io.nativeblocks.runtime.engine.NativeBlockModel as EngineBlockModel
+import io.nativeblocks.runtime.engine.NativeVariableModel as EngineVariableModel
+
+internal fun EngineLoggerEventLevel.toDomain(): LoggerEventLevel {
+    return when (this) {
+        EngineLoggerEventLevel.DEBUG -> LoggerEventLevel.DEBUG
+        EngineLoggerEventLevel.INFO -> LoggerEventLevel.INFO
+        EngineLoggerEventLevel.WARNING -> LoggerEventLevel.WARNING
+        EngineLoggerEventLevel.ERROR -> LoggerEventLevel.ERROR
+    }
+}
+
+internal fun EngineVariableModel.toDomain(): NativeVariableModel {
+    return NativeVariableModel(
+        key = key,
+        value = value,
+        type = variableType,
+    )
+}
+
+internal fun EngineBlockModel.toDomain(): NativeBlockModel {
+    return NativeBlockModel(
+        id = id,
+        parentId = parentId,
+        parentKey = parentKey,
+        version = version,
+        slot = slot,
+        keyType = keyType,
+        key = key,
+        visibility = visibility,
+        position = position,
+        data = data.mapValues { (_, data) ->
+            NativeBlockDataModel(key = data.key, value = data.value, type = data.dataType)
+        },
+        properties = properties.mapValues { (_, property) ->
+            NativeBlockPropertyModel(
+                key = property.key,
+                valueMobile = property.valueMobile,
+                valueTablet = property.valueTablet,
+                valueDesktop = property.valueDesktop,
+                type = property.propertyType,
+            )
+        },
+        slots = slots.mapValues { (_, slot) -> NativeBlockSlotModel(slot = slot.slot) },
+        subBlocks = subKeys,
+    )
+}
+
+internal fun EngineActionModel.toDomain(): NativeActionModel {
+    return NativeActionModel(
+        id = id,
+        key = key,
+        event = event,
+        triggers = triggers.map { it.toDomain() },
+    )
+}
+
+private fun EngineActionTriggerModel.toDomain(): NativeActionTriggerModel {
+    return NativeActionTriggerModel(
+        name = name,
+        id = id,
+        parentId = parentId,
+        version = version,
+        keyType = keyType,
+        then = then.toDomain(),
+        properties = properties.mapValues { (_, property) ->
+            NativeActionTriggerPropertyModel(
+                key = property.key,
+                value = property.value,
+                type = property.propertyType,
+            )
+        },
+        data = data.mapValues { (_, data) ->
+            NativeActionTriggerDataModel(key = data.key, value = data.value, type = data.dataType)
+        },
+        subTriggers = emptyList(),
+    )
+}
+
+private fun EngineActionTriggerThen.toDomain(): NativeActionTriggerThen {
+    return when (this) {
+        EngineActionTriggerThen.SUCCESS -> NativeActionTriggerThen.SUCCESS
+        EngineActionTriggerThen.FAILURE -> NativeActionTriggerThen.FAILURE
+        EngineActionTriggerThen.NEXT -> NativeActionTriggerThen.NEXT
+        EngineActionTriggerThen.END -> NativeActionTriggerThen.END
+    }
+}

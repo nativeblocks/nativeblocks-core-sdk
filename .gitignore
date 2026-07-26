@@ -10,5 +10,17 @@ Cargo.lock
 *.pdb
 **/mutants.out*/
 rustc-ice-*.txt
+
+/exm
+
+# IDE / OS
 .idea/
 .DS_Store
+
+
+platforms/android/*/local.properties
+platforms/android/*/secrets.properties
+platforms/android/*/build
+platforms/android/*/core/build
+platforms/android/*/.gradle
+platforms/android/*/*.gpg
