@@ -1,9 +1,9 @@
 package io.nativeblocks.runtime.logger
 
 import io.nativeblocks.runtime.api.provider.logger.INativeLogger
-import io.nativeblocks.runtime.engine.Logger
-import io.nativeblocks.runtime.engine.LoggerEventLevel
-import io.nativeblocks.runtime.engine.toDomain
+import io.nativeblocks.runtime.ffi.Logger
+import io.nativeblocks.runtime.ffi.LoggerEventLevel
+import io.nativeblocks.runtime.ffi.toDomain
 
 internal class LoggerAdapter(
     private val delegate: INativeLogger,

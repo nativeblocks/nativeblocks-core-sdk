@@ -3,7 +3,7 @@
 
 @file:Suppress("NAME_SHADOWING")
 
-package io.nativeblocks.runtime.engine
+package io.nativeblocks.runtime.ffi
 
 // Common helper code.
 //
@@ -44,13 +44,15 @@ import kotlin.coroutines.resume
  * @suppress
  */
 @Structure.FieldOrder("capacity", "len", "data")
-open class RustBuffer : Structure() {
+internal open class RustBuffer : Structure() {
     // Note: `capacity` and `len` are actually `ULong` values, but JVM only supports signed values.
     // When dealing with these fields, make sure to call `toULong()`.
     @JvmField
     var capacity: Long = 0
+
     @JvmField
     var len: Long = 0
+
     @JvmField
     var data: Pointer? = null
 
@@ -66,7 +68,7 @@ open class RustBuffer : Structure() {
     companion object {
         internal fun alloc(size: ULong = 0UL) = uniffiRustCall() { status ->
             // Note: need to convert the size to a `Long` value to make this work with JVM.
-            UniffiLib.ffi_nativeblocks_core_sdk_rustbuffer_alloc(size.toLong(), status)
+            UniffiLib.ffi_nativeblocks_runtime_rustbuffer_alloc(size.toLong(), status)
         }.also {
             if (it.data == null) {
                 throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
@@ -82,7 +84,7 @@ open class RustBuffer : Structure() {
         }
 
         internal fun free(buf: RustBuffer.ByValue) = uniffiRustCall() { status ->
-            UniffiLib.ffi_nativeblocks_core_sdk_rustbuffer_free(buf, status)
+            UniffiLib.ffi_nativeblocks_runtime_rustbuffer_free(buf, status)
         }
     }
 
@@ -103,6 +105,7 @@ open class RustBuffer : Structure() {
 internal open class ForeignBytes : Structure() {
     @JvmField
     var len: Int = 0
+
     @JvmField
     var data: Pointer? = null
 
@@ -117,7 +120,7 @@ internal open class ForeignBytes : Structure() {
  *
  * @suppress
  */
-public interface FfiConverter<KotlinType, FfiType> {
+internal interface FfiConverter<KotlinType, FfiType> {
     // Convert an FFI type to a Kotlin type
     fun lift(value: FfiType): KotlinType
 
@@ -184,7 +187,7 @@ public interface FfiConverter<KotlinType, FfiType> {
  *
  * @suppress
  */
-public interface FfiConverterRustBuffer<KotlinType> : FfiConverter<KotlinType, RustBuffer.ByValue> {
+internal interface FfiConverterRustBuffer<KotlinType> : FfiConverter<KotlinType, RustBuffer.ByValue> {
     override fun lift(value: RustBuffer.ByValue) = liftFromRustBuffer(value)
     override fun lower(value: KotlinType) = lowerIntoRustBuffer(value)
 }
@@ -199,6 +202,7 @@ internal const val UNIFFI_CALL_UNEXPECTED_ERROR = 2.toByte()
 internal open class UniffiRustCallStatus : Structure() {
     @JvmField
     var code: Byte = 0
+
     @JvmField
     var error_buf: RustBuffer.ByValue = RustBuffer.ByValue()
 
@@ -226,14 +230,14 @@ internal open class UniffiRustCallStatus : Structure() {
     }
 }
 
-class InternalException(message: String) : kotlin.Exception(message)
+internal class InternalException(message: String) : kotlin.Exception(message)
 
 /**
  * Each top-level error class has a companion object that can lift the error from the call status's rust buffer
  *
  * @suppress
  */
-interface UniffiRustCallStatusErrorHandler<E> {
+internal interface UniffiRustCallStatusErrorHandler<E> {
     fun lift(error_buf: RustBuffer.ByValue): E;
 }
 
@@ -280,7 +284,7 @@ private fun <E : kotlin.Exception> uniffiCheckCallStatus(
  *
  * @suppress
  */
-object UniffiNullRustCallStatusErrorHandler : UniffiRustCallStatusErrorHandler<InternalException> {
+internal object UniffiNullRustCallStatusErrorHandler : UniffiRustCallStatusErrorHandler<InternalException> {
     override fun lift(error_buf: RustBuffer.ByValue): InternalException {
         RustBuffer.free(error_buf)
         return InternalException("Unexpected CALL_ERROR")
@@ -383,7 +387,7 @@ private fun findLibraryName(componentName: String): String {
     if (libOverride != null) {
         return libOverride
     }
-    return "nativeblocks_core_sdk"
+    return "nativeblocks_runtime"
 }
 
 // Define FFI callback types
@@ -1009,171 +1013,162 @@ internal open class UniffiVTableCallbackInterfaceScriptBridge(
 // We now use JNA's "direct mapping" - unclear if same considerations apply exactly.
 internal object IntegrityCheckingUniffiLib {
     init {
-        Native.register(
-            IntegrityCheckingUniffiLib::class.java,
-            findLibraryName(componentName = "NativeblocksCoreEngine")
-        )
+        Native.register(IntegrityCheckingUniffiLib::class.java, findLibraryName(componentName = "NativeblocksRuntime"))
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_func_dispose_instance(
+    external fun uniffi_nativeblocks_runtime_checksum_func_dispose_instance(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_func_warmup_instance(
+    external fun uniffi_nativeblocks_runtime_checksum_func_provide_logger(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_func_warmup_instance_async(
+    external fun uniffi_nativeblocks_runtime_checksum_func_remove_logger(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_func_provide_logger(
+    external fun uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_experiment_client(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_func_remove_logger(
+    external fun uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_frame_client(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_nativeblocksengine_experiment_client(
+    external fun uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_global_parameter_client(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_nativeblocksengine_frame_client(
+    external fun uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_localization_client(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_nativeblocksengine_global_parameter_client(
+    external fun uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_scaffold_client(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_nativeblocksengine_localization_client(
+    external fun uniffi_nativeblocks_runtime_checksum_method_experimentclient_get_experiment(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_nativeblocksengine_scaffold_client(
+    external fun uniffi_nativeblocks_runtime_checksum_method_frameclient_clear(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_experimentclient_get_experiment(
+    external fun uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_frameclient_clear(
+    external fun uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_frameclient_clear_all(
+    external fun uniffi_nativeblocks_runtime_checksum_method_frameclient_sync_frame(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_frameclient_state_manager(
+    external fun uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_frameclient_sync_frame(
+    external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_release(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_framestateobserver_on_frame_change(
+    external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_framestatemanager_release(
+    external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_framestatemanager_setup_frame(
+    external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_framestatemanager_update_block_property(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationclient_get_localization(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_framestatemanager_update_variable(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationclient_set_language_code(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationclient_get_localization(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationclient_state_manager(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationclient_set_language_code(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationclient_sync_localization(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationclient_state_manager(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationclient_translate(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationclient_sync_localization(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_localization_state(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationclient_translate(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_observe(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_localization_state(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_release(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_observe(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_set_language_code(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_release(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_setup_localization(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_set_language_code(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_translate(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_setup_localization(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_state_changed(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_translate(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_localization_changed(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationstateobserver_on_state_changed(
+    external fun uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_language_code_changed(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationstateobserver_on_localization_changed(
+    external fun uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_get_scaffold(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_localizationstateobserver_on_language_code_changed(
+    external fun uniffi_nativeblocks_runtime_checksum_method_cacheprovider_save_bytes(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_scaffoldclient_get_scaffold(
+    external fun uniffi_nativeblocks_runtime_checksum_method_cacheprovider_get_bytes(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_save_bytes(
+    external fun uniffi_nativeblocks_runtime_checksum_method_cacheprovider_remove(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_get_bytes(
+    external fun uniffi_nativeblocks_runtime_checksum_method_cacheprovider_clear(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_remove(
+    external fun uniffi_nativeblocks_runtime_checksum_method_cacheprovider_has(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_clear(
+    external fun uniffi_nativeblocks_runtime_checksum_method_cacheprovider_dispose(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_has(
+    external fun uniffi_nativeblocks_runtime_checksum_method_httpclient_get(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_dispose(
+    external fun uniffi_nativeblocks_runtime_checksum_method_httpclient_post(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_httpclient_get(
+    external fun uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_get(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_httpclient_post(
+    external fun uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_set(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_globalparameterclient_get(
+    external fun uniffi_nativeblocks_runtime_checksum_method_scriptengine_evaluate(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_globalparameterclient_set(
+    external fun uniffi_nativeblocks_runtime_checksum_method_scriptbridge_get_variable(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_scriptengine_evaluate(
+    external fun uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_scriptbridge_get_variable(
+    external fun uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_block_property(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_scriptbridge_update_variable(
+    external fun uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_scriptbridge_update_block_property(
+    external fun uniffi_nativeblocks_runtime_checksum_constructor_scriptengine_new(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_constructor_nativeblocksengine_new(
+    external fun uniffi_nativeblocks_runtime_checksum_method_logger_log(
     ): Int
 
-    external fun uniffi_nativeblocks_core_sdk_checksum_constructor_scriptengine_new(
-    ): Int
-
-    external fun uniffi_nativeblocks_core_sdk_checksum_method_logger_log(
-    ): Int
-
-    external fun ffi_nativeblocks_core_sdk_uniffi_contract_version(
+    external fun ffi_nativeblocks_runtime_uniffi_contract_version(
     ): Int
 
 
@@ -1188,7 +1183,7 @@ internal object UniffiLib {
 
 
     init {
-        Native.register(UniffiLib::class.java, findLibraryName(componentName = "NativeblocksCoreEngine"))
+        Native.register(UniffiLib::class.java, findLibraryName(componentName = "NativeblocksRuntime"))
         uniffiCallbackInterfaceCacheProvider.register(this)
         uniffiCallbackInterfaceFrameStateObserver.register(this)
         uniffiCallbackInterfaceHttpClient.register(this)
@@ -1198,15 +1193,15 @@ internal object UniffiLib {
 
     }
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_nativeblocksengine(
+    external fun uniffi_nativeblocks_runtime_fn_clone_nativeblocksruntime(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_nativeblocksengine(
+    external fun uniffi_nativeblocks_runtime_fn_free_nativeblocksruntime(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_constructor_nativeblocksengine_new(
+    external fun uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(
         `environment`: RustBuffer.ByValue,
         `config`: RustBuffer.ByValue,
         `http`: Long,
@@ -1214,95 +1209,95 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_nativeblocksengine_experiment_client(
+    external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_experiment_client(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_nativeblocksengine_frame_client(
+    external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_frame_client(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_nativeblocksengine_global_parameter_client(
+    external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_global_parameter_client(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_nativeblocksengine_localization_client(
+    external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_localization_client(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_nativeblocksengine_scaffold_client(
+    external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_scaffold_client(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_experimentclient(
+    external fun uniffi_nativeblocks_runtime_fn_clone_experimentclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_experimentclient(
+    external fun uniffi_nativeblocks_runtime_fn_free_experimentclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_experimentclient_get_experiment(
+    external fun uniffi_nativeblocks_runtime_fn_method_experimentclient_get_experiment(
         `ptr`: Long, `key`: RustBuffer.ByValue, `cacheTtl`: RustBuffer.ByValue,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_frameclient(
+    external fun uniffi_nativeblocks_runtime_fn_clone_frameclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_frameclient(
+    external fun uniffi_nativeblocks_runtime_fn_free_frameclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_frameclient_clear(
+    external fun uniffi_nativeblocks_runtime_fn_method_frameclient_clear(
         `ptr`: Long, `route`: RustBuffer.ByValue,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_frameclient_clear_all(
+    external fun uniffi_nativeblocks_runtime_fn_method_frameclient_clear_all(
         `ptr`: Long, `routes`: RustBuffer.ByValue,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_frameclient_state_manager(
+    external fun uniffi_nativeblocks_runtime_fn_method_frameclient_state_manager(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_frameclient_sync_frame(
+    external fun uniffi_nativeblocks_runtime_fn_method_frameclient_sync_frame(
         `ptr`: Long, `route`: RustBuffer.ByValue, `parameters`: RustBuffer.ByValue,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_framestateobserver(
+    external fun uniffi_nativeblocks_runtime_fn_clone_framestateobserver(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_framestateobserver(
+    external fun uniffi_nativeblocks_runtime_fn_free_framestateobserver(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_framestateobserver(
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_framestateobserver(
         `vtable`: UniffiVTableCallbackInterfaceFrameStateObserver,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_framestateobserver_on_frame_change(
+    external fun uniffi_nativeblocks_runtime_fn_method_framestateobserver_on_frame_change(
         `ptr`: Long, `change`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_framestatemanager(
+    external fun uniffi_nativeblocks_runtime_fn_clone_framestatemanager(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_framestatemanager(
+    external fun uniffi_nativeblocks_runtime_fn_free_framestatemanager(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_framestatemanager_release(
+    external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_framestatemanager_setup_frame(
+    external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(
         `ptr`: Long, `route`: RustBuffer.ByValue, `args`: RustBuffer.ByValue, `observer`: Long,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_framestatemanager_update_block_property(
+    external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_property(
         `ptr`: Long,
         `blockKey`: RustBuffer.ByValue,
         `propertyKey`: RustBuffer.ByValue,
@@ -1312,119 +1307,119 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_framestatemanager_update_variable(
+    external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_variable(
         `ptr`: Long, `key`: RustBuffer.ByValue, `value`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_localizationclient(
+    external fun uniffi_nativeblocks_runtime_fn_clone_localizationclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_localizationclient(
+    external fun uniffi_nativeblocks_runtime_fn_free_localizationclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationclient_get_localization(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_get_localization(
         `ptr`: Long, `languageCode`: RustBuffer.ByValue,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationclient_set_language_code(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_set_language_code(
         `ptr`: Long, `languageCode`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationclient_state_manager(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_state_manager(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationclient_sync_localization(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_sync_localization(
         `ptr`: Long, `languageCode`: RustBuffer.ByValue,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationclient_translate(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_translate(
         `ptr`: Long, `key`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_localizationstatemanager(
+    external fun uniffi_nativeblocks_runtime_fn_clone_localizationstatemanager(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_localizationstatemanager(
+    external fun uniffi_nativeblocks_runtime_fn_free_localizationstatemanager(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_localization_state(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_localization_state(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_observe(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_observe(
         `ptr`: Long, `observer`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_release(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_release(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_set_language_code(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_set_language_code(
         `ptr`: Long, `languageCode`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_setup_localization(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_setup_localization(
         `ptr`: Long, `languageCode`: RustBuffer.ByValue,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_translate(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_translate(
         `ptr`: Long, `key`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_localizationstateobserver(
+    external fun uniffi_nativeblocks_runtime_fn_clone_localizationstateobserver(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_localizationstateobserver(
+    external fun uniffi_nativeblocks_runtime_fn_free_localizationstateobserver(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_localizationstateobserver(
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_localizationstateobserver(
         `vtable`: UniffiVTableCallbackInterfaceLocalizationStateObserver,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationstateobserver_on_state_changed(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_state_changed(
         `ptr`: Long, `state`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationstateobserver_on_localization_changed(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_localization_changed(
         `ptr`: Long, `localizations`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_localizationstateobserver_on_language_code_changed(
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_language_code_changed(
         `ptr`: Long, `languageCode`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_scaffoldclient(
+    external fun uniffi_nativeblocks_runtime_fn_clone_scaffoldclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_scaffoldclient(
+    external fun uniffi_nativeblocks_runtime_fn_free_scaffoldclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_scaffoldclient_get_scaffold(
+    external fun uniffi_nativeblocks_runtime_fn_method_scaffoldclient_get_scaffold(
         `ptr`: Long,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_cacheprovider(
+    external fun uniffi_nativeblocks_runtime_fn_clone_cacheprovider(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_cacheprovider(
+    external fun uniffi_nativeblocks_runtime_fn_free_cacheprovider(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_cacheprovider(
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_cacheprovider(
         `vtable`: UniffiVTableCallbackInterfaceCacheProvider,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_save_bytes(
+    external fun uniffi_nativeblocks_runtime_fn_method_cacheprovider_save_bytes(
         `ptr`: Long,
         `key`: RustBuffer.ByValue,
         `value`: RustBuffer.ByValue,
@@ -1432,75 +1427,75 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_get_bytes(
+    external fun uniffi_nativeblocks_runtime_fn_method_cacheprovider_get_bytes(
         `ptr`: Long, `key`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_remove(
+    external fun uniffi_nativeblocks_runtime_fn_method_cacheprovider_remove(
         `ptr`: Long, `key`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_clear(
+    external fun uniffi_nativeblocks_runtime_fn_method_cacheprovider_clear(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_has(
+    external fun uniffi_nativeblocks_runtime_fn_method_cacheprovider_has(
         `ptr`: Long, `key`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_dispose(
+    external fun uniffi_nativeblocks_runtime_fn_method_cacheprovider_dispose(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_httpclient(
+    external fun uniffi_nativeblocks_runtime_fn_clone_httpclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_httpclient(
+    external fun uniffi_nativeblocks_runtime_fn_free_httpclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_httpclient(
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_httpclient(
         `vtable`: UniffiVTableCallbackInterfaceHttpClient,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_httpclient_get(
+    external fun uniffi_nativeblocks_runtime_fn_method_httpclient_get(
         `ptr`: Long, `url`: RustBuffer.ByValue, `headers`: RustBuffer.ByValue,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_httpclient_post(
+    external fun uniffi_nativeblocks_runtime_fn_method_httpclient_post(
         `ptr`: Long, `url`: RustBuffer.ByValue, `headers`: RustBuffer.ByValue, `body`: RustBuffer.ByValue,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_globalparameterclient(
+    external fun uniffi_nativeblocks_runtime_fn_clone_globalparameterclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_globalparameterclient(
+    external fun uniffi_nativeblocks_runtime_fn_free_globalparameterclient(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_globalparameterclient_get(
+    external fun uniffi_nativeblocks_runtime_fn_method_globalparameterclient_get(
         `ptr`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_globalparameterclient_set(
+    external fun uniffi_nativeblocks_runtime_fn_method_globalparameterclient_set(
         `ptr`: Long, `parameters`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_scriptengine(
+    external fun uniffi_nativeblocks_runtime_fn_clone_scriptengine(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_scriptengine(
+    external fun uniffi_nativeblocks_runtime_fn_free_scriptengine(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_constructor_scriptengine_new(
+    external fun uniffi_nativeblocks_runtime_fn_constructor_scriptengine_new(
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_scriptengine_evaluate(
+    external fun uniffi_nativeblocks_runtime_fn_method_scriptengine_evaluate(
         `ptr`: Long,
         `script`: RustBuffer.ByValue,
         `bridge`: Long,
@@ -1508,27 +1503,27 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun uniffi_nativeblocks_core_sdk_fn_clone_scriptbridge(
+    external fun uniffi_nativeblocks_runtime_fn_clone_scriptbridge(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_nativeblocks_core_sdk_fn_free_scriptbridge(
+    external fun uniffi_nativeblocks_runtime_fn_free_scriptbridge(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_scriptbridge(
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_scriptbridge(
         `vtable`: UniffiVTableCallbackInterfaceScriptBridge,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_scriptbridge_get_variable(
+    external fun uniffi_nativeblocks_runtime_fn_method_scriptbridge_get_variable(
         `ptr`: Long, `key`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_scriptbridge_update_variable(
+    external fun uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_variable(
         `ptr`: Long, `key`: RustBuffer.ByValue, `value`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_method_scriptbridge_update_block_property(
+    external fun uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_block_property(
         `ptr`: Long,
         `blockKey`: RustBuffer.ByValue,
         `propertyKey`: RustBuffer.ByValue,
@@ -1538,237 +1533,230 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_logger(
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_logger(
         `vtable`: UniffiVTableCallbackInterfaceLogger,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_func_dispose_instance(
+    external fun uniffi_nativeblocks_runtime_fn_func_dispose_instance(
         `instanceName`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_func_warmup_instance(
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_nativeblocks_core_sdk_fn_func_warmup_instance_async(
-    ): Long
-
-    external fun uniffi_nativeblocks_core_sdk_fn_func_provide_logger(
+    external fun uniffi_nativeblocks_runtime_fn_func_provide_logger(
         `instanceName`: RustBuffer.ByValue,
         `loggerType`: RustBuffer.ByValue,
         `logger`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_nativeblocks_core_sdk_fn_func_remove_logger(
+    external fun uniffi_nativeblocks_runtime_fn_func_remove_logger(
         `instanceName`: RustBuffer.ByValue, `loggerType`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rustbuffer_alloc(
+    external fun ffi_nativeblocks_runtime_rustbuffer_alloc(
         `size`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun ffi_nativeblocks_core_sdk_rustbuffer_from_bytes(
+    external fun ffi_nativeblocks_runtime_rustbuffer_from_bytes(
         `bytes`: ForeignBytes.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun ffi_nativeblocks_core_sdk_rustbuffer_free(
+    external fun ffi_nativeblocks_runtime_rustbuffer_free(
         `buf`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rustbuffer_reserve(
+    external fun ffi_nativeblocks_runtime_rustbuffer_reserve(
         `buf`: RustBuffer.ByValue, `additional`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_u8(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_u8(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_u8(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_u8(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_u8(
+    external fun ffi_nativeblocks_runtime_rust_future_free_u8(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_u8(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_u8(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Int
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_i8(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_i8(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_i8(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_i8(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_i8(
+    external fun ffi_nativeblocks_runtime_rust_future_free_i8(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_i8(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_i8(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_u16(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_u16(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_u16(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_u16(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_u16(
+    external fun ffi_nativeblocks_runtime_rust_future_free_u16(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_u16(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_u16(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Int
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_i16(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_i16(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_i16(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_i16(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_i16(
+    external fun ffi_nativeblocks_runtime_rust_future_free_i16(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_i16(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_i16(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Short
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_u32(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_u32(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_u32(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_u32(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_u32(
+    external fun ffi_nativeblocks_runtime_rust_future_free_u32(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_u32(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_u32(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Int
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_i32(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_i32(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_i32(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_i32(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_i32(
+    external fun ffi_nativeblocks_runtime_rust_future_free_i32(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_i32(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_i32(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Int
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_u64(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_u64(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_u64(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_u64(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_u64(
+    external fun ffi_nativeblocks_runtime_rust_future_free_u64(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_u64(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_u64(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_i64(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_i64(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_i64(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_i64(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_i64(
+    external fun ffi_nativeblocks_runtime_rust_future_free_i64(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_i64(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_i64(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_f32(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_f32(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_f32(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_f32(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_f32(
+    external fun ffi_nativeblocks_runtime_rust_future_free_f32(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_f32(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_f32(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Float
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_f64(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_f64(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_f64(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_f64(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_f64(
+    external fun ffi_nativeblocks_runtime_rust_future_free_f64(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_f64(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_f64(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Double
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_rust_buffer(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_rust_buffer(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_rust_buffer(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_rust_buffer(
+    external fun ffi_nativeblocks_runtime_rust_future_free_rust_buffer(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_rust_buffer(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_rust_buffer(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_poll_void(
+    external fun ffi_nativeblocks_runtime_rust_future_poll_void(
         `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_cancel_void(
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_void(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_free_void(
+    external fun ffi_nativeblocks_runtime_rust_future_free_void(
         `handle`: Long,
     ): Unit
 
-    external fun ffi_nativeblocks_core_sdk_rust_future_complete_void(
+    external fun ffi_nativeblocks_runtime_rust_future_complete_void(
         `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
@@ -1779,7 +1767,7 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
     // Get the bindings contract version from our ComponentInterface
     val bindings_contract_version = 30
     // Get the scaffolding contract version by calling the into the dylib
-    val scaffolding_contract_version = lib.ffi_nativeblocks_core_sdk_uniffi_contract_version()
+    val scaffolding_contract_version = lib.ffi_nativeblocks_runtime_uniffi_contract_version()
     if (bindings_contract_version != scaffolding_contract_version) {
         throw RuntimeException("UniFFI contract version mismatch: try cleaning and rebuilding your project")
     }
@@ -1787,160 +1775,154 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_func_dispose_instance() != 31073) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_func_dispose_instance() != 8338) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_func_warmup_instance() != 6832) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_func_provide_logger() != 17662) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_func_warmup_instance_async() != 25320) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_func_remove_logger() != 46009) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_func_provide_logger() != 63252) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_experiment_client() != 36989) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_func_remove_logger() != 53475) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_frame_client() != 26806) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_nativeblocksengine_experiment_client() != 50294) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_global_parameter_client() != 22549) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_nativeblocksengine_frame_client() != 25988) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_localization_client() != 40357) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_nativeblocksengine_global_parameter_client() != 43216) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_scaffold_client() != 12233) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_nativeblocksengine_localization_client() != 24167) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_experimentclient_get_experiment() != 64299) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_nativeblocksengine_scaffold_client() != 32205) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear() != 19078) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_experimentclient_get_experiment() != 53436) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all() != 60829) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_frameclient_clear() != 7882) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager() != 39836) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_frameclient_clear_all() != 24563) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_sync_frame() != 57963) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_frameclient_state_manager() != 48032) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change() != 21114) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_frameclient_sync_frame() != 1380) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_release() != 7950) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_framestateobserver_on_frame_change() != 29039) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 40874) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_framestatemanager_release() != 62917) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property() != 32460) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_framestatemanager_setup_frame() != 5039) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable() != 34459) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_framestatemanager_update_block_property() != 9336) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_get_localization() != 34135) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_framestatemanager_update_variable() != 48250) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_set_language_code() != 39407) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationclient_get_localization() != 48592) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_state_manager() != 35708) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationclient_set_language_code() != 1711) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_sync_localization() != 21594) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationclient_state_manager() != 49600) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_translate() != 63226) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationclient_sync_localization() != 64585) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_localization_state() != 57550) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationclient_translate() != 4124) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_observe() != 5813) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_localization_state() != 64614) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_release() != 63441) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_observe() != 43674) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_set_language_code() != 31868) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_release() != 57300) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_setup_localization() != 50525) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_set_language_code() != 40598) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_translate() != 58652) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_setup_localization() != 24083) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_state_changed() != 63769) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationstatemanager_translate() != 53418) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_localization_changed() != 62924) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationstateobserver_on_state_changed() != 20898) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_language_code_changed() != 32556) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationstateobserver_on_localization_changed() != 27362) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_get_scaffold() != 1926) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_localizationstateobserver_on_language_code_changed() != 51636) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_cacheprovider_save_bytes() != 4863) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_scaffoldclient_get_scaffold() != 22741) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_cacheprovider_get_bytes() != 12382) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_save_bytes() != 9863) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_cacheprovider_remove() != 52519) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_get_bytes() != 22868) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_cacheprovider_clear() != 33582) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_remove() != 58024) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_cacheprovider_has() != 9469) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_clear() != 63052) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_cacheprovider_dispose() != 53034) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_has() != 52024) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_httpclient_get() != 8710) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_cacheprovider_dispose() != 57083) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_httpclient_post() != 22786) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_httpclient_get() != 59028) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_get() != 21439) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_httpclient_post() != 12996) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_set() != 27781) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_globalparameterclient_get() != 42238) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_scriptengine_evaluate() != 36866) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_globalparameterclient_set() != 20630) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_scriptbridge_get_variable() != 49508) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_scriptengine_evaluate() != 48427) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable() != 976) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_scriptbridge_get_variable() != 11494) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_block_property() != 27798) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_scriptbridge_update_variable() != 21289) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() != 485) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_scriptbridge_update_block_property() != 10767) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_constructor_scriptengine_new() != 769) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_constructor_nativeblocksengine_new() != 46265) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_constructor_scriptengine_new() != 63724) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_nativeblocks_core_sdk_checksum_method_logger_log() != 50309) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_logger_log() != 41625) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1948,7 +1930,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
 /**
  * @suppress
  */
-public fun uniffiEnsureInitialized() {
+internal fun uniffiEnsureInitialized() {
     IntegrityCheckingUniffiLib
     // UniffiLib() initialized as objects are used, but we still need to explicitly
     // reference it so initialization across crates works as expected.
@@ -2095,7 +2077,7 @@ internal object uniffiForeignFutureDroppedCallbackImpl : UniffiForeignFutureDrop
 }
 
 // For testing
-public fun uniffiForeignFutureHandleCount() = uniffiForeignFutureHandleMap.size
+internal fun uniffiForeignFutureHandleCount() = uniffiForeignFutureHandleMap.size
 
 // Public interface members begin here.
 
@@ -2108,7 +2090,7 @@ public fun uniffiForeignFutureHandleCount() = uniffiForeignFutureHandleMap.size
 //
 // The easiest way to ensure this method is called is to use the `.use`
 // helper method to execute a block and destroy the object at the end.
-interface Disposable {
+internal interface Disposable {
     fun destroy()
 
     companion object {
@@ -2147,7 +2129,7 @@ interface Disposable {
 /**
  * @suppress
  */
-inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
+internal inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
     try {
         block(this)
     } finally {
@@ -2168,14 +2150,14 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
  *
  * @suppress
  * */
-object UniffiWithHandle
+internal object UniffiWithHandle
 
 /** 
  * Used to instantiate an interface without an actual pointer, for fakes in tests, mostly.
  *
  * @suppress
  * */
-object NoHandle// Magic number for the Rust proxy to call using the same mechanism as every other method,
+internal object NoHandle// Magic number for the Rust proxy to call using the same mechanism as every other method,
 
 // to free the callback once it's dropped by Rust.
 internal const val IDX_CALLBACK_FREE = 0
@@ -2188,7 +2170,7 @@ internal const val UNIFFI_CALLBACK_UNEXPECTED_ERROR = 2
 /**
  * @suppress
  */
-public abstract class FfiConverterCallbackInterface<CallbackInterface : Any> : FfiConverter<CallbackInterface, Long> {
+internal abstract class FfiConverterCallbackInterface<CallbackInterface : Any> : FfiConverter<CallbackInterface, Long> {
     internal val handleMap = UniffiHandleMap<CallbackInterface>()
 
     internal fun drop(handle: Long) {
@@ -2220,7 +2202,7 @@ public abstract class FfiConverterCallbackInterface<CallbackInterface : Any> : F
  *
  * @suppress
  */
-interface UniffiCleaner {
+internal interface UniffiCleaner {
     interface Cleanable {
         fun clean()
     }
@@ -2251,7 +2233,7 @@ private fun UniffiCleaner.Companion.create(): UniffiCleaner = UniffiJnaCleaner()
 /**
  * @suppress
  */
-public object FfiConverterInt : FfiConverter<Int, Int> {
+internal object FfiConverterInt : FfiConverter<Int, Int> {
     override fun lift(value: Int): Int {
         return value
     }
@@ -2274,7 +2256,7 @@ public object FfiConverterInt : FfiConverter<Int, Int> {
 /**
  * @suppress
  */
-public object FfiConverterULong : FfiConverter<ULong, Long> {
+internal object FfiConverterULong : FfiConverter<ULong, Long> {
     override fun lift(value: Long): ULong {
         return value.toULong()
     }
@@ -2297,7 +2279,7 @@ public object FfiConverterULong : FfiConverter<ULong, Long> {
 /**
  * @suppress
  */
-public object FfiConverterLong : FfiConverter<Long, Long> {
+internal object FfiConverterLong : FfiConverter<Long, Long> {
     override fun lift(value: Long): Long {
         return value
     }
@@ -2320,7 +2302,7 @@ public object FfiConverterLong : FfiConverter<Long, Long> {
 /**
  * @suppress
  */
-public object FfiConverterBoolean : FfiConverter<Boolean, Byte> {
+internal object FfiConverterBoolean : FfiConverter<Boolean, Byte> {
     override fun lift(value: Byte): Boolean {
         return value.toInt() != 0
     }
@@ -2343,7 +2325,7 @@ public object FfiConverterBoolean : FfiConverter<Boolean, Byte> {
 /**
  * @suppress
  */
-public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
+internal object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
     // Note: we don't inherit from FfiConverterRustBuffer, because we use a
     // special encoding when lowering/lifting.  We can use `RustBuffer.len` to
     // store our length and avoid writing it out to the buffer.
@@ -2400,7 +2382,7 @@ public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
 /**
  * @suppress
  */
-public object FfiConverterByteArray : FfiConverterRustBuffer<ByteArray> {
+internal object FfiConverterByteArray : FfiConverterRustBuffer<ByteArray> {
     override fun read(buf: ByteBuffer): ByteArray {
         val len = buf.getInt()
         val byteArr = ByteArray(len)
@@ -2514,7 +2496,7 @@ public object FfiConverterByteArray : FfiConverterRustBuffer<ByteArray> {
 //
 
 
-public interface CacheProvider {
+internal interface CacheProvider {
 
     fun `saveBytes`(`key`: kotlin.String, `value`: kotlin.ByteArray, `ttlMillis`: kotlin.Long?)
 
@@ -2531,7 +2513,7 @@ public interface CacheProvider {
     companion object
 }
 
-open class CacheProviderImpl : Disposable, AutoCloseable, CacheProvider {
+internal open class CacheProviderImpl : Disposable, AutoCloseable, CacheProvider {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -2609,7 +2591,7 @@ open class CacheProviderImpl : Disposable, AutoCloseable, CacheProvider {
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_cacheprovider(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_cacheprovider(handle, status)
             }
         }
     }
@@ -2622,7 +2604,7 @@ open class CacheProviderImpl : Disposable, AutoCloseable, CacheProvider {
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_cacheprovider(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_cacheprovider(handle, status)
         }
     }
 
@@ -2631,7 +2613,7 @@ open class CacheProviderImpl : Disposable, AutoCloseable, CacheProvider {
     override fun `saveBytes`(`key`: kotlin.String, `value`: kotlin.ByteArray, `ttlMillis`: kotlin.Long?) =
         callWithHandle {
             uniffiRustCallWithError(NbException) { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_save_bytes(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_cacheprovider_save_bytes(
                     it,
                     FfiConverterString.lower(`key`),
                     FfiConverterByteArray.lower(`value`),
@@ -2647,7 +2629,7 @@ open class CacheProviderImpl : Disposable, AutoCloseable, CacheProvider {
         return FfiConverterOptionalByteArray.lift(
             callWithHandle {
                 uniffiRustCallWithError(NbException) { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_get_bytes(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_cacheprovider_get_bytes(
                         it,
                         FfiConverterString.lower(`key`), _status
                     )
@@ -2661,7 +2643,7 @@ open class CacheProviderImpl : Disposable, AutoCloseable, CacheProvider {
     override fun `remove`(`key`: kotlin.String) =
         callWithHandle {
             uniffiRustCallWithError(NbException) { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_remove(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_cacheprovider_remove(
                     it,
                     FfiConverterString.lower(`key`), _status
                 )
@@ -2673,7 +2655,7 @@ open class CacheProviderImpl : Disposable, AutoCloseable, CacheProvider {
     override fun `clear`() =
         callWithHandle {
             uniffiRustCallWithError(NbException) { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_clear(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_cacheprovider_clear(
                     it,
                     _status
                 )
@@ -2686,7 +2668,7 @@ open class CacheProviderImpl : Disposable, AutoCloseable, CacheProvider {
         return FfiConverterBoolean.lift(
             callWithHandle {
                 uniffiRustCallWithError(NbException) { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_has(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_cacheprovider_has(
                         it,
                         FfiConverterString.lower(`key`), _status
                     )
@@ -2700,7 +2682,7 @@ open class CacheProviderImpl : Disposable, AutoCloseable, CacheProvider {
     override fun `dispose`() =
         callWithHandle {
             uniffiRustCallWithError(NbException) { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_cacheprovider_dispose(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_cacheprovider_dispose(
                     it,
                     _status
                 )
@@ -2883,14 +2865,14 @@ internal object uniffiCallbackInterfaceCacheProvider {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_cacheprovider(vtable)
+        lib.uniffi_nativeblocks_runtime_fn_init_callback_vtable_cacheprovider(vtable)
     }
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeCacheProvider : FfiConverter<CacheProvider, Long> {
+internal object FfiConverterTypeCacheProvider : FfiConverter<CacheProvider, Long> {
     internal val handleMap = UniffiHandleMap<CacheProvider>()
 
     override fun lower(value: CacheProvider): Long {
@@ -3021,14 +3003,14 @@ public object FfiConverterTypeCacheProvider : FfiConverter<CacheProvider, Long> 
 //
 
 
-public interface ExperimentClientInterface {
+internal interface ExperimentClientInterface {
 
     suspend fun `getExperiment`(`key`: kotlin.String, `cacheTtl`: kotlin.Long?): NativeExperimentModel
 
     companion object
 }
 
-open class ExperimentClient : Disposable, AutoCloseable, ExperimentClientInterface {
+internal open class ExperimentClient : Disposable, AutoCloseable, ExperimentClientInterface {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -3106,7 +3088,7 @@ open class ExperimentClient : Disposable, AutoCloseable, ExperimentClientInterfa
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_experimentclient(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_experimentclient(handle, status)
             }
         }
     }
@@ -3119,7 +3101,7 @@ open class ExperimentClient : Disposable, AutoCloseable, ExperimentClientInterfa
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_experimentclient(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_experimentclient(handle, status)
         }
     }
 
@@ -3129,25 +3111,25 @@ open class ExperimentClient : Disposable, AutoCloseable, ExperimentClientInterfa
     override suspend fun `getExperiment`(`key`: kotlin.String, `cacheTtl`: kotlin.Long?): NativeExperimentModel {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_experimentclient_get_experiment(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_experimentclient_get_experiment(
                     uniffiHandle,
                     FfiConverterString.lower(`key`), FfiConverterOptionalLong.lower(`cacheTtl`),
                 )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_rust_buffer(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_rust_buffer(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_rust_buffer(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_rust_buffer(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterTypeNativeExperimentModel.lift(it) },
             // Error FFI converter
@@ -3167,7 +3149,7 @@ open class ExperimentClient : Disposable, AutoCloseable, ExperimentClientInterfa
 /**
  * @suppress
  */
-public object FfiConverterTypeExperimentClient : FfiConverter<ExperimentClient, Long> {
+internal object FfiConverterTypeExperimentClient : FfiConverter<ExperimentClient, Long> {
     override fun lower(value: ExperimentClient): Long {
         return value.uniffiCloneHandle()
     }
@@ -3283,7 +3265,7 @@ public object FfiConverterTypeExperimentClient : FfiConverter<ExperimentClient, 
 //
 
 
-public interface FrameClientInterface {
+internal interface FrameClientInterface {
 
     suspend fun `clear`(`route`: kotlin.String)
 
@@ -3296,7 +3278,7 @@ public interface FrameClientInterface {
     companion object
 }
 
-open class FrameClient : Disposable, AutoCloseable, FrameClientInterface {
+internal open class FrameClient : Disposable, AutoCloseable, FrameClientInterface {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -3374,7 +3356,7 @@ open class FrameClient : Disposable, AutoCloseable, FrameClientInterface {
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_frameclient(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_frameclient(handle, status)
             }
         }
     }
@@ -3387,7 +3369,7 @@ open class FrameClient : Disposable, AutoCloseable, FrameClientInterface {
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_frameclient(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_frameclient(handle, status)
         }
     }
 
@@ -3397,25 +3379,25 @@ open class FrameClient : Disposable, AutoCloseable, FrameClientInterface {
     override suspend fun `clear`(`route`: kotlin.String) {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_frameclient_clear(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_frameclient_clear(
                     uniffiHandle,
                     FfiConverterString.lower(`route`),
                 )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_void(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
             // lift function
             { Unit },
 
@@ -3430,25 +3412,25 @@ open class FrameClient : Disposable, AutoCloseable, FrameClientInterface {
     override suspend fun `clearAll`(`routes`: List<kotlin.String>) {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_frameclient_clear_all(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_frameclient_clear_all(
                     uniffiHandle,
                     FfiConverterSequenceString.lower(`routes`),
                 )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_void(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
             // lift function
             { Unit },
 
@@ -3461,7 +3443,7 @@ open class FrameClient : Disposable, AutoCloseable, FrameClientInterface {
         return FfiConverterTypeFrameStateManager.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_frameclient_state_manager(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_frameclient_state_manager(
                         it,
                         _status
                     )
@@ -3476,25 +3458,25 @@ open class FrameClient : Disposable, AutoCloseable, FrameClientInterface {
     override suspend fun `syncFrame`(`route`: kotlin.String, `parameters`: Map<kotlin.String, kotlin.String>) {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_frameclient_sync_frame(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_frameclient_sync_frame(
                     uniffiHandle,
                     FfiConverterString.lower(`route`), FfiConverterMapStringString.lower(`parameters`),
                 )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_void(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
             // lift function
             { Unit },
 
@@ -3515,7 +3497,7 @@ open class FrameClient : Disposable, AutoCloseable, FrameClientInterface {
 /**
  * @suppress
  */
-public object FfiConverterTypeFrameClient : FfiConverter<FrameClient, Long> {
+internal object FfiConverterTypeFrameClient : FfiConverter<FrameClient, Long> {
     override fun lower(value: FrameClient): Long {
         return value.uniffiCloneHandle()
     }
@@ -3631,7 +3613,7 @@ public object FfiConverterTypeFrameClient : FfiConverter<FrameClient, Long> {
 //
 
 
-public interface FrameStateManagerInterface {
+internal interface FrameStateManagerInterface {
 
     fun `release`()
 
@@ -3654,7 +3636,7 @@ public interface FrameStateManagerInterface {
     companion object
 }
 
-open class FrameStateManager : Disposable, AutoCloseable, FrameStateManagerInterface {
+internal open class FrameStateManager : Disposable, AutoCloseable, FrameStateManagerInterface {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -3732,7 +3714,7 @@ open class FrameStateManager : Disposable, AutoCloseable, FrameStateManagerInter
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_framestatemanager(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_framestatemanager(handle, status)
             }
         }
     }
@@ -3745,14 +3727,14 @@ open class FrameStateManager : Disposable, AutoCloseable, FrameStateManagerInter
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_framestatemanager(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_framestatemanager(handle, status)
         }
     }
 
     override fun `release`() =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_framestatemanager_release(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(
                     it,
                     _status
                 )
@@ -3768,7 +3750,7 @@ open class FrameStateManager : Disposable, AutoCloseable, FrameStateManagerInter
     ) {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_framestatemanager_setup_frame(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(
                     uniffiHandle,
                     FfiConverterString.lower(`route`),
                     FfiConverterMapStringString.lower(`args`),
@@ -3776,19 +3758,19 @@ open class FrameStateManager : Disposable, AutoCloseable, FrameStateManagerInter
                 )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_void(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
             // lift function
             { Unit },
 
@@ -3806,7 +3788,7 @@ open class FrameStateManager : Disposable, AutoCloseable, FrameStateManagerInter
     ) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_framestatemanager_update_block_property(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_property(
                     it,
                     FfiConverterString.lower(`blockKey`),
                     FfiConverterString.lower(`propertyKey`),
@@ -3822,7 +3804,7 @@ open class FrameStateManager : Disposable, AutoCloseable, FrameStateManagerInter
     override fun `updateVariable`(`key`: kotlin.String, `value`: kotlin.String) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_framestatemanager_update_variable(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_variable(
                     it,
                     FfiConverterString.lower(`key`), FfiConverterString.lower(`value`), _status
                 )
@@ -3841,7 +3823,7 @@ open class FrameStateManager : Disposable, AutoCloseable, FrameStateManagerInter
 /**
  * @suppress
  */
-public object FfiConverterTypeFrameStateManager : FfiConverter<FrameStateManager, Long> {
+internal object FfiConverterTypeFrameStateManager : FfiConverter<FrameStateManager, Long> {
     override fun lower(value: FrameStateManager): Long {
         return value.uniffiCloneHandle()
     }
@@ -3957,14 +3939,14 @@ public object FfiConverterTypeFrameStateManager : FfiConverter<FrameStateManager
 //
 
 
-public interface FrameStateObserver {
+internal interface FrameStateObserver {
 
     fun `onFrameChange`(`change`: FrameChangeType)
 
     companion object
 }
 
-open class FrameStateObserverImpl : Disposable, AutoCloseable, FrameStateObserver {
+internal open class FrameStateObserverImpl : Disposable, AutoCloseable, FrameStateObserver {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -4042,7 +4024,7 @@ open class FrameStateObserverImpl : Disposable, AutoCloseable, FrameStateObserve
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_framestateobserver(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_framestateobserver(handle, status)
             }
         }
     }
@@ -4055,14 +4037,14 @@ open class FrameStateObserverImpl : Disposable, AutoCloseable, FrameStateObserve
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_framestateobserver(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_framestateobserver(handle, status)
         }
     }
 
     override fun `onFrameChange`(`change`: FrameChangeType) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_framestateobserver_on_frame_change(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestateobserver_on_frame_change(
                     it,
                     FfiConverterTypeFrameChangeType.lower(`change`), _status
                 )
@@ -4119,14 +4101,14 @@ internal object uniffiCallbackInterfaceFrameStateObserver {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_framestateobserver(vtable)
+        lib.uniffi_nativeblocks_runtime_fn_init_callback_vtable_framestateobserver(vtable)
     }
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeFrameStateObserver : FfiConverter<FrameStateObserver, Long> {
+internal object FfiConverterTypeFrameStateObserver : FfiConverter<FrameStateObserver, Long> {
     internal val handleMap = UniffiHandleMap<FrameStateObserver>()
 
     override fun lower(value: FrameStateObserver): Long {
@@ -4257,7 +4239,7 @@ public object FfiConverterTypeFrameStateObserver : FfiConverter<FrameStateObserv
 //
 
 
-public interface GlobalParameterClientInterface {
+internal interface GlobalParameterClientInterface {
 
     fun `get`(): Map<kotlin.String, kotlin.String>
 
@@ -4266,7 +4248,7 @@ public interface GlobalParameterClientInterface {
     companion object
 }
 
-open class GlobalParameterClient : Disposable, AutoCloseable, GlobalParameterClientInterface {
+internal open class GlobalParameterClient : Disposable, AutoCloseable, GlobalParameterClientInterface {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -4344,7 +4326,7 @@ open class GlobalParameterClient : Disposable, AutoCloseable, GlobalParameterCli
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_globalparameterclient(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_globalparameterclient(handle, status)
             }
         }
     }
@@ -4357,7 +4339,7 @@ open class GlobalParameterClient : Disposable, AutoCloseable, GlobalParameterCli
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_globalparameterclient(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_globalparameterclient(handle, status)
         }
     }
 
@@ -4365,7 +4347,7 @@ open class GlobalParameterClient : Disposable, AutoCloseable, GlobalParameterCli
         return FfiConverterMapStringString.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_globalparameterclient_get(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_globalparameterclient_get(
                         it,
                         _status
                     )
@@ -4378,7 +4360,7 @@ open class GlobalParameterClient : Disposable, AutoCloseable, GlobalParameterCli
     override fun `set`(`parameters`: Map<kotlin.String, kotlin.String>) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_globalparameterclient_set(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_globalparameterclient_set(
                     it,
                     FfiConverterMapStringString.lower(`parameters`), _status
                 )
@@ -4397,7 +4379,7 @@ open class GlobalParameterClient : Disposable, AutoCloseable, GlobalParameterCli
 /**
  * @suppress
  */
-public object FfiConverterTypeGlobalParameterClient : FfiConverter<GlobalParameterClient, Long> {
+internal object FfiConverterTypeGlobalParameterClient : FfiConverter<GlobalParameterClient, Long> {
     override fun lower(value: GlobalParameterClient): Long {
         return value.uniffiCloneHandle()
     }
@@ -4513,7 +4495,7 @@ public object FfiConverterTypeGlobalParameterClient : FfiConverter<GlobalParamet
 //
 
 
-public interface HttpClient {
+internal interface HttpClient {
 
     suspend fun `get`(`url`: kotlin.String, `headers`: Map<kotlin.String, kotlin.String>): kotlin.String
 
@@ -4526,7 +4508,7 @@ public interface HttpClient {
     companion object
 }
 
-open class HttpClientImpl : Disposable, AutoCloseable, HttpClient {
+internal open class HttpClientImpl : Disposable, AutoCloseable, HttpClient {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -4604,7 +4586,7 @@ open class HttpClientImpl : Disposable, AutoCloseable, HttpClient {
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_httpclient(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_httpclient(handle, status)
             }
         }
     }
@@ -4617,7 +4599,7 @@ open class HttpClientImpl : Disposable, AutoCloseable, HttpClient {
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_httpclient(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_httpclient(handle, status)
         }
     }
 
@@ -4627,25 +4609,25 @@ open class HttpClientImpl : Disposable, AutoCloseable, HttpClient {
     override suspend fun `get`(`url`: kotlin.String, `headers`: Map<kotlin.String, kotlin.String>): kotlin.String {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_httpclient_get(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_httpclient_get(
                     uniffiHandle,
                     FfiConverterString.lower(`url`), FfiConverterMapStringString.lower(`headers`),
                 )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_rust_buffer(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_rust_buffer(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_rust_buffer(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_rust_buffer(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterString.lift(it) },
             // Error FFI converter
@@ -4663,7 +4645,7 @@ open class HttpClientImpl : Disposable, AutoCloseable, HttpClient {
     ): kotlin.String {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_httpclient_post(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_httpclient_post(
                     uniffiHandle,
                     FfiConverterString.lower(`url`),
                     FfiConverterMapStringString.lower(`headers`),
@@ -4671,19 +4653,19 @@ open class HttpClientImpl : Disposable, AutoCloseable, HttpClient {
                 )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_rust_buffer(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_rust_buffer(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_rust_buffer(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_rust_buffer(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterString.lift(it) },
             // Error FFI converter
@@ -4812,14 +4794,14 @@ internal object uniffiCallbackInterfaceHttpClient {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_httpclient(vtable)
+        lib.uniffi_nativeblocks_runtime_fn_init_callback_vtable_httpclient(vtable)
     }
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeHttpClient : FfiConverter<HttpClient, Long> {
+internal object FfiConverterTypeHttpClient : FfiConverter<HttpClient, Long> {
     internal val handleMap = UniffiHandleMap<HttpClient>()
 
     override fun lower(value: HttpClient): Long {
@@ -4950,7 +4932,7 @@ public object FfiConverterTypeHttpClient : FfiConverter<HttpClient, Long> {
 //
 
 
-public interface LocalizationClientInterface {
+internal interface LocalizationClientInterface {
 
     suspend fun `getLocalization`(`languageCode`: kotlin.String): NativeLocalizationModel
 
@@ -4965,7 +4947,7 @@ public interface LocalizationClientInterface {
     companion object
 }
 
-open class LocalizationClient : Disposable, AutoCloseable, LocalizationClientInterface {
+internal open class LocalizationClient : Disposable, AutoCloseable, LocalizationClientInterface {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -5043,7 +5025,7 @@ open class LocalizationClient : Disposable, AutoCloseable, LocalizationClientInt
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_localizationclient(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_localizationclient(handle, status)
             }
         }
     }
@@ -5056,7 +5038,7 @@ open class LocalizationClient : Disposable, AutoCloseable, LocalizationClientInt
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_localizationclient(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_localizationclient(handle, status)
         }
     }
 
@@ -5066,25 +5048,25 @@ open class LocalizationClient : Disposable, AutoCloseable, LocalizationClientInt
     override suspend fun `getLocalization`(`languageCode`: kotlin.String): NativeLocalizationModel {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationclient_get_localization(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationclient_get_localization(
                     uniffiHandle,
                     FfiConverterString.lower(`languageCode`),
                 )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_rust_buffer(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_rust_buffer(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_rust_buffer(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_rust_buffer(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterTypeNativeLocalizationModel.lift(it) },
             // Error FFI converter
@@ -5095,7 +5077,7 @@ open class LocalizationClient : Disposable, AutoCloseable, LocalizationClientInt
     override fun `setLanguageCode`(`languageCode`: kotlin.String) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationclient_set_language_code(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationclient_set_language_code(
                     it,
                     FfiConverterString.lower(`languageCode`), _status
                 )
@@ -5107,7 +5089,7 @@ open class LocalizationClient : Disposable, AutoCloseable, LocalizationClientInt
         return FfiConverterTypeLocalizationStateManager.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationclient_state_manager(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationclient_state_manager(
                         it,
                         _status
                     )
@@ -5122,25 +5104,25 @@ open class LocalizationClient : Disposable, AutoCloseable, LocalizationClientInt
     override suspend fun `syncLocalization`(`languageCode`: kotlin.String) {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationclient_sync_localization(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationclient_sync_localization(
                     uniffiHandle,
                     FfiConverterString.lower(`languageCode`),
                 )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_void(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
             // lift function
             { Unit },
 
@@ -5153,7 +5135,7 @@ open class LocalizationClient : Disposable, AutoCloseable, LocalizationClientInt
         return FfiConverterOptionalString.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationclient_translate(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationclient_translate(
                         it,
                         FfiConverterString.lower(`key`), _status
                     )
@@ -5174,7 +5156,7 @@ open class LocalizationClient : Disposable, AutoCloseable, LocalizationClientInt
 /**
  * @suppress
  */
-public object FfiConverterTypeLocalizationClient : FfiConverter<LocalizationClient, Long> {
+internal object FfiConverterTypeLocalizationClient : FfiConverter<LocalizationClient, Long> {
     override fun lower(value: LocalizationClient): Long {
         return value.uniffiCloneHandle()
     }
@@ -5290,7 +5272,7 @@ public object FfiConverterTypeLocalizationClient : FfiConverter<LocalizationClie
 //
 
 
-public interface LocalizationStateManagerInterface {
+internal interface LocalizationStateManagerInterface {
 
     fun `localizationState`(): LocalizationState
 
@@ -5307,7 +5289,7 @@ public interface LocalizationStateManagerInterface {
     companion object
 }
 
-open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationStateManagerInterface {
+internal open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationStateManagerInterface {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -5385,7 +5367,7 @@ open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationSta
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_localizationstatemanager(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_localizationstatemanager(handle, status)
             }
         }
     }
@@ -5398,7 +5380,7 @@ open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationSta
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_localizationstatemanager(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_localizationstatemanager(handle, status)
         }
     }
 
@@ -5406,7 +5388,7 @@ open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationSta
         return FfiConverterTypeLocalizationState.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_localization_state(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_localization_state(
                         it,
                         _status
                     )
@@ -5419,7 +5401,7 @@ open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationSta
     override fun `observe`(`observer`: LocalizationStateObserver) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_observe(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_observe(
                     it,
                     FfiConverterTypeLocalizationStateObserver.lower(`observer`), _status
                 )
@@ -5430,7 +5412,7 @@ open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationSta
     override fun `release`() =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_release(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_release(
                     it,
                     _status
                 )
@@ -5441,7 +5423,7 @@ open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationSta
     override fun `setLanguageCode`(`languageCode`: kotlin.String) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_set_language_code(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_set_language_code(
                     it,
                     FfiConverterString.lower(`languageCode`), _status
                 )
@@ -5453,25 +5435,25 @@ open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationSta
     override suspend fun `setupLocalization`(`languageCode`: kotlin.String) {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_setup_localization(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_setup_localization(
                     uniffiHandle,
                     FfiConverterString.lower(`languageCode`),
                 )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_void(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_void(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
             // lift function
             { Unit },
 
@@ -5484,7 +5466,7 @@ open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationSta
         return FfiConverterOptionalString.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationstatemanager_translate(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_translate(
                         it,
                         FfiConverterString.lower(`key`), _status
                     )
@@ -5505,7 +5487,7 @@ open class LocalizationStateManager : Disposable, AutoCloseable, LocalizationSta
 /**
  * @suppress
  */
-public object FfiConverterTypeLocalizationStateManager : FfiConverter<LocalizationStateManager, Long> {
+internal object FfiConverterTypeLocalizationStateManager : FfiConverter<LocalizationStateManager, Long> {
     override fun lower(value: LocalizationStateManager): Long {
         return value.uniffiCloneHandle()
     }
@@ -5621,7 +5603,7 @@ public object FfiConverterTypeLocalizationStateManager : FfiConverter<Localizati
 //
 
 
-public interface LocalizationStateObserver {
+internal interface LocalizationStateObserver {
 
     fun `onStateChanged`(`state`: LocalizationState)
 
@@ -5632,7 +5614,7 @@ public interface LocalizationStateObserver {
     companion object
 }
 
-open class LocalizationStateObserverImpl : Disposable, AutoCloseable, LocalizationStateObserver {
+internal open class LocalizationStateObserverImpl : Disposable, AutoCloseable, LocalizationStateObserver {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -5710,7 +5692,7 @@ open class LocalizationStateObserverImpl : Disposable, AutoCloseable, Localizati
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_localizationstateobserver(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_localizationstateobserver(handle, status)
             }
         }
     }
@@ -5723,14 +5705,14 @@ open class LocalizationStateObserverImpl : Disposable, AutoCloseable, Localizati
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_localizationstateobserver(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_localizationstateobserver(handle, status)
         }
     }
 
     override fun `onStateChanged`(`state`: LocalizationState) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationstateobserver_on_state_changed(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_state_changed(
                     it,
                     FfiConverterTypeLocalizationState.lower(`state`), _status
                 )
@@ -5741,7 +5723,7 @@ open class LocalizationStateObserverImpl : Disposable, AutoCloseable, Localizati
     override fun `onLocalizationChanged`(`localizations`: Map<kotlin.String, kotlin.String>) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationstateobserver_on_localization_changed(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_localization_changed(
                     it,
                     FfiConverterMapStringString.lower(`localizations`), _status
                 )
@@ -5752,7 +5734,7 @@ open class LocalizationStateObserverImpl : Disposable, AutoCloseable, Localizati
     override fun `onLanguageCodeChanged`(`languageCode`: kotlin.String?) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_localizationstateobserver_on_language_code_changed(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_language_code_changed(
                     it,
                     FfiConverterOptionalString.lower(`languageCode`), _status
                 )
@@ -5847,14 +5829,14 @@ internal object uniffiCallbackInterfaceLocalizationStateObserver {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_localizationstateobserver(vtable)
+        lib.uniffi_nativeblocks_runtime_fn_init_callback_vtable_localizationstateobserver(vtable)
     }
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeLocalizationStateObserver : FfiConverter<LocalizationStateObserver, Long> {
+internal object FfiConverterTypeLocalizationStateObserver : FfiConverter<LocalizationStateObserver, Long> {
     internal val handleMap = UniffiHandleMap<LocalizationStateObserver>()
 
     override fun lower(value: LocalizationStateObserver): Long {
@@ -5985,7 +5967,7 @@ public object FfiConverterTypeLocalizationStateObserver : FfiConverter<Localizat
 //
 
 
-public interface NativeblocksEngineInterface {
+internal interface NativeblocksRuntimeInterface {
 
     fun `experimentClient`(): ExperimentClient
 
@@ -6000,7 +5982,7 @@ public interface NativeblocksEngineInterface {
     companion object
 }
 
-open class NativeblocksEngine : Disposable, AutoCloseable, NativeblocksEngineInterface {
+internal open class NativeblocksRuntime : Disposable, AutoCloseable, NativeblocksRuntimeInterface {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -6033,7 +6015,7 @@ open class NativeblocksEngine : Disposable, AutoCloseable, NativeblocksEngineInt
             this(
                 UniffiWithHandle,
                 uniffiRustCallWithError(NbException) { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_constructor_nativeblocksengine_new(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(
 
                         FfiConverterTypeNativeblocksEnvironment.lower(`environment`),
                         FfiConverterTypeSdkConfig.lower(`config`),
@@ -6098,7 +6080,7 @@ open class NativeblocksEngine : Disposable, AutoCloseable, NativeblocksEngineInt
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_nativeblocksengine(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_nativeblocksruntime(handle, status)
             }
         }
     }
@@ -6111,7 +6093,7 @@ open class NativeblocksEngine : Disposable, AutoCloseable, NativeblocksEngineInt
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_nativeblocksengine(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_nativeblocksruntime(handle, status)
         }
     }
 
@@ -6119,7 +6101,7 @@ open class NativeblocksEngine : Disposable, AutoCloseable, NativeblocksEngineInt
         return FfiConverterTypeExperimentClient.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_nativeblocksengine_experiment_client(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_experiment_client(
                         it,
                         _status
                     )
@@ -6133,7 +6115,7 @@ open class NativeblocksEngine : Disposable, AutoCloseable, NativeblocksEngineInt
         return FfiConverterTypeFrameClient.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_nativeblocksengine_frame_client(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_frame_client(
                         it,
                         _status
                     )
@@ -6147,7 +6129,7 @@ open class NativeblocksEngine : Disposable, AutoCloseable, NativeblocksEngineInt
         return FfiConverterTypeGlobalParameterClient.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_nativeblocksengine_global_parameter_client(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_global_parameter_client(
                         it,
                         _status
                     )
@@ -6161,7 +6143,7 @@ open class NativeblocksEngine : Disposable, AutoCloseable, NativeblocksEngineInt
         return FfiConverterTypeLocalizationClient.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_nativeblocksengine_localization_client(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_localization_client(
                         it,
                         _status
                     )
@@ -6175,7 +6157,7 @@ open class NativeblocksEngine : Disposable, AutoCloseable, NativeblocksEngineInt
         return FfiConverterTypeScaffoldClient.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_nativeblocksengine_scaffold_client(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_scaffold_client(
                         it,
                         _status
                     )
@@ -6196,22 +6178,22 @@ open class NativeblocksEngine : Disposable, AutoCloseable, NativeblocksEngineInt
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeblocksEngine : FfiConverter<NativeblocksEngine, Long> {
-    override fun lower(value: NativeblocksEngine): Long {
+internal object FfiConverterTypeNativeblocksRuntime : FfiConverter<NativeblocksRuntime, Long> {
+    override fun lower(value: NativeblocksRuntime): Long {
         return value.uniffiCloneHandle()
     }
 
-    override fun lift(value: Long): NativeblocksEngine {
-        return NativeblocksEngine(UniffiWithHandle, value)
+    override fun lift(value: Long): NativeblocksRuntime {
+        return NativeblocksRuntime(UniffiWithHandle, value)
     }
 
-    override fun read(buf: ByteBuffer): NativeblocksEngine {
+    override fun read(buf: ByteBuffer): NativeblocksRuntime {
         return lift(buf.getLong())
     }
 
-    override fun allocationSize(value: NativeblocksEngine) = 8UL
+    override fun allocationSize(value: NativeblocksRuntime) = 8UL
 
-    override fun write(value: NativeblocksEngine, buf: ByteBuffer) {
+    override fun write(value: NativeblocksRuntime, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
@@ -6312,14 +6294,14 @@ public object FfiConverterTypeNativeblocksEngine : FfiConverter<NativeblocksEngi
 //
 
 
-public interface ScaffoldClientInterface {
+internal interface ScaffoldClientInterface {
 
     suspend fun `getScaffold`(): ScaffoldModel
 
     companion object
 }
 
-open class ScaffoldClient : Disposable, AutoCloseable, ScaffoldClientInterface {
+internal open class ScaffoldClient : Disposable, AutoCloseable, ScaffoldClientInterface {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -6397,7 +6379,7 @@ open class ScaffoldClient : Disposable, AutoCloseable, ScaffoldClientInterface {
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_scaffoldclient(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_scaffoldclient(handle, status)
             }
         }
     }
@@ -6410,7 +6392,7 @@ open class ScaffoldClient : Disposable, AutoCloseable, ScaffoldClientInterface {
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_scaffoldclient(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_scaffoldclient(handle, status)
         }
     }
 
@@ -6420,25 +6402,25 @@ open class ScaffoldClient : Disposable, AutoCloseable, ScaffoldClientInterface {
     override suspend fun `getScaffold`(): ScaffoldModel {
         return uniffiRustCallAsync(
             callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_scaffoldclient_get_scaffold(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_scaffoldclient_get_scaffold(
                     uniffiHandle,
 
                     )
             },
             { future, callback, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_rust_buffer(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(
                     future,
                     callback,
                     continuation
                 )
             },
             { future, continuation ->
-                UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_rust_buffer(
+                UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_rust_buffer(
                     future,
                     continuation
                 )
             },
-            { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_rust_buffer(future) },
+            { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterTypeScaffoldModel.lift(it) },
             // Error FFI converter
@@ -6458,7 +6440,7 @@ open class ScaffoldClient : Disposable, AutoCloseable, ScaffoldClientInterface {
 /**
  * @suppress
  */
-public object FfiConverterTypeScaffoldClient : FfiConverter<ScaffoldClient, Long> {
+internal object FfiConverterTypeScaffoldClient : FfiConverter<ScaffoldClient, Long> {
     override fun lower(value: ScaffoldClient): Long {
         return value.uniffiCloneHandle()
     }
@@ -6574,7 +6556,7 @@ public object FfiConverterTypeScaffoldClient : FfiConverter<ScaffoldClient, Long
 //
 
 
-public interface ScriptBridge {
+internal interface ScriptBridge {
 
     fun `getVariable`(`key`: kotlin.String): kotlin.String?
 
@@ -6591,7 +6573,7 @@ public interface ScriptBridge {
     companion object
 }
 
-open class ScriptBridgeImpl : Disposable, AutoCloseable, ScriptBridge {
+internal open class ScriptBridgeImpl : Disposable, AutoCloseable, ScriptBridge {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -6669,7 +6651,7 @@ open class ScriptBridgeImpl : Disposable, AutoCloseable, ScriptBridge {
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_scriptbridge(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_scriptbridge(handle, status)
             }
         }
     }
@@ -6682,7 +6664,7 @@ open class ScriptBridgeImpl : Disposable, AutoCloseable, ScriptBridge {
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_scriptbridge(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_scriptbridge(handle, status)
         }
     }
 
@@ -6690,7 +6672,7 @@ open class ScriptBridgeImpl : Disposable, AutoCloseable, ScriptBridge {
         return FfiConverterOptionalString.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_scriptbridge_get_variable(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_scriptbridge_get_variable(
                         it,
                         FfiConverterString.lower(`key`), _status
                     )
@@ -6703,7 +6685,7 @@ open class ScriptBridgeImpl : Disposable, AutoCloseable, ScriptBridge {
     override fun `updateVariable`(`key`: kotlin.String, `value`: kotlin.String) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_scriptbridge_update_variable(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_variable(
                     it,
                     FfiConverterString.lower(`key`), FfiConverterString.lower(`value`), _status
                 )
@@ -6720,7 +6702,7 @@ open class ScriptBridgeImpl : Disposable, AutoCloseable, ScriptBridge {
     ) =
         callWithHandle {
             uniffiRustCall() { _status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_scriptbridge_update_block_property(
+                UniffiLib.uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_block_property(
                     it,
                     FfiConverterString.lower(`blockKey`),
                     FfiConverterString.lower(`propertyKey`),
@@ -6831,14 +6813,14 @@ internal object uniffiCallbackInterfaceScriptBridge {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_scriptbridge(vtable)
+        lib.uniffi_nativeblocks_runtime_fn_init_callback_vtable_scriptbridge(vtable)
     }
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeScriptBridge : FfiConverter<ScriptBridge, Long> {
+internal object FfiConverterTypeScriptBridge : FfiConverter<ScriptBridge, Long> {
     internal val handleMap = UniffiHandleMap<ScriptBridge>()
 
     override fun lower(value: ScriptBridge): Long {
@@ -6969,14 +6951,14 @@ public object FfiConverterTypeScriptBridge : FfiConverter<ScriptBridge, Long> {
 //
 
 
-public interface ScriptEngineInterface {
+internal interface ScriptEngineInterface {
 
     fun `evaluate`(`script`: kotlin.String, `bridge`: ScriptBridge, `timeoutMs`: kotlin.ULong): ScriptResult
 
     companion object
 }
 
-open class ScriptEngine : Disposable, AutoCloseable, ScriptEngineInterface {
+internal open class ScriptEngine : Disposable, AutoCloseable, ScriptEngineInterface {
 
     @Suppress("UNUSED_PARAMETER")
             /**
@@ -7004,7 +6986,7 @@ open class ScriptEngine : Disposable, AutoCloseable, ScriptEngineInterface {
             this(
                 UniffiWithHandle,
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_constructor_scriptengine_new(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_constructor_scriptengine_new(
 
                         _status
                     )
@@ -7065,7 +7047,7 @@ open class ScriptEngine : Disposable, AutoCloseable, ScriptEngineInterface {
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_nativeblocks_core_sdk_fn_free_scriptengine(handle, status)
+                UniffiLib.uniffi_nativeblocks_runtime_fn_free_scriptengine(handle, status)
             }
         }
     }
@@ -7078,7 +7060,7 @@ open class ScriptEngine : Disposable, AutoCloseable, ScriptEngineInterface {
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_nativeblocks_core_sdk_fn_clone_scriptengine(handle, status)
+            UniffiLib.uniffi_nativeblocks_runtime_fn_clone_scriptengine(handle, status)
         }
     }
 
@@ -7086,7 +7068,7 @@ open class ScriptEngine : Disposable, AutoCloseable, ScriptEngineInterface {
         return FfiConverterTypeScriptResult.lift(
             callWithHandle {
                 uniffiRustCall() { _status ->
-                    UniffiLib.uniffi_nativeblocks_core_sdk_fn_method_scriptengine_evaluate(
+                    UniffiLib.uniffi_nativeblocks_runtime_fn_method_scriptengine_evaluate(
                         it,
                         FfiConverterString.lower(`script`),
                         FfiConverterTypeScriptBridge.lower(`bridge`),
@@ -7110,7 +7092,7 @@ open class ScriptEngine : Disposable, AutoCloseable, ScriptEngineInterface {
 /**
  * @suppress
  */
-public object FfiConverterTypeScriptEngine : FfiConverter<ScriptEngine, Long> {
+internal object FfiConverterTypeScriptEngine : FfiConverter<ScriptEngine, Long> {
     override fun lower(value: ScriptEngine): Long {
         return value.uniffiCloneHandle()
     }
@@ -7131,7 +7113,7 @@ public object FfiConverterTypeScriptEngine : FfiConverter<ScriptEngine, Long> {
 }
 
 
-data class FrameDiff(
+internal data class FrameDiff(
     val `variables`: Map<kotlin.String, NativeVariableModel>,
     val `blocks`: Map<kotlin.String, NativeBlockModel>
 
@@ -7144,7 +7126,7 @@ data class FrameDiff(
 /**
  * @suppress
  */
-public object FfiConverterTypeFrameDiff : FfiConverterRustBuffer<FrameDiff> {
+internal object FfiConverterTypeFrameDiff : FfiConverterRustBuffer<FrameDiff> {
     override fun read(buf: ByteBuffer): FrameDiff {
         return FrameDiff(
             FfiConverterMapStringTypeNativeVariableModel.read(buf),
@@ -7164,7 +7146,7 @@ public object FfiConverterTypeFrameDiff : FfiConverterRustBuffer<FrameDiff> {
 }
 
 
-data class FrameFull(
+internal data class FrameFull(
     val `state`: RenderingState,
     val `rootKey`: kotlin.String?,
     val `blocks`: Map<kotlin.String, NativeBlockModel>,
@@ -7180,7 +7162,7 @@ data class FrameFull(
 /**
  * @suppress
  */
-public object FfiConverterTypeFrameFull : FfiConverterRustBuffer<FrameFull> {
+internal object FfiConverterTypeFrameFull : FfiConverterRustBuffer<FrameFull> {
     override fun read(buf: ByteBuffer): FrameFull {
         return FrameFull(
             FfiConverterTypeRenderingState.read(buf),
@@ -7209,7 +7191,7 @@ public object FfiConverterTypeFrameFull : FfiConverterRustBuffer<FrameFull> {
 }
 
 
-data class FrameRouteModel(
+internal data class FrameRouteModel(
     val `id`: kotlin.String?,
     val `name`: kotlin.String?,
     val `frameType`: FrameTypeModel?,
@@ -7226,7 +7208,7 @@ data class FrameRouteModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeFrameRouteModel : FfiConverterRustBuffer<FrameRouteModel> {
+internal object FfiConverterTypeFrameRouteModel : FfiConverterRustBuffer<FrameRouteModel> {
     override fun read(buf: ByteBuffer): FrameRouteModel {
         return FrameRouteModel(
             FfiConverterOptionalString.read(buf),
@@ -7258,7 +7240,7 @@ public object FfiConverterTypeFrameRouteModel : FfiConverterRustBuffer<FrameRout
 }
 
 
-data class NativeActionModel(
+internal data class NativeActionModel(
     val `id`: kotlin.String,
     val `key`: kotlin.String,
     val `event`: kotlin.String,
@@ -7273,7 +7255,7 @@ data class NativeActionModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeActionModel : FfiConverterRustBuffer<NativeActionModel> {
+internal object FfiConverterTypeNativeActionModel : FfiConverterRustBuffer<NativeActionModel> {
     override fun read(buf: ByteBuffer): NativeActionModel {
         return NativeActionModel(
             FfiConverterString.read(buf),
@@ -7299,7 +7281,7 @@ public object FfiConverterTypeNativeActionModel : FfiConverterRustBuffer<NativeA
 }
 
 
-data class NativeActionTriggerDataModel(
+internal data class NativeActionTriggerDataModel(
     val `key`: kotlin.String,
     val `value`: kotlin.String,
     val `dataType`: kotlin.String
@@ -7313,7 +7295,7 @@ data class NativeActionTriggerDataModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeActionTriggerDataModel : FfiConverterRustBuffer<NativeActionTriggerDataModel> {
+internal object FfiConverterTypeNativeActionTriggerDataModel : FfiConverterRustBuffer<NativeActionTriggerDataModel> {
     override fun read(buf: ByteBuffer): NativeActionTriggerDataModel {
         return NativeActionTriggerDataModel(
             FfiConverterString.read(buf),
@@ -7336,7 +7318,7 @@ public object FfiConverterTypeNativeActionTriggerDataModel : FfiConverterRustBuf
 }
 
 
-data class NativeActionTriggerModel(
+internal data class NativeActionTriggerModel(
     val `name`: kotlin.String,
     val `id`: kotlin.String,
     val `parentId`: kotlin.String,
@@ -7355,7 +7337,7 @@ data class NativeActionTriggerModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeActionTriggerModel : FfiConverterRustBuffer<NativeActionTriggerModel> {
+internal object FfiConverterTypeNativeActionTriggerModel : FfiConverterRustBuffer<NativeActionTriggerModel> {
     override fun read(buf: ByteBuffer): NativeActionTriggerModel {
         return NativeActionTriggerModel(
             FfiConverterString.read(buf),
@@ -7393,7 +7375,7 @@ public object FfiConverterTypeNativeActionTriggerModel : FfiConverterRustBuffer<
 }
 
 
-data class NativeActionTriggerPropertyModel(
+internal data class NativeActionTriggerPropertyModel(
     val `key`: kotlin.String,
     val `value`: kotlin.String,
     val `propertyType`: kotlin.String
@@ -7407,7 +7389,7 @@ data class NativeActionTriggerPropertyModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeActionTriggerPropertyModel :
+internal object FfiConverterTypeNativeActionTriggerPropertyModel :
     FfiConverterRustBuffer<NativeActionTriggerPropertyModel> {
     override fun read(buf: ByteBuffer): NativeActionTriggerPropertyModel {
         return NativeActionTriggerPropertyModel(
@@ -7431,7 +7413,7 @@ public object FfiConverterTypeNativeActionTriggerPropertyModel :
 }
 
 
-data class NativeBlockDataModel(
+internal data class NativeBlockDataModel(
     val `key`: kotlin.String,
     val `value`: kotlin.String,
     val `dataType`: kotlin.String
@@ -7445,7 +7427,7 @@ data class NativeBlockDataModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeBlockDataModel : FfiConverterRustBuffer<NativeBlockDataModel> {
+internal object FfiConverterTypeNativeBlockDataModel : FfiConverterRustBuffer<NativeBlockDataModel> {
     override fun read(buf: ByteBuffer): NativeBlockDataModel {
         return NativeBlockDataModel(
             FfiConverterString.read(buf),
@@ -7468,7 +7450,7 @@ public object FfiConverterTypeNativeBlockDataModel : FfiConverterRustBuffer<Nati
 }
 
 
-data class NativeBlockModel(
+internal data class NativeBlockModel(
     val `id`: kotlin.String,
     val `parentId`: kotlin.String,
     val `parentKey`: kotlin.String,
@@ -7492,7 +7474,7 @@ data class NativeBlockModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeBlockModel : FfiConverterRustBuffer<NativeBlockModel> {
+internal object FfiConverterTypeNativeBlockModel : FfiConverterRustBuffer<NativeBlockModel> {
     override fun read(buf: ByteBuffer): NativeBlockModel {
         return NativeBlockModel(
             FfiConverterString.read(buf),
@@ -7545,7 +7527,7 @@ public object FfiConverterTypeNativeBlockModel : FfiConverterRustBuffer<NativeBl
 }
 
 
-data class NativeBlockPropertyModel(
+internal data class NativeBlockPropertyModel(
     val `key`: kotlin.String,
     val `valueMobile`: kotlin.String,
     val `valueTablet`: kotlin.String,
@@ -7561,7 +7543,7 @@ data class NativeBlockPropertyModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeBlockPropertyModel : FfiConverterRustBuffer<NativeBlockPropertyModel> {
+internal object FfiConverterTypeNativeBlockPropertyModel : FfiConverterRustBuffer<NativeBlockPropertyModel> {
     override fun read(buf: ByteBuffer): NativeBlockPropertyModel {
         return NativeBlockPropertyModel(
             FfiConverterString.read(buf),
@@ -7590,7 +7572,7 @@ public object FfiConverterTypeNativeBlockPropertyModel : FfiConverterRustBuffer<
 }
 
 
-data class NativeBlockSlotModel(
+internal data class NativeBlockSlotModel(
     val `slot`: kotlin.String
 
 ) {
@@ -7602,7 +7584,7 @@ data class NativeBlockSlotModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeBlockSlotModel : FfiConverterRustBuffer<NativeBlockSlotModel> {
+internal object FfiConverterTypeNativeBlockSlotModel : FfiConverterRustBuffer<NativeBlockSlotModel> {
     override fun read(buf: ByteBuffer): NativeBlockSlotModel {
         return NativeBlockSlotModel(
             FfiConverterString.read(buf),
@@ -7619,7 +7601,7 @@ public object FfiConverterTypeNativeBlockSlotModel : FfiConverterRustBuffer<Nati
 }
 
 
-data class NativeExperimentModel(
+internal data class NativeExperimentModel(
     val `value`: kotlin.String,
     val `variableType`: kotlin.String
 
@@ -7632,7 +7614,7 @@ data class NativeExperimentModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeExperimentModel : FfiConverterRustBuffer<NativeExperimentModel> {
+internal object FfiConverterTypeNativeExperimentModel : FfiConverterRustBuffer<NativeExperimentModel> {
     override fun read(buf: ByteBuffer): NativeExperimentModel {
         return NativeExperimentModel(
             FfiConverterString.read(buf),
@@ -7652,7 +7634,7 @@ public object FfiConverterTypeNativeExperimentModel : FfiConverterRustBuffer<Nat
 }
 
 
-data class NativeLocalizationModel(
+internal data class NativeLocalizationModel(
     val `checksum`: kotlin.String?,
     val `localizations`: Map<kotlin.String, kotlin.String>
 
@@ -7665,7 +7647,7 @@ data class NativeLocalizationModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeLocalizationModel : FfiConverterRustBuffer<NativeLocalizationModel> {
+internal object FfiConverterTypeNativeLocalizationModel : FfiConverterRustBuffer<NativeLocalizationModel> {
     override fun read(buf: ByteBuffer): NativeLocalizationModel {
         return NativeLocalizationModel(
             FfiConverterOptionalString.read(buf),
@@ -7685,7 +7667,7 @@ public object FfiConverterTypeNativeLocalizationModel : FfiConverterRustBuffer<N
 }
 
 
-data class NativeVariableModel(
+internal data class NativeVariableModel(
     val `key`: kotlin.String,
     val `value`: kotlin.String,
     val `variableType`: kotlin.String
@@ -7699,7 +7681,7 @@ data class NativeVariableModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeVariableModel : FfiConverterRustBuffer<NativeVariableModel> {
+internal object FfiConverterTypeNativeVariableModel : FfiConverterRustBuffer<NativeVariableModel> {
     override fun read(buf: ByteBuffer): NativeVariableModel {
         return NativeVariableModel(
             FfiConverterString.read(buf),
@@ -7722,7 +7704,7 @@ public object FfiConverterTypeNativeVariableModel : FfiConverterRustBuffer<Nativ
 }
 
 
-data class NativeblocksEnvironment(
+internal data class NativeblocksEnvironment(
     val `instanceName`: kotlin.String,
     val `endpoint`: kotlin.String,
     val `apiKey`: kotlin.String,
@@ -7737,7 +7719,7 @@ data class NativeblocksEnvironment(
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeblocksEnvironment : FfiConverterRustBuffer<NativeblocksEnvironment> {
+internal object FfiConverterTypeNativeblocksEnvironment : FfiConverterRustBuffer<NativeblocksEnvironment> {
     override fun read(buf: ByteBuffer): NativeblocksEnvironment {
         return NativeblocksEnvironment(
             FfiConverterString.read(buf),
@@ -7763,7 +7745,7 @@ public object FfiConverterTypeNativeblocksEnvironment : FfiConverterRustBuffer<N
 }
 
 
-data class RouteArgumentsModel(
+internal data class RouteArgumentsModel(
     val `name`: kotlin.String?
 
 ) {
@@ -7775,7 +7757,7 @@ data class RouteArgumentsModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeRouteArgumentsModel : FfiConverterRustBuffer<RouteArgumentsModel> {
+internal object FfiConverterTypeRouteArgumentsModel : FfiConverterRustBuffer<RouteArgumentsModel> {
     override fun read(buf: ByteBuffer): RouteArgumentsModel {
         return RouteArgumentsModel(
             FfiConverterOptionalString.read(buf),
@@ -7792,7 +7774,7 @@ public object FfiConverterTypeRouteArgumentsModel : FfiConverterRustBuffer<Route
 }
 
 
-data class ScaffoldModel(
+internal data class ScaffoldModel(
     val `frames`: List<FrameRouteModel>
 
 ) {
@@ -7804,7 +7786,7 @@ data class ScaffoldModel(
 /**
  * @suppress
  */
-public object FfiConverterTypeScaffoldModel : FfiConverterRustBuffer<ScaffoldModel> {
+internal object FfiConverterTypeScaffoldModel : FfiConverterRustBuffer<ScaffoldModel> {
     override fun read(buf: ByteBuffer): ScaffoldModel {
         return ScaffoldModel(
             FfiConverterSequenceTypeFrameRouteModel.read(buf),
@@ -7821,7 +7803,7 @@ public object FfiConverterTypeScaffoldModel : FfiConverterRustBuffer<ScaffoldMod
 }
 
 
-data class ScriptResult(
+internal data class ScriptResult(
     val `value`: kotlin.String?,
     val `error`: kotlin.String?
 
@@ -7834,7 +7816,7 @@ data class ScriptResult(
 /**
  * @suppress
  */
-public object FfiConverterTypeScriptResult : FfiConverterRustBuffer<ScriptResult> {
+internal object FfiConverterTypeScriptResult : FfiConverterRustBuffer<ScriptResult> {
     override fun read(buf: ByteBuffer): ScriptResult {
         return ScriptResult(
             FfiConverterOptionalString.read(buf),
@@ -7854,7 +7836,7 @@ public object FfiConverterTypeScriptResult : FfiConverterRustBuffer<ScriptResult
 }
 
 
-data class SdkConfig(
+internal data class SdkConfig(
     val `version`: kotlin.String,
     val `platform`: kotlin.String
 
@@ -7867,7 +7849,7 @@ data class SdkConfig(
 /**
  * @suppress
  */
-public object FfiConverterTypeSdkConfig : FfiConverterRustBuffer<SdkConfig> {
+internal object FfiConverterTypeSdkConfig : FfiConverterRustBuffer<SdkConfig> {
     override fun read(buf: ByteBuffer): SdkConfig {
         return SdkConfig(
             FfiConverterString.read(buf),
@@ -7887,7 +7869,7 @@ public object FfiConverterTypeSdkConfig : FfiConverterRustBuffer<SdkConfig> {
 }
 
 
-enum class ErrorType {
+internal enum class ErrorType {
 
     NETWORK,
     CACHE,
@@ -7901,7 +7883,7 @@ enum class ErrorType {
 /**
  * @suppress
  */
-public object FfiConverterTypeErrorType : FfiConverterRustBuffer<ErrorType> {
+internal object FfiConverterTypeErrorType : FfiConverterRustBuffer<ErrorType> {
     override fun read(buf: ByteBuffer) = try {
         ErrorType.values()[buf.getInt() - 1]
     } catch (e: IndexOutOfBoundsException) {
@@ -7916,10 +7898,10 @@ public object FfiConverterTypeErrorType : FfiConverterRustBuffer<ErrorType> {
 }
 
 
-sealed class FrameChangeType {
+internal sealed class FrameChangeType {
 
     data class Full(
-        val `frame`: io.nativeblocks.runtime.engine.FrameFull
+        val `frame`: io.nativeblocks.runtime.ffi.FrameFull
     ) : FrameChangeType() {
 
 
@@ -7927,7 +7909,7 @@ sealed class FrameChangeType {
     }
 
     data class Diff(
-        val `frame`: io.nativeblocks.runtime.engine.FrameDiff
+        val `frame`: io.nativeblocks.runtime.ffi.FrameDiff
     ) : FrameChangeType() {
 
 
@@ -7941,7 +7923,7 @@ sealed class FrameChangeType {
 /**
  * @suppress
  */
-public object FfiConverterTypeFrameChangeType : FfiConverterRustBuffer<FrameChangeType> {
+internal object FfiConverterTypeFrameChangeType : FfiConverterRustBuffer<FrameChangeType> {
     override fun read(buf: ByteBuffer): FrameChangeType {
         return when (buf.getInt()) {
             1 -> FrameChangeType.Full(
@@ -7988,7 +7970,7 @@ public object FfiConverterTypeFrameChangeType : FfiConverterRustBuffer<FrameChan
 }
 
 
-enum class FrameTypeModel {
+internal enum class FrameTypeModel {
 
     FRAME,
     BOTTOM_SHEET,
@@ -8002,7 +7984,7 @@ enum class FrameTypeModel {
 /**
  * @suppress
  */
-public object FfiConverterTypeFrameTypeModel : FfiConverterRustBuffer<FrameTypeModel> {
+internal object FfiConverterTypeFrameTypeModel : FfiConverterRustBuffer<FrameTypeModel> {
     override fun read(buf: ByteBuffer) = try {
         FrameTypeModel.values()[buf.getInt() - 1]
     } catch (e: IndexOutOfBoundsException) {
@@ -8017,7 +7999,7 @@ public object FfiConverterTypeFrameTypeModel : FfiConverterRustBuffer<FrameTypeM
 }
 
 
-sealed class LocalizationState {
+internal sealed class LocalizationState {
 
     object Loading : LocalizationState()
 
@@ -8040,7 +8022,7 @@ sealed class LocalizationState {
 /**
  * @suppress
  */
-public object FfiConverterTypeLocalizationState : FfiConverterRustBuffer<LocalizationState> {
+internal object FfiConverterTypeLocalizationState : FfiConverterRustBuffer<LocalizationState> {
     override fun read(buf: ByteBuffer): LocalizationState {
         return when (buf.getInt()) {
             1 -> LocalizationState.Loading
@@ -8094,7 +8076,7 @@ public object FfiConverterTypeLocalizationState : FfiConverterRustBuffer<Localiz
 }
 
 
-enum class LoggerEventLevel {
+internal enum class LoggerEventLevel {
 
     DEBUG,
     INFO,
@@ -8109,7 +8091,7 @@ enum class LoggerEventLevel {
 /**
  * @suppress
  */
-public object FfiConverterTypeLoggerEventLevel : FfiConverterRustBuffer<LoggerEventLevel> {
+internal object FfiConverterTypeLoggerEventLevel : FfiConverterRustBuffer<LoggerEventLevel> {
     override fun read(buf: ByteBuffer) = try {
         LoggerEventLevel.values()[buf.getInt() - 1]
     } catch (e: IndexOutOfBoundsException) {
@@ -8124,7 +8106,7 @@ public object FfiConverterTypeLoggerEventLevel : FfiConverterRustBuffer<LoggerEv
 }
 
 
-sealed class NbException : kotlin.Exception() {
+internal sealed class NbException : kotlin.Exception() {
 
     class Failure(
 
@@ -8149,7 +8131,7 @@ sealed class NbException : kotlin.Exception() {
 /**
  * @suppress
  */
-public object FfiConverterTypeNBError : FfiConverterRustBuffer<NbException> {
+internal object FfiConverterTypeNBError : FfiConverterRustBuffer<NbException> {
     override fun read(buf: ByteBuffer): NbException {
 
 
@@ -8190,7 +8172,7 @@ public object FfiConverterTypeNBError : FfiConverterRustBuffer<NbException> {
 }
 
 
-enum class NativeActionTriggerThen {
+internal enum class NativeActionTriggerThen {
 
     SUCCESS,
     FAILURE,
@@ -8205,7 +8187,7 @@ enum class NativeActionTriggerThen {
 /**
  * @suppress
  */
-public object FfiConverterTypeNativeActionTriggerThen : FfiConverterRustBuffer<NativeActionTriggerThen> {
+internal object FfiConverterTypeNativeActionTriggerThen : FfiConverterRustBuffer<NativeActionTriggerThen> {
     override fun read(buf: ByteBuffer) = try {
         NativeActionTriggerThen.values()[buf.getInt() - 1]
     } catch (e: IndexOutOfBoundsException) {
@@ -8220,7 +8202,7 @@ public object FfiConverterTypeNativeActionTriggerThen : FfiConverterRustBuffer<N
 }
 
 
-sealed class RenderingState {
+internal sealed class RenderingState {
 
     object Loading : RenderingState()
 
@@ -8243,7 +8225,7 @@ sealed class RenderingState {
 /**
  * @suppress
  */
-public object FfiConverterTypeRenderingState : FfiConverterRustBuffer<RenderingState> {
+internal object FfiConverterTypeRenderingState : FfiConverterRustBuffer<RenderingState> {
     override fun read(buf: ByteBuffer): RenderingState {
         return when (buf.getInt()) {
             1 -> RenderingState.Loading
@@ -8297,7 +8279,7 @@ public object FfiConverterTypeRenderingState : FfiConverterRustBuffer<RenderingS
 }
 
 
-public interface Logger {
+internal interface Logger {
 
     fun `log`(
         `level`: LoggerEventLevel,
@@ -8357,7 +8339,7 @@ internal object uniffiCallbackInterfaceLogger {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_nativeblocks_core_sdk_fn_init_callback_vtable_logger(vtable)
+        lib.uniffi_nativeblocks_runtime_fn_init_callback_vtable_logger(vtable)
     }
 }
 
@@ -8366,13 +8348,13 @@ internal object uniffiCallbackInterfaceLogger {
  *
  * @suppress
  */
-public object FfiConverterTypeLogger : FfiConverterCallbackInterface<Logger>()
+internal object FfiConverterTypeLogger : FfiConverterCallbackInterface<Logger>()
 
 
 /**
  * @suppress
  */
-public object FfiConverterOptionalLong : FfiConverterRustBuffer<kotlin.Long?> {
+internal object FfiConverterOptionalLong : FfiConverterRustBuffer<kotlin.Long?> {
     override fun read(buf: ByteBuffer): kotlin.Long? {
         if (buf.get().toInt() == 0) {
             return null
@@ -8402,7 +8384,7 @@ public object FfiConverterOptionalLong : FfiConverterRustBuffer<kotlin.Long?> {
 /**
  * @suppress
  */
-public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?> {
+internal object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?> {
     override fun read(buf: ByteBuffer): kotlin.String? {
         if (buf.get().toInt() == 0) {
             return null
@@ -8432,7 +8414,7 @@ public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?
 /**
  * @suppress
  */
-public object FfiConverterOptionalByteArray : FfiConverterRustBuffer<kotlin.ByteArray?> {
+internal object FfiConverterOptionalByteArray : FfiConverterRustBuffer<kotlin.ByteArray?> {
     override fun read(buf: ByteBuffer): kotlin.ByteArray? {
         if (buf.get().toInt() == 0) {
             return null
@@ -8462,7 +8444,7 @@ public object FfiConverterOptionalByteArray : FfiConverterRustBuffer<kotlin.Byte
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeFrameTypeModel : FfiConverterRustBuffer<FrameTypeModel?> {
+internal object FfiConverterOptionalTypeFrameTypeModel : FfiConverterRustBuffer<FrameTypeModel?> {
     override fun read(buf: ByteBuffer): FrameTypeModel? {
         if (buf.get().toInt() == 0) {
             return null
@@ -8492,7 +8474,8 @@ public object FfiConverterOptionalTypeFrameTypeModel : FfiConverterRustBuffer<Fr
 /**
  * @suppress
  */
-public object FfiConverterOptionalSequenceTypeRouteArgumentsModel : FfiConverterRustBuffer<List<RouteArgumentsModel>?> {
+internal object FfiConverterOptionalSequenceTypeRouteArgumentsModel :
+    FfiConverterRustBuffer<List<RouteArgumentsModel>?> {
     override fun read(buf: ByteBuffer): List<RouteArgumentsModel>? {
         if (buf.get().toInt() == 0) {
             return null
@@ -8522,7 +8505,7 @@ public object FfiConverterOptionalSequenceTypeRouteArgumentsModel : FfiConverter
 /**
  * @suppress
  */
-public object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.String>> {
+internal object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.String>> {
     override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
         return List<kotlin.String>(len) {
@@ -8548,7 +8531,7 @@ public object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.St
 /**
  * @suppress
  */
-public object FfiConverterSequenceTypeFrameRouteModel : FfiConverterRustBuffer<List<FrameRouteModel>> {
+internal object FfiConverterSequenceTypeFrameRouteModel : FfiConverterRustBuffer<List<FrameRouteModel>> {
     override fun read(buf: ByteBuffer): List<FrameRouteModel> {
         val len = buf.getInt()
         return List<FrameRouteModel>(len) {
@@ -8574,7 +8557,7 @@ public object FfiConverterSequenceTypeFrameRouteModel : FfiConverterRustBuffer<L
 /**
  * @suppress
  */
-public object FfiConverterSequenceTypeNativeActionModel : FfiConverterRustBuffer<List<NativeActionModel>> {
+internal object FfiConverterSequenceTypeNativeActionModel : FfiConverterRustBuffer<List<NativeActionModel>> {
     override fun read(buf: ByteBuffer): List<NativeActionModel> {
         val len = buf.getInt()
         return List<NativeActionModel>(len) {
@@ -8600,7 +8583,7 @@ public object FfiConverterSequenceTypeNativeActionModel : FfiConverterRustBuffer
 /**
  * @suppress
  */
-public object FfiConverterSequenceTypeNativeActionTriggerModel :
+internal object FfiConverterSequenceTypeNativeActionTriggerModel :
     FfiConverterRustBuffer<List<NativeActionTriggerModel>> {
     override fun read(buf: ByteBuffer): List<NativeActionTriggerModel> {
         val len = buf.getInt()
@@ -8627,7 +8610,7 @@ public object FfiConverterSequenceTypeNativeActionTriggerModel :
 /**
  * @suppress
  */
-public object FfiConverterSequenceTypeRouteArgumentsModel : FfiConverterRustBuffer<List<RouteArgumentsModel>> {
+internal object FfiConverterSequenceTypeRouteArgumentsModel : FfiConverterRustBuffer<List<RouteArgumentsModel>> {
     override fun read(buf: ByteBuffer): List<RouteArgumentsModel> {
         val len = buf.getInt()
         return List<RouteArgumentsModel>(len) {
@@ -8653,7 +8636,7 @@ public object FfiConverterSequenceTypeRouteArgumentsModel : FfiConverterRustBuff
 /**
  * @suppress
  */
-public object FfiConverterMapStringString : FfiConverterRustBuffer<Map<kotlin.String, kotlin.String>> {
+internal object FfiConverterMapStringString : FfiConverterRustBuffer<Map<kotlin.String, kotlin.String>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, kotlin.String> {
         val len = buf.getInt()
         return buildMap<kotlin.String, kotlin.String>(len) {
@@ -8690,7 +8673,7 @@ public object FfiConverterMapStringString : FfiConverterRustBuffer<Map<kotlin.St
 /**
  * @suppress
  */
-public object FfiConverterMapStringTypeNativeActionTriggerDataModel :
+internal object FfiConverterMapStringTypeNativeActionTriggerDataModel :
     FfiConverterRustBuffer<Map<kotlin.String, NativeActionTriggerDataModel>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, NativeActionTriggerDataModel> {
         val len = buf.getInt()
@@ -8728,7 +8711,7 @@ public object FfiConverterMapStringTypeNativeActionTriggerDataModel :
 /**
  * @suppress
  */
-public object FfiConverterMapStringTypeNativeActionTriggerPropertyModel :
+internal object FfiConverterMapStringTypeNativeActionTriggerPropertyModel :
     FfiConverterRustBuffer<Map<kotlin.String, NativeActionTriggerPropertyModel>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, NativeActionTriggerPropertyModel> {
         val len = buf.getInt()
@@ -8766,7 +8749,7 @@ public object FfiConverterMapStringTypeNativeActionTriggerPropertyModel :
 /**
  * @suppress
  */
-public object FfiConverterMapStringTypeNativeBlockDataModel :
+internal object FfiConverterMapStringTypeNativeBlockDataModel :
     FfiConverterRustBuffer<Map<kotlin.String, NativeBlockDataModel>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, NativeBlockDataModel> {
         val len = buf.getInt()
@@ -8804,7 +8787,8 @@ public object FfiConverterMapStringTypeNativeBlockDataModel :
 /**
  * @suppress
  */
-public object FfiConverterMapStringTypeNativeBlockModel : FfiConverterRustBuffer<Map<kotlin.String, NativeBlockModel>> {
+internal object FfiConverterMapStringTypeNativeBlockModel :
+    FfiConverterRustBuffer<Map<kotlin.String, NativeBlockModel>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, NativeBlockModel> {
         val len = buf.getInt()
         return buildMap<kotlin.String, NativeBlockModel>(len) {
@@ -8841,7 +8825,7 @@ public object FfiConverterMapStringTypeNativeBlockModel : FfiConverterRustBuffer
 /**
  * @suppress
  */
-public object FfiConverterMapStringTypeNativeBlockPropertyModel :
+internal object FfiConverterMapStringTypeNativeBlockPropertyModel :
     FfiConverterRustBuffer<Map<kotlin.String, NativeBlockPropertyModel>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, NativeBlockPropertyModel> {
         val len = buf.getInt()
@@ -8879,7 +8863,7 @@ public object FfiConverterMapStringTypeNativeBlockPropertyModel :
 /**
  * @suppress
  */
-public object FfiConverterMapStringTypeNativeBlockSlotModel :
+internal object FfiConverterMapStringTypeNativeBlockSlotModel :
     FfiConverterRustBuffer<Map<kotlin.String, NativeBlockSlotModel>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, NativeBlockSlotModel> {
         val len = buf.getInt()
@@ -8917,7 +8901,7 @@ public object FfiConverterMapStringTypeNativeBlockSlotModel :
 /**
  * @suppress
  */
-public object FfiConverterMapStringTypeNativeVariableModel :
+internal object FfiConverterMapStringTypeNativeVariableModel :
     FfiConverterRustBuffer<Map<kotlin.String, NativeVariableModel>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, NativeVariableModel> {
         val len = buf.getInt()
@@ -8955,7 +8939,7 @@ public object FfiConverterMapStringTypeNativeVariableModel :
 /**
  * @suppress
  */
-public object FfiConverterMapStringSequenceString : FfiConverterRustBuffer<Map<kotlin.String, List<kotlin.String>>> {
+internal object FfiConverterMapStringSequenceString : FfiConverterRustBuffer<Map<kotlin.String, List<kotlin.String>>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, List<kotlin.String>> {
         val len = buf.getInt()
         return buildMap<kotlin.String, List<kotlin.String>>(len) {
@@ -8992,7 +8976,7 @@ public object FfiConverterMapStringSequenceString : FfiConverterRustBuffer<Map<k
 /**
  * @suppress
  */
-public object FfiConverterMapStringSequenceTypeNativeActionModel :
+internal object FfiConverterMapStringSequenceTypeNativeActionModel :
     FfiConverterRustBuffer<Map<kotlin.String, List<NativeActionModel>>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, List<NativeActionModel>> {
         val len = buf.getInt()
@@ -9027,48 +9011,17 @@ public object FfiConverterMapStringSequenceTypeNativeActionModel :
 }
 
 
-fun `disposeInstance`(`instanceName`: kotlin.String) =
+internal fun `disposeInstance`(`instanceName`: kotlin.String) =
     uniffiRustCall() { _status ->
-        UniffiLib.uniffi_nativeblocks_core_sdk_fn_func_dispose_instance(
+        UniffiLib.uniffi_nativeblocks_runtime_fn_func_dispose_instance(
 
             FfiConverterString.lower(`instanceName`), _status
         )
     }
 
-
-fun `warmupInstance`() =
+internal fun `provideLogger`(`instanceName`: kotlin.String, `loggerType`: kotlin.String, `logger`: Logger) =
     uniffiRustCall() { _status ->
-        UniffiLib.uniffi_nativeblocks_core_sdk_fn_func_warmup_instance(
-
-            _status
-        )
-    }
-
-
-@Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-suspend fun `warmupInstanceAsync`() {
-    return uniffiRustCallAsync(
-        UniffiLib.uniffi_nativeblocks_core_sdk_fn_func_warmup_instance_async(),
-        { future, callback, continuation ->
-            UniffiLib.ffi_nativeblocks_core_sdk_rust_future_poll_void(
-                future,
-                callback,
-                continuation
-            )
-        },
-        { future, continuation -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.ffi_nativeblocks_core_sdk_rust_future_free_void(future) },
-        // lift function
-        { Unit },
-
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-}
-
-fun `provideLogger`(`instanceName`: kotlin.String, `loggerType`: kotlin.String, `logger`: Logger) =
-    uniffiRustCall() { _status ->
-        UniffiLib.uniffi_nativeblocks_core_sdk_fn_func_provide_logger(
+        UniffiLib.uniffi_nativeblocks_runtime_fn_func_provide_logger(
 
             FfiConverterString.lower(`instanceName`),
             FfiConverterString.lower(`loggerType`),
@@ -9078,9 +9031,9 @@ fun `provideLogger`(`instanceName`: kotlin.String, `loggerType`: kotlin.String, 
     }
 
 
-fun `removeLogger`(`instanceName`: kotlin.String, `loggerType`: kotlin.String) =
+internal fun `removeLogger`(`instanceName`: kotlin.String, `loggerType`: kotlin.String) =
     uniffiRustCall() { _status ->
-        UniffiLib.uniffi_nativeblocks_core_sdk_fn_func_remove_logger(
+        UniffiLib.uniffi_nativeblocks_runtime_fn_func_remove_logger(
 
             FfiConverterString.lower(`instanceName`), FfiConverterString.lower(`loggerType`), _status
         )

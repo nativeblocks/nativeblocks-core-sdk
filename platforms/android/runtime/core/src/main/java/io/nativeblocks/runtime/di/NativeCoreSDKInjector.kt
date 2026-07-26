@@ -2,9 +2,9 @@ package io.nativeblocks.runtime.di
 
 import android.content.Context
 import io.nativeblocks.runtime.api.NativeblocksEdition
-import io.nativeblocks.runtime.engine.CacheProvider
-import io.nativeblocks.runtime.engine.HttpClient
-import io.nativeblocks.runtime.engine.NativeEngineClientManager
+import io.nativeblocks.runtime.ffi.CacheProvider
+import io.nativeblocks.runtime.ffi.HttpClient
+import io.nativeblocks.runtime.ffi.NativeRuntimeClientManager
 import io.nativeblocks.runtime.experiment.ExperimentUseCase
 import io.nativeblocks.runtime.frame.FrameStateBridgeImpl
 import io.nativeblocks.runtime.frame.FrameViewModel
@@ -36,7 +36,7 @@ internal object NativeCoreSDKInjector {
                 val app = koinApplication {
                     androidContext(context)
                     modules(
-                        engineModule(name, edition),
+                        ffiModule(name, edition),
                         featureModule(name),
                     )
                 }
@@ -54,9 +54,9 @@ internal object NativeCoreSDKInjector {
 internal fun featureModule(instanceName: String): Module {
     return module {
         viewModel(named(instanceName)) {
-            val engine = get<NativeEngineClientManager>(named(instanceName))
+            val runtimeClientManager = get<NativeRuntimeClientManager>(named(instanceName))
             FrameViewModel(
-                frameStateBridge = FrameStateBridgeImpl(engine.frameStateManager()),
+                frameStateBridge = FrameStateBridgeImpl(runtimeClientManager.frameStateManager()),
                 instanceName = instanceName,
             )
         }
@@ -66,17 +66,17 @@ internal fun featureModule(instanceName: String): Module {
         }
 
         single(named(instanceName)) {
-            val engine = get<NativeEngineClientManager>(named(instanceName))
+            val runtimeClientManager = get<NativeRuntimeClientManager>(named(instanceName))
             LocalizationUseCase(
-                engine,
-                engine.localizationStateManager()
+                runtimeClientManager,
+                runtimeClientManager.localizationStateManager()
             )
         }
 
     }
 }
 
-internal fun engineModule(instanceName: String, edition: NativeblocksEdition) = module {
+internal fun ffiModule(instanceName: String, edition: NativeblocksEdition) = module {
     single<CacheProvider>(named(instanceName)) {
         SqliteCacheProvider(
             NativeSqliteHelper(
@@ -98,7 +98,7 @@ internal fun engineModule(instanceName: String, edition: NativeblocksEdition) = 
     }
 
     single(named(instanceName)) {
-        NativeEngineClientManager(
+        NativeRuntimeClientManager(
             instanceName = instanceName,
             edition = edition,
             http = get(named(instanceName)),

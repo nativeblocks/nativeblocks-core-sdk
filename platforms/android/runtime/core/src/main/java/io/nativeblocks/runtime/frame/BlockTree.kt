@@ -13,7 +13,7 @@ import io.nativeblocks.runtime.api.provider.block.defaults.InternalFallbackBlock
 import io.nativeblocks.runtime.api.provider.block.defaults.RootBlock
 import io.nativeblocks.runtime.api.util.LocalNativeWindowWidthClass
 import io.nativeblocks.runtime.api.util.currentWindowWidthClass
-import io.nativeblocks.runtime.engine.RenderingState
+import io.nativeblocks.runtime.ffi.RenderingState
 
 private const val ON_APPEAR = "onAppear"
 private const val ON_DISAPPEAR = "onDisappear"

@@ -2,8 +2,8 @@ package io.nativeblocks.runtime.api.provider.action.defaults
 
 import io.nativeblocks.runtime.api.provider.action.ActionProps
 import io.nativeblocks.runtime.api.provider.action.INativeAction
-import io.nativeblocks.runtime.engine.ScriptBridge
-import io.nativeblocks.runtime.engine.ScriptEngine
+import io.nativeblocks.runtime.ffi.ScriptBridge
+import io.nativeblocks.runtime.ffi.ScriptEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

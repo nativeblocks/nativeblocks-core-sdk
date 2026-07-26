@@ -1,19 +1,19 @@
 package io.nativeblocks.runtime.localization
 
-import io.nativeblocks.runtime.engine.LocalizationStateManager
-import io.nativeblocks.runtime.engine.NativeEngineClientManager
+import io.nativeblocks.runtime.ffi.LocalizationStateManager
+import io.nativeblocks.runtime.ffi.NativeRuntimeClientManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 internal class LocalizationUseCase(
-    private val engineClient: NativeEngineClientManager,
+    private val runtimeClient: NativeRuntimeClientManager,
     private val stateManager: LocalizationStateManager,
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val client get() = engineClient.localizationClient
+    private val client get() = runtimeClient.localizationClient
 
     fun setLocalization(languageCode: String) {
         scope.launch {

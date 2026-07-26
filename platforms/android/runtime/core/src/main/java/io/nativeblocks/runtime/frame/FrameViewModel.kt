@@ -10,10 +10,10 @@ import io.nativeblocks.runtime.api.provider.block.NativeBlockProviderRegistry
 import io.nativeblocks.runtime.api.provider.model.NativeActionModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
 import io.nativeblocks.runtime.api.provider.model.NativeVariableModel
-import io.nativeblocks.runtime.engine.FrameDiff
-import io.nativeblocks.runtime.engine.FrameFull
-import io.nativeblocks.runtime.engine.RenderingState
-import io.nativeblocks.runtime.engine.toDomain
+import io.nativeblocks.runtime.ffi.FrameDiff
+import io.nativeblocks.runtime.ffi.FrameFull
+import io.nativeblocks.runtime.ffi.RenderingState
+import io.nativeblocks.runtime.ffi.toDomain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
-import io.nativeblocks.runtime.engine.NativeBlockModel as EngineBlockModel
-import io.nativeblocks.runtime.engine.NativeVariableModel as EngineVariableModel
+import io.nativeblocks.runtime.ffi.NativeBlockModel as RuntimeFFIBlockModel
+import io.nativeblocks.runtime.ffi.NativeVariableModel as RuntimeFFIVariableModel
 
 internal class FrameViewModel(
     frameStateBridge: FrameStateBridge,
@@ -123,16 +123,16 @@ internal class FrameViewModel(
         }
     }
 
-    private fun syncVariables(engineVariables: Map<String, EngineVariableModel>) {
-        engineVariables.forEach { (key, variable) ->
+    private fun syncVariables(runtimeVariables: Map<String, RuntimeFFIVariableModel>) {
+        runtimeVariables.forEach { (key, variable) ->
             val domain = variable.toDomain()
             val cell = variables[key]
             if (cell == null) variables[key] = mutableStateOf(domain) else cell.value = domain
         }
     }
 
-    private fun syncBlocks(engineBlocks: Map<String, EngineBlockModel>) {
-        engineBlocks.forEach { (key, block) ->
+    private fun syncBlocks(runtimeBlocks: Map<String, RuntimeFFIBlockModel>) {
+        runtimeBlocks.forEach { (key, block) ->
             val domain = block.toDomain()
             val cell = blocks[key]
             if (cell == null) blocks[key] = mutableStateOf(domain) else cell.value = domain

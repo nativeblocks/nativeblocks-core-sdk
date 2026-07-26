@@ -93,7 +93,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3-window-size-class")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    //==========================engine===========================
+    //==========================runtime===========================
     implementation("net.java.dev.jna:jna:5.19.1@aar")
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
     //==========================di=======================================

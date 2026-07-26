@@ -1,10 +1,12 @@
-package io.nativeblocks.runtime.engine
+package io.nativeblocks.runtime.ffi
 
 import io.nativeblocks.runtime.BuildConfig
 import io.nativeblocks.runtime.api.NativeblocksEdition
 import io.nativeblocks.runtime.api.util.SDKConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-internal class NativeEngineClientManager(
+internal class NativeRuntimeClientManager(
     private val instanceName: String,
     edition: NativeblocksEdition,
     http: HttpClient,
@@ -17,18 +19,18 @@ internal class NativeEngineClientManager(
         platform = SDKConfig.SDK_PLATFORM,
     )
 
-    private val engine: NativeblocksEngine = NativeblocksEngine(environment, config, http, cache)
+    private val runtime: NativeblocksRuntime = NativeblocksRuntime(environment, config, http, cache)
 
-    val frameClient: FrameClient = engine.frameClient()
-    val scaffoldClient: ScaffoldClient = engine.scaffoldClient()
-    val experimentClient: ExperimentClient = engine.experimentClient()
-    val localizationClient: LocalizationClient = engine.localizationClient()
-    val globalParameterClient: GlobalParameterClient = engine.globalParameterClient()
+    val frameClient: FrameClient = runtime.frameClient()
+    val scaffoldClient: ScaffoldClient = runtime.scaffoldClient()
+    val experimentClient: ExperimentClient = runtime.experimentClient()
+    val localizationClient: LocalizationClient = runtime.localizationClient()
+    val globalParameterClient: GlobalParameterClient = runtime.globalParameterClient()
 
     fun frameStateManager(): FrameStateManager = frameClient.stateManager()
     fun localizationStateManager(): LocalizationStateManager = localizationClient.stateManager()
 
-    fun warmup() {
+    suspend fun warmup() = withContext(Dispatchers.IO) {
         runCatching { cache.has("nativeblocks_warmup") }
     }
 
@@ -38,7 +40,7 @@ internal class NativeEngineClientManager(
         runCatching { experimentClient.close() }
         runCatching { localizationClient.close() }
         runCatching { globalParameterClient.close() }
-        runCatching { engine.close() }
+        runCatching { runtime.close() }
         runCatching { disposeInstance(instanceName) }
         runCatching { cache.dispose() }
     }

@@ -14,11 +14,10 @@ import io.nativeblocks.runtime.api.provider.type.NativeTypeProvider
 import io.nativeblocks.runtime.api.provider.type.NativeTypeProviderRegistry
 import io.nativeblocks.runtime.api.provider.wandkit.Wandkit
 import io.nativeblocks.runtime.di.NativeCoreSDKInjector
-import io.nativeblocks.runtime.engine.NativeEngineClientManager
-import io.nativeblocks.runtime.engine.disposeInstance
-import io.nativeblocks.runtime.engine.provideLogger
-import io.nativeblocks.runtime.engine.removeLogger
-import io.nativeblocks.runtime.engine.warmupInstanceAsync
+import io.nativeblocks.runtime.ffi.NativeRuntimeClientManager
+import io.nativeblocks.runtime.ffi.disposeInstance
+import io.nativeblocks.runtime.ffi.provideLogger
+import io.nativeblocks.runtime.ffi.removeLogger
 import io.nativeblocks.runtime.experiment.ExperimentUseCase
 import io.nativeblocks.runtime.localization.LocalizationUseCase
 import io.nativeblocks.runtime.logger.LoggerAdapter
@@ -96,9 +95,8 @@ class NativeblocksManager internal constructor(
 
     private suspend fun warmup() {
         runCatching {
-            warmupInstanceAsync()
-            val engineClient: NativeEngineClientManager by getKoin().inject(named(this.name))
-            engineClient.warmup()
+            val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
+            runtimeClient.warmup()
         }
     }
 
@@ -201,8 +199,8 @@ class NativeblocksManager internal constructor(
         loggerTypes.forEach { runCatching { removeLogger(this.name, it) } }
         loggerTypes.clear()
         runCatching {
-            val engineClient: NativeEngineClientManager by getKoin().inject(named(this.name))
-            engineClient.close()
+            val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
+            runtimeClient.close()
         }
         NativeCoreSDKInjector.destroy(this.name)
         runCatching { disposeInstance(this.name) }
@@ -219,8 +217,8 @@ class NativeblocksManager internal constructor(
      * @return The NativeblocksManager instance for chaining.
      */
     suspend fun syncFrame(route: String): NativeblocksManager {
-        val engineClient: NativeEngineClientManager by getKoin().inject(named(this.name))
-        runCatching { engineClient.frameClient.syncFrame(route, emptyMap()) }
+        val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
+        runCatching { runtimeClient.frameClient.syncFrame(route, emptyMap()) }
         return this
     }
 
@@ -229,8 +227,8 @@ class NativeblocksManager internal constructor(
      * @return The NativeblocksManager instance for chaining.
      */
     suspend fun clearAllFrames(): NativeblocksManager {
-        val engineClient: NativeEngineClientManager by getKoin().inject(named(this.name))
-        runCatching { engineClient.frameClient.clearAll(emptyList()) }
+        val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
+        runCatching { runtimeClient.frameClient.clearAll(emptyList()) }
         return this
     }
 
@@ -240,8 +238,8 @@ class NativeblocksManager internal constructor(
      * @return The NativeblocksManager instance for chaining.
      */
     suspend fun clearFrame(route: String): NativeblocksManager {
-        val engineClient: NativeEngineClientManager by getKoin().inject(named(this.name))
-        runCatching { engineClient.frameClient.clear(route) }
+        val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
+        runCatching { runtimeClient.frameClient.clear(route) }
         return this
     }
 
@@ -270,8 +268,8 @@ class NativeblocksManager internal constructor(
      * Retrieves the scaffold model for the current configuration.
      */
     suspend fun getScaffold(): Result<NativeScaffoldModel> {
-        val engineClient: NativeEngineClientManager by getKoin().inject(named(this.name))
-        return runCatching { engineClient.scaffoldClient.getScaffold().toHost() }
+        val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
+        return runCatching { runtimeClient.scaffoldClient.getScaffold().toHost() }
     }
 
     /**
@@ -354,8 +352,8 @@ class NativeblocksManager internal constructor(
      * @return The NativeblocksManager instance for chaining.
      */
     fun setGlobalParameters(parameters: Map<String, String>): NativeblocksManager {
-        val engineClient: NativeEngineClientManager by getKoin().inject(named(this.name))
-        runCatching { engineClient.globalParameterClient.set(parameters) }
+        val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
+        runCatching { runtimeClient.globalParameterClient.set(parameters) }
         return this
     }
 

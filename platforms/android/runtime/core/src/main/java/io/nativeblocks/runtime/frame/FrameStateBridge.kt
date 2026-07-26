@@ -1,10 +1,10 @@
 package io.nativeblocks.runtime.frame
 
-import io.nativeblocks.runtime.engine.FrameChangeType
-import io.nativeblocks.runtime.engine.FrameDiff
-import io.nativeblocks.runtime.engine.FrameFull
-import io.nativeblocks.runtime.engine.FrameStateManager
-import io.nativeblocks.runtime.engine.FrameStateObserver
+import io.nativeblocks.runtime.ffi.FrameChangeType
+import io.nativeblocks.runtime.ffi.FrameDiff
+import io.nativeblocks.runtime.ffi.FrameFull
+import io.nativeblocks.runtime.ffi.FrameStateManager
+import io.nativeblocks.runtime.ffi.FrameStateObserver
 
 internal interface FrameStateBridge {
     suspend fun observeFrame(

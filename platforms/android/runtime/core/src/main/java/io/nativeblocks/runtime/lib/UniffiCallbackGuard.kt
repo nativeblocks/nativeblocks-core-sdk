@@ -1,7 +1,7 @@
 package io.nativeblocks.runtime.lib
 
-import io.nativeblocks.runtime.engine.ErrorType
-import io.nativeblocks.runtime.engine.NbException
+import io.nativeblocks.runtime.ffi.ErrorType
+import io.nativeblocks.runtime.ffi.NbException
 
 internal inline fun <R> uniffiCallbackGuard(errorType: ErrorType, block: () -> R): R = try {
     block()

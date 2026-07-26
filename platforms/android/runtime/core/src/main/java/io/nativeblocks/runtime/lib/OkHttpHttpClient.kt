@@ -1,8 +1,8 @@
 package io.nativeblocks.runtime.lib
 
-import io.nativeblocks.runtime.engine.ErrorType
-import io.nativeblocks.runtime.engine.HttpClient
-import io.nativeblocks.runtime.engine.NbException
+import io.nativeblocks.runtime.ffi.ErrorType
+import io.nativeblocks.runtime.ffi.HttpClient
+import io.nativeblocks.runtime.ffi.NbException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType

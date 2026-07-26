@@ -100,8 +100,10 @@ free for the host's public API:
 
 **Sealing.** `generate-bindings.sh` runs `seal-bindings.sh` before anything is
 staged, so no unsealed copy exists: Kotlin top-level declarations → `internal`,
-Swift `public`/`open` → `package`. A wrapper that leaks a generated type then
-*fails to build*:
+Swift `public`/`open` → `package`. Every file is then re-read in check mode,
+which fails the build if one declaration is still reachable — a partial seal
+breaks the host build, so it must never reach `dist/`. A wrapper that leaks a
+generated type then *fails to build*:
 
 ```kotlin
 public fun frames(): ffi.FrameClient = client

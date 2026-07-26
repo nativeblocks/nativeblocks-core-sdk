@@ -1,14 +1,14 @@
 package io.nativeblocks.runtime.experiment
 
-import io.nativeblocks.runtime.engine.NativeEngineClientManager
+import io.nativeblocks.runtime.ffi.NativeRuntimeClientManager
 
 internal class ExperimentUseCase(
-    private val engineClient: NativeEngineClientManager,
+    private val runtimeClient: NativeRuntimeClientManager,
 ) {
 
     suspend fun get(key: String, cacheTTL: Long): Pair<String, String>? =
         runCatching {
-            val result = engineClient.experimentClient.getExperiment(key, cacheTTL)
+            val result = runtimeClient.experimentClient.getExperiment(key, cacheTTL)
             result.value to result.variableType
         }.getOrNull()
 }

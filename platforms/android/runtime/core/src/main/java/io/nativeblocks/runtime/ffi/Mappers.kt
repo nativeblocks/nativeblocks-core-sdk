@@ -1,4 +1,4 @@
-package io.nativeblocks.runtime.engine
+package io.nativeblocks.runtime.ffi
 
 import io.nativeblocks.runtime.api.provider.logger.LoggerEventLevel
 import io.nativeblocks.runtime.api.provider.model.NativeActionModel
@@ -11,23 +11,23 @@ import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockPropertyModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockSlotModel
 import io.nativeblocks.runtime.api.provider.model.NativeVariableModel
-import io.nativeblocks.runtime.engine.LoggerEventLevel as EngineLoggerEventLevel
-import io.nativeblocks.runtime.engine.NativeActionModel as EngineActionModel
-import io.nativeblocks.runtime.engine.NativeActionTriggerModel as EngineActionTriggerModel
-import io.nativeblocks.runtime.engine.NativeActionTriggerThen as EngineActionTriggerThen
-import io.nativeblocks.runtime.engine.NativeBlockModel as EngineBlockModel
-import io.nativeblocks.runtime.engine.NativeVariableModel as EngineVariableModel
+import io.nativeblocks.runtime.ffi.LoggerEventLevel as RuntimeFFILoggerEventLevel
+import io.nativeblocks.runtime.ffi.NativeActionModel as RuntimeFFIActionModel
+import io.nativeblocks.runtime.ffi.NativeActionTriggerModel as RuntimeFFIActionTriggerModel
+import io.nativeblocks.runtime.ffi.NativeActionTriggerThen as RuntimeFFIActionTriggerThen
+import io.nativeblocks.runtime.ffi.NativeBlockModel as RuntimeFFIBlockModel
+import io.nativeblocks.runtime.ffi.NativeVariableModel as RuntimeFFIVariableModel
 
-internal fun EngineLoggerEventLevel.toDomain(): LoggerEventLevel {
+internal fun RuntimeFFILoggerEventLevel.toDomain(): LoggerEventLevel {
     return when (this) {
-        EngineLoggerEventLevel.DEBUG -> LoggerEventLevel.DEBUG
-        EngineLoggerEventLevel.INFO -> LoggerEventLevel.INFO
-        EngineLoggerEventLevel.WARNING -> LoggerEventLevel.WARNING
-        EngineLoggerEventLevel.ERROR -> LoggerEventLevel.ERROR
+        RuntimeFFILoggerEventLevel.DEBUG -> LoggerEventLevel.DEBUG
+        RuntimeFFILoggerEventLevel.INFO -> LoggerEventLevel.INFO
+        RuntimeFFILoggerEventLevel.WARNING -> LoggerEventLevel.WARNING
+        RuntimeFFILoggerEventLevel.ERROR -> LoggerEventLevel.ERROR
     }
 }
 
-internal fun EngineVariableModel.toDomain(): NativeVariableModel {
+internal fun RuntimeFFIVariableModel.toDomain(): NativeVariableModel {
     return NativeVariableModel(
         key = key,
         value = value,
@@ -35,7 +35,7 @@ internal fun EngineVariableModel.toDomain(): NativeVariableModel {
     )
 }
 
-internal fun EngineBlockModel.toDomain(): NativeBlockModel {
+internal fun RuntimeFFIBlockModel.toDomain(): NativeBlockModel {
     return NativeBlockModel(
         id = id,
         parentId = parentId,
@@ -63,7 +63,7 @@ internal fun EngineBlockModel.toDomain(): NativeBlockModel {
     )
 }
 
-internal fun EngineActionModel.toDomain(): NativeActionModel {
+internal fun RuntimeFFIActionModel.toDomain(): NativeActionModel {
     return NativeActionModel(
         id = id,
         key = key,
@@ -72,7 +72,7 @@ internal fun EngineActionModel.toDomain(): NativeActionModel {
     )
 }
 
-private fun EngineActionTriggerModel.toDomain(): NativeActionTriggerModel {
+private fun RuntimeFFIActionTriggerModel.toDomain(): NativeActionTriggerModel {
     return NativeActionTriggerModel(
         name = name,
         id = id,
@@ -94,11 +94,11 @@ private fun EngineActionTriggerModel.toDomain(): NativeActionTriggerModel {
     )
 }
 
-private fun EngineActionTriggerThen.toDomain(): NativeActionTriggerThen {
+private fun RuntimeFFIActionTriggerThen.toDomain(): NativeActionTriggerThen {
     return when (this) {
-        EngineActionTriggerThen.SUCCESS -> NativeActionTriggerThen.SUCCESS
-        EngineActionTriggerThen.FAILURE -> NativeActionTriggerThen.FAILURE
-        EngineActionTriggerThen.NEXT -> NativeActionTriggerThen.NEXT
-        EngineActionTriggerThen.END -> NativeActionTriggerThen.END
+        RuntimeFFIActionTriggerThen.SUCCESS -> NativeActionTriggerThen.SUCCESS
+        RuntimeFFIActionTriggerThen.FAILURE -> NativeActionTriggerThen.FAILURE
+        RuntimeFFIActionTriggerThen.NEXT -> NativeActionTriggerThen.NEXT
+        RuntimeFFIActionTriggerThen.END -> NativeActionTriggerThen.END
     }
 }
