@@ -1,7 +1,7 @@
 # nativeblocks-core-sdk
 
-The Rust core of the NativeBlocks runtime. It ships inside the Android and iOS
-host SDKs over UniFFI bindings that are generated, never committed.
+The Rust core of the NativeBlocks runtime. It ships inside the Android and iOS host SDKs over UniFFI bindings that are
+generated, never committed.
 
 ## Setup
 
@@ -32,9 +32,8 @@ cargo install cargo-ndk                              # + install the Android NDK
 # or: ./scripts/release.sh android ios
 ```
 
-This cleans `dist/`, builds the core per platform, generates and seals the
-bindings, and stages everything under `dist/`. Toolchains you don't have are
-**skipped with a hint** (e.g. iOS off macOS), not errors.
+This cleans `dist/`, builds the core per platform, generates and seals the bindings, and stages everything under
+`dist/`. Toolchains you don't have are **skipped with a hint** (e.g. iOS off macOS), not errors.
 
 ```
 dist/
@@ -48,14 +47,14 @@ Single-platform rebuilds: `scripts/build-android.sh`, `build-ios.sh`. Each
 
 ### 3. Copy into the host SDK
 
-Every release: re-run `./scripts/release.sh` and re-copy — a Rust change moves
-the native libs _and_ the bindings together.
+Every release: re-run `./scripts/release.sh` and re-copy — a Rust change moves the native libs _and_ the bindings
+together.
 
-**Android** — both folders go into the **same** Gradle module as the hand-written
-wrapper (the binding is `internal`, which is module-scoped):
+**Android** — both folders go into the **same** Gradle module as the hand-written wrapper (the binding is `internal`,
+which is module-scoped):
 
 | Copy from                | Into                         |
-| ------------------------ | ---------------------------- |
+|--------------------------|------------------------------|
 | `dist/android/jniLibs/*` | `<module>/src/main/jniLibs/` |
 | `dist/android/java/*`    | `<module>/src/main/java/`    |
 
@@ -65,17 +64,17 @@ kotlin { explicitApi() }
 dependencies { implementation("net.java.dev.jna:jna:5.14.0@aar") }
 ```
 
-**iOS** — one SwiftPM package, two targets (the binding is `package`-visible, so
-it must live in the same package as the wrapper). Xcode 15+:
+**iOS** — one SwiftPM package, two targets (the binding is `package`-visible, so it must live in the same package as the
+wrapper). Xcode 15+:
 
-| Copy from                                     | Into                                 |
-| --------------------------------------------- | ------------------------------------ |
-| `dist/ios/NativeblocksRuntimeCFFI.xcframework` | `Frameworks/` → **Embed & Sign**    |
-| `dist/ios/NativeblocksRuntimeFFI.swift`       | `Sources/NativeblocksRuntimeFFI/`    |
+| Copy from                                      | Into                              |
+|------------------------------------------------|-----------------------------------|
+| `dist/ios/NativeblocksRuntimeCFFI.xcframework` | `Frameworks/` → **Embed & Sign**  |
+| `dist/ios/NativeblocksRuntimeFFI.swift`        | `Sources/NativeblocksRuntimeFFI/` |
 
 ```swift
 products: [
-    .library(name: "NativeblocksRuntime", targets: ["NativeblocksRuntime"]),  // the only product
+    .library(name: "NativeblocksRuntime", targets: ["NativeblocksRuntime"]), // the only product
 ],
 targets: [
     .target(name: "NativeblocksRuntime", dependencies: ["NativeblocksRuntimeFFI"]),
@@ -87,37 +86,12 @@ targets: [
 
 ## Host SDK boundary
 
-App developers depend on the host SDK and must never name anything UniFFI
-generated. Two things enforce that, by the compiler rather than by review.
+App developers depend on the host SDK and must never name anything UniFFI generated. Two things enforce that, by the
+compiler rather than by review.
 
-**Names.** Everything generated carries an FFI postfix, leaving the clean names
-free for the host's public API:
+**Names.** Everything generated carries an FFI postfix, leaving the clean names free for the host's public API:
 
-| | generated (private) | host (public) |
-| --- | --- | --- |
-| Android | package `io.nativeblocks.runtime.ffi` | `io.nativeblocks.runtime` |
-| iOS | `NativeblocksRuntimeFFI` + `NativeblocksRuntimeCFFI` (C shim) | `NativeblocksRuntime` |
-
-**Sealing.** `generate-bindings.sh` runs `seal-bindings.sh` before anything is
-staged, so no unsealed copy exists: Kotlin top-level declarations → `internal`,
-Swift `public`/`open` → `package`. Every file is then re-read in check mode,
-which fails the build if one declaration is still reachable — a partial seal
-breaks the host build, so it must never reach `dist/`. A wrapper that leaks a
-generated type then *fails to build*:
-
-```kotlin
-public fun frames(): ffi.FrameClient = client
-//     ^ error: public function exposes its internal return type FrameClient
-```
-
-So the wrapper holds generated objects privately and maps to host-owned types on
-the way out. Inbound is the half that is easy to miss: UniFFI generates callback
-interfaces the host implements (`HttpClient`, `CacheProvider`, `Logger`,
-`ScriptBridge`, `FrameStateObserver`). Declare your own public interface and an
-`internal`/`package` adapter for each, so consumers never import the FFI package.
-
-Not closed, but unreachable by accident: Java callers on Android can see
-`…runtime.ffi.*` (Kotlin `internal` is public in bytecode); a consumer can import
-`NativeblocksRuntimeCFFI` directly if the xcframework is in their search path;
-the cdylib exports `uniffi_*`/`ffi_*` C symbols by construction (`dlsym`-only, no
-headers ship).
+|         | generated (private)                                           | host (public)             |
+|---------|---------------------------------------------------------------|---------------------------|
+| Android | package `io.nativeblocks.runtime.ffi`                         | `io.nativeblocks.runtime` |
+| iOS     | `NativeblocksRuntimeFFI` + `NativeblocksRuntimeCFFI` (C shim) | `NativeblocksRuntime`     |

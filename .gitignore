@@ -37,3 +37,4 @@ platforms/ios/*/Package
 platforms/ios/*/Package.pins
 platforms/ios/*/Package.resolved
 platforms/ios/*/*.xcodeproj
+platforms/ios/*/*.xcodeproj/**/xcuserdata
