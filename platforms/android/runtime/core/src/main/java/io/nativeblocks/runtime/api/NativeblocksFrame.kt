@@ -30,25 +30,25 @@ import org.koin.core.qualifier.named
  */
 @Composable
 fun NativeblocksFrame(
-    instance: String = "default",
+    instanceName: String = "default",
     route: String,
     routeArguments: Map<String, String>,
     loading: @Composable () -> Unit,
     error: @Composable (String) -> Unit
 ) {
-    KoinIsolatedContext(context = NativeCoreSDKInjector.get(instance)) {
-        val systemContractors = NativeblocksManager.getInstance(instance).providedActionContractors()
+    KoinIsolatedContext(context = NativeCoreSDKInjector.get(instanceName)) {
+        val systemContractors = NativeblocksManager.getInstance(instanceName).providedActionContractors()
         systemContractors.forEach {
             it.ActionContractor()
         }
         val frameViewModel = koinViewModel<FrameViewModel>(
-            qualifier = named(instance),
-            key = "$instance-$route-${routeArguments.hashCode()}"
+            qualifier = named(instanceName),
+            key = "$instanceName-$route-${routeArguments.hashCode()}"
         )
-        LaunchedEffect(instance, route, routeArguments) {
+        LaunchedEffect(instanceName, route, routeArguments) {
             frameViewModel.setupFrame(route, routeArguments)
         }
-        NativeFrame(frameViewModel, loading, error)
+        NativeFrame(instanceName, frameViewModel, loading, error)
     }
 }
 

@@ -10,24 +10,26 @@ internal struct NativeFrame: View {
     private let args: [String: String]
     private let loading: () -> AnyView
     private let error: (String) -> AnyView
+    private let instanceName: String
 
     @StateObject private var frameViewModel: FrameViewModel
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(
-        instance: String = "default",
+        instanceName: String = "default",
         route: String,
         args: [String: String],
         loading: @escaping () -> AnyView,
         error: @escaping (String) -> AnyView
     ) {
+        self.instanceName = instanceName
         self.route = route
         self.args = args
         self.loading = loading
         self.error = error
         self._frameViewModel = StateObject(
-            wrappedValue: NativeCoreSDKInjector.get(name: instance).makeFrameViewModel()
+            wrappedValue: NativeCoreSDKInjector.get(name: instanceName).makeFrameViewModel()
         )
     }
 
@@ -37,7 +39,7 @@ internal struct NativeFrame: View {
             case .loading:
                 loading()
             case .ready:
-                RootLifecycle(vm: frameViewModel)
+                RootLifecycle(instanceName: instanceName, vm: frameViewModel)
             case .error(let message):
                 error(message)
             }
@@ -54,12 +56,13 @@ internal struct NativeFrame: View {
 
 private struct RootLifecycle: View {
 
+    let instanceName: String
     @ObservedObject var vm: FrameViewModel
 
     var body: some View {
         Group {
             if let rootKey = vm.rootKey {
-                Block(vm: vm, blockKey: rootKey, listItemIndex: NONE_INDEX)
+                Block(instanceName: instanceName, vm: vm, blockKey: rootKey, listItemIndex: NONE_INDEX)
                     .onAppear {
                         handle(rootKey, ON_APPEAR)
                     }
@@ -83,6 +86,7 @@ private struct RootLifecycle: View {
 
 private struct Block: View {
 
+    let instanceName: String
     @ObservedObject var vm: FrameViewModel
     let blockKey: String
     let listItemIndex: Int
@@ -106,7 +110,7 @@ private struct Block: View {
 
     private func makeBlockProps(for block: NativeBlockModel) -> BlockProps {
         return BlockProps(
-            instanceName: vm.instanceName,
+            instanceName: instanceName,
             listItemIndex: listItemIndex,
             onFindVariable: { key in
                 vm.variableOf(key)
@@ -125,6 +129,7 @@ private struct Block: View {
                 AnyView(
                     ForEach(blockKeys[subSlot.slot] ?? [], id: \.self) { childKey in
                         Block(
+                            instanceName: instanceName,
                             vm: vm,
                             blockKey: childKey,
                             listItemIndex: itemIndex == NONE_INDEX ? listItemIndex : itemIndex

@@ -26,7 +26,7 @@ import io.nativeblocks.runtime.ffi.NativeVariableModel as RuntimeFFIVariableMode
 
 internal class FrameViewModel(
     frameStateBridge: FrameStateBridge,
-    val instanceName: String,
+    private val instanceName: String,
 ) : ViewModel(),
     FrameStateBridge by frameStateBridge {
 

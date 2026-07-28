@@ -6,7 +6,7 @@ import NativeblocksRuntimeFFI
 internal final class FrameViewModel: ObservableObject {
 
     private let frameStateBridge: FrameStateBridge
-    let instanceName: String
+    private let instanceName: String
 
     @Published private(set) var renderingState: RenderingState = .loading
     @Published private(set) var rootKey: String? = nil

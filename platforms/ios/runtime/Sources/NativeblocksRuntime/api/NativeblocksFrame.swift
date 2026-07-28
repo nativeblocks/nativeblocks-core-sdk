@@ -4,7 +4,7 @@ import SwiftUI
 /// Represents a view that manages and displays a Nativeblocks frame.
 /// The `NativeblocksFrame` is used to display a portion of the UI as defined by a specific route and its arguments.
 public struct NativeblocksFrame: View {
-    private var instance: String = "default"
+    private var instanceName: String = "default"
     private var route: String
     private var routeArguments: [String: String]
     private var loading: () -> AnyView
@@ -17,13 +17,13 @@ public struct NativeblocksFrame: View {
     ///   - loading: A closure that returns a view to be shown while the content is loading.
     ///   - error: A closure that takes a message string and returns a view to be shown when an error occurs.
     public init(
-        instance: String = "default",
+        instanceName: String = "default",
         route: String,
         routeArguments: [String: String],
         loading: @escaping () -> AnyView,
         error: @escaping (String) -> AnyView
     ) {
-        self.instance = instance
+        self.instanceName = instanceName
         self.route = route
         self.routeArguments = routeArguments
         self.loading = loading
@@ -31,13 +31,13 @@ public struct NativeblocksFrame: View {
     }
 
     public var body: some View {
-        let contractors = NativeblocksManager.getInstance(name: instance).providedActionContractors()
+        let contractors = NativeblocksManager.getInstance(name: instanceName).providedActionContractors()
         ZStack {
             ForEach(Array(contractors.enumerated()), id: \.offset) { _, contractor in
                 AnyView(contractor.actionContractor())
             }
             NativeFrame(
-                instance: instance,
+                instanceName: instanceName,
                 route: route,
                 args: routeArguments,
                 loading: loading,

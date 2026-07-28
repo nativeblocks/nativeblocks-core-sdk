@@ -20,6 +20,7 @@ private const val ON_DISAPPEAR = "onDisappear"
 
 @Composable
 internal fun NativeFrame(
+    instanceName: String,
     frameViewModel: FrameViewModel,
     loading: @Composable () -> Unit,
     error: @Composable (String) -> Unit
@@ -28,14 +29,14 @@ internal fun NativeFrame(
     CompositionLocalProvider(LocalNativeWindowWidthClass provides currentWindowWidthClass()) {
         when (val frameState = state) {
             is RenderingState.Loading -> loading.invoke()
-            is RenderingState.Ready -> RootLifecycle(frameViewModel)
+            is RenderingState.Ready -> RootLifecycle(instanceName, frameViewModel)
             is RenderingState.Error -> error.invoke(frameState.message)
         }
     }
 }
 
 @Composable
-private fun RootLifecycle(vm: FrameViewModel) {
+private fun RootLifecycle(instanceName: String, vm: FrameViewModel) {
     val rootKeyState by vm.rootKey.collectAsStateWithLifecycle()
     val appearGen by vm.frameUpdateGeneration.collectAsStateWithLifecycle()
 
@@ -50,11 +51,11 @@ private fun RootLifecycle(vm: FrameViewModel) {
         }
     }
 
-    Block(vm, rootKey, NONE_INDEX)
+    Block(instanceName, vm, rootKey, NONE_INDEX)
 }
 
 @Composable
-private fun Block(vm: FrameViewModel, blockKey: String, listItemIndex: Int) {
+private fun Block(instanceName: String, vm: FrameViewModel, blockKey: String, listItemIndex: Int) {
     val block = vm.blockOf(blockKey)?.value ?: return
 
     val nativeBlock = remember(block.keyType) {
@@ -68,7 +69,7 @@ private fun Block(vm: FrameViewModel, blockKey: String, listItemIndex: Int) {
 
     val props = remember(block, listItemIndex) {
         BlockProps(
-            instanceName = vm.instanceName,
+            instanceName = instanceName,
             listItemIndex = listItemIndex,
             onFindVariable = { vm.variableOf(it)?.value },
             onVariableChange = { vm.updateVariable(it.key, it.value) },
@@ -79,6 +80,7 @@ private fun Block(vm: FrameViewModel, blockKey: String, listItemIndex: Int) {
                 blockKeys[subSlot.slot]?.forEach { childKey ->
                     key(childKey) {
                         Block(
+                            instanceName = instanceName,
                             vm = vm,
                             blockKey = childKey,
                             listItemIndex = if (itemIndex == NONE_INDEX) listItemIndex else itemIndex,
