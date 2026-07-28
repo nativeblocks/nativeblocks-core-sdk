@@ -52,7 +52,7 @@ pub(in crate::feature::frame::data) async fn sync_cloud(
         return Ok(SyncOutcome::Updated(frame));
     }
 
-    let outcome = match db_source::cached_checksum(cache, route)? {
+    let outcome = match db_source::cached_checksum(cache, route).await? {
         None => SyncOutcome::Updated(
             fetch_production_frame(
                 http,
@@ -127,7 +127,7 @@ async fn fetch_dev_frame(
     )
     .await
     .map_err(|error| error.or_code(error_code::FRAME_DEV_SYNC))?;
-    db_source::save_frame(cache, route, &frame, false)?;
+    db_source::save_frame(cache, route, &frame, false).await?;
     return Ok(frame);
 }
 
@@ -156,7 +156,7 @@ async fn fetch_production_frame(
     )
     .await
     .map_err(|error| error.or_code(error_code::FRAME_PRODUCTION_SYNC))?;
-    db_source::save_frame(cache, route, &frame, true)?;
+    db_source::save_frame(cache, route, &frame, true).await?;
     return Ok(frame);
 }
 

@@ -13,8 +13,8 @@ use crate::plugin::config::model::{NativeProjectConfigModel, ProjectConfigGatewa
 
 const PROJECT_CONFIG_TTL_MILLIS: i64 = 1 * 24 * 60 * 60 * 1000;
 
-pub(crate) fn install_id(cache: &dyn CacheProvider) -> NBResult<String> {
-    if let Some(bytes) = cache.get_bytes(INSTALL_ID_KEY.to_string())? {
+pub(crate) async fn install_id(cache: &dyn CacheProvider) -> NBResult<String> {
+    if let Some(bytes) = cache.get(INSTALL_ID_KEY.to_string()).await? {
         if let Ok(existing) = String::from_utf8(bytes) {
             if !existing.is_empty() {
                 return Ok(existing);
@@ -22,35 +22,39 @@ pub(crate) fn install_id(cache: &dyn CacheProvider) -> NBResult<String> {
         }
     }
     let install_id = Uuid::now_v7().to_string();
-    cache.save_bytes(
-        INSTALL_ID_KEY.to_string(),
-        install_id.clone().into_bytes(),
-        None,
-    )?;
+    cache
+        .save(
+            INSTALL_ID_KEY.to_string(),
+            install_id.clone().into_bytes(),
+            None,
+        )
+        .await?;
     return Ok(install_id);
 }
 
-pub(crate) fn read_cached_config(
+pub(crate) async fn read_cached_config(
     cache: &dyn CacheProvider,
 ) -> NBResult<Option<NativeProjectConfigModel>> {
-    return cache::read_or_cleanup(cache, PROJECT_CONFIG_KEY.to_string());
+    return cache::read_or_cleanup(cache, PROJECT_CONFIG_KEY.to_string()).await;
 }
 
-pub(crate) fn is_config_fresh(cache: &dyn CacheProvider) -> NBResult<bool> {
-    return Ok(cache.has(PROJECT_CONFIG_FRESH_KEY.to_string())?);
+pub(crate) async fn is_config_fresh(cache: &dyn CacheProvider) -> NBResult<bool> {
+    return Ok(cache.has(PROJECT_CONFIG_FRESH_KEY.to_string()).await?);
 }
 
-pub(crate) fn write_cached_config(
+pub(crate) async fn write_cached_config(
     cache: &dyn CacheProvider,
     config: &NativeProjectConfigModel,
 ) -> NBResult<()> {
     let bytes = util::to_bytes(config)?;
-    cache.save_bytes(PROJECT_CONFIG_KEY.to_string(), bytes, None)?;
-    cache.save_bytes(
-        PROJECT_CONFIG_FRESH_KEY.to_string(),
-        b"1".to_vec(),
-        Some(PROJECT_CONFIG_TTL_MILLIS),
-    )?;
+    cache.save(PROJECT_CONFIG_KEY.to_string(), bytes, None).await?;
+    cache
+        .save(
+            PROJECT_CONFIG_FRESH_KEY.to_string(),
+            b"1".to_vec(),
+            Some(PROJECT_CONFIG_TTL_MILLIS),
+        )
+        .await?;
     return Ok(());
 }
 

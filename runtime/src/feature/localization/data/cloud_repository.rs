@@ -50,7 +50,7 @@ impl CloudLocalizationRepository {
         };
     }
 
-    fn from_cache(&self, language_code: &str) -> Option<NativeLocalizationModel> {
+    async fn from_cache(&self, language_code: &str) -> Option<NativeLocalizationModel> {
         if let Some(localization) = self.memory.get_localization(language_code) {
             return Some(localization);
         }
@@ -58,7 +58,8 @@ impl CloudLocalizationRepository {
             self.cache.as_ref(),
             language_code,
             self.environment.development_mode(),
-        );
+        )
+        .await;
         match &from_db {
             Ok(localization) => {
                 self.memory
@@ -119,7 +120,7 @@ impl CloudLocalizationRepository {
 #[async_trait::async_trait]
 impl LocalizationRepository for CloudLocalizationRepository {
     async fn load(&self, language_code: &str) -> NBResult<NativeLocalizationModel> {
-        if let Some(localization) = self.from_cache(language_code) {
+        if let Some(localization) = self.from_cache(language_code).await {
             return Ok(localization);
         }
         return self.from_network(language_code).await;

@@ -41,7 +41,7 @@ pub(super) async fn sync_cloud(
         .await;
     }
 
-    return match db_source::cached_checksum(cache, language_code)? {
+    return match db_source::cached_checksum(cache, language_code).await? {
         None => {
             fetch_production_localization(
                 http,
@@ -79,7 +79,7 @@ pub(super) async fn sync_cloud(
                 )
                 .await
             } else {
-                db_source::get_localization(cache, language_code, false)
+                db_source::get_localization(cache, language_code, false).await
             }
         }
     };
@@ -108,7 +108,7 @@ async fn fetch_dev_localization(
     )
     .await
     .map_err(|error| error.or_code(error_code::LOCALIZATION_DEV_SYNC))?;
-    db_source::save_localization(cache, language_code, &localization, false)?;
+    db_source::save_localization(cache, language_code, &localization, false).await?;
     return Ok(localization);
 }
 
@@ -135,7 +135,7 @@ async fn fetch_production_localization(
     )
     .await
     .map_err(|error| error.or_code(error_code::LOCALIZATION_PRODUCTION_SYNC))?;
-    db_source::save_localization(cache, language_code, &localization, true)?;
+    db_source::save_localization(cache, language_code, &localization, true).await?;
     return Ok(localization);
 }
 

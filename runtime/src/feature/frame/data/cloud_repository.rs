@@ -52,7 +52,7 @@ impl CloudFrameRepository {
         };
     }
 
-    fn from_cache(&self, route: &str) -> Option<Arc<NativeFrameModel>> {
+    async fn from_cache(&self, route: &str) -> Option<Arc<NativeFrameModel>> {
         if let Some(frame) = self.memory.get_frame(route) {
             return Some(frame);
         }
@@ -61,6 +61,7 @@ impl CloudFrameRepository {
             route,
             self.environment.development_mode(),
         )
+        .await
         .ok()?;
         let frame = Arc::new(frame);
         self.memory.save_frame(route, frame.clone());
@@ -117,7 +118,7 @@ impl CloudFrameRepository {
 #[async_trait::async_trait]
 impl FrameRepository for CloudFrameRepository {
     async fn load(&self, route: &str, parameters: &HashMap<String, String>) -> NBResult<()> {
-        if let Some(frame) = self.from_cache(route) {
+        if let Some(frame) = self.from_cache(route).await {
             self.channels.publish(route, Ok(frame));
             let _ = self.sync(route, parameters).await;
             return Ok(());

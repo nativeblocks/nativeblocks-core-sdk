@@ -48,7 +48,7 @@ impl ExperimentRepositoryImpl {
         cache_ttl: Option<i64>,
         globals: &HashMap<String, String>,
     ) -> NBResult<NativeExperimentModel> {
-        if let Some(cached) = self.cached(key)? {
+        if let Some(cached) = self.cached(key).await? {
             return Ok(cached);
         }
         let resolved = self.config_client.gateway(GATEWAY_OPERATION).await?;
@@ -63,19 +63,19 @@ impl ExperimentRepositoryImpl {
             globals,
         )
         .await?;
-        self.cache_experiment(key, &experiment, cache_ttl)?;
+        self.cache_experiment(key, &experiment, cache_ttl).await?;
         return Ok(experiment);
     }
 
-    fn cached(&self, key: &str) -> NBResult<Option<NativeExperimentModel>> {
+    async fn cached(&self, key: &str) -> NBResult<Option<NativeExperimentModel>> {
         let cache_key = format_cache_key(key);
-        if !self.cache.has(cache_key.clone())? {
+        if !self.cache.has(cache_key.clone()).await? {
             return Ok(None);
         }
-        return cache::read_or_cleanup(self.cache.as_ref(), cache_key);
+        return cache::read_or_cleanup(self.cache.as_ref(), cache_key).await;
     }
 
-    fn cache_experiment(
+    async fn cache_experiment(
         &self,
         key: &str,
         experiment: &NativeExperimentModel,
@@ -83,7 +83,8 @@ impl ExperimentRepositoryImpl {
     ) -> NBResult<()> {
         let bytes = util::to_bytes(experiment)?;
         self.cache
-            .save_bytes(format_cache_key(key), bytes, cache_ttl)?;
+            .save(format_cache_key(key), bytes, cache_ttl)
+            .await?;
         return Ok(());
     }
 }

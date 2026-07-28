@@ -36,7 +36,7 @@ impl Client {
     }
 
     pub(crate) async fn gateway(&self, operation: &str) -> NBResult<ResolvedGatewayModel> {
-        let install_id = self.install_id()?;
+        let install_id = self.install_id().await?;
         let config = self.project_config(&install_id).await?;
         let gateway = repository::resolve_gateway(&config, operation);
         return Ok(ResolvedGatewayModel {
@@ -46,11 +46,11 @@ impl Client {
         });
     }
 
-    fn install_id(&self) -> NBResult<String> {
+    async fn install_id(&self) -> NBResult<String> {
         if let Some(id) = self.install_id.lock().unwrap().clone() {
             return Ok(id);
         }
-        let id = repository::install_id(self.cache.as_ref())?;
+        let id = repository::install_id(self.cache.as_ref()).await?;
         *self.install_id.lock().unwrap() = Some(id.clone());
         return Ok(id);
     }
@@ -64,11 +64,11 @@ impl Client {
         }
 
         // Durable last-known-good config; never TTL-expired.
-        let cached = repository::read_cached_config(self.cache.as_ref())?;
+        let cached = repository::read_cached_config(self.cache.as_ref()).await?;
 
         // Still within the refresh window: serve cache, skip the network.
         if let Some(config) = &cached {
-            if repository::is_config_fresh(self.cache.as_ref())? {
+            if repository::is_config_fresh(self.cache.as_ref()).await? {
                 *guard = Some(config.clone());
                 return Ok(config.clone());
             }
@@ -84,7 +84,7 @@ impl Client {
         .await
         {
             Ok(config) => {
-                repository::write_cached_config(self.cache.as_ref(), &config)?;
+                repository::write_cached_config(self.cache.as_ref(), &config).await?;
                 *guard = Some(config.clone());
                 Ok(config)
             }

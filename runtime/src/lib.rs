@@ -20,7 +20,7 @@ use crate::feature::frame::FrameClient;
 use crate::feature::localization::LocalizationClient;
 use crate::feature::scaffold::ScaffoldClient;
 use crate::feature::{experiment, frame, localization, scaffold};
-use crate::library::cache::CacheProvider;
+use crate::library::cache;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::library::net::network::HttpClient;
 use crate::library::result::NBError;
@@ -40,8 +40,9 @@ impl NativeblocksRuntime {
         environment: NativeblocksEnvironment,
         config: SdkConfig,
         http: Arc<dyn HttpClient>,
-        cache: Arc<dyn CacheProvider>,
+        cache_dir: String,
     ) -> Result<Arc<Self>, NBError> {
+        let cache = cache::build_provider(&cache_dir, environment.instance_name())?;
         let container = di::get_or_create(&environment, &config, http, cache)?;
         return Ok(Arc::new(Self { container }));
     }
