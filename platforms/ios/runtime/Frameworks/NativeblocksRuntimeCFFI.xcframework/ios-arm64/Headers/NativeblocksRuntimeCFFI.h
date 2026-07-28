@@ -278,48 +278,6 @@ typedef void (*UniffiCallbackInterfaceLocalizationStateObserverMethod2)(uint64_t
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD0
-#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD0
-typedef void (*UniffiCallbackInterfaceCacheProviderMethod0)(uint64_t, RustBuffer, RustBuffer, RustBuffer, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
-    );
-
-#endif
-#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD1
-#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD1
-typedef void (*UniffiCallbackInterfaceCacheProviderMethod1)(uint64_t, RustBuffer, RustBuffer* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
-    );
-
-#endif
-#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD2
-#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD2
-typedef void (*UniffiCallbackInterfaceCacheProviderMethod2)(uint64_t, RustBuffer, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
-    );
-
-#endif
-#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD3
-#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD3
-typedef void (*UniffiCallbackInterfaceCacheProviderMethod3)(uint64_t, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
-    );
-
-#endif
-#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD4
-#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD4
-typedef void (*UniffiCallbackInterfaceCacheProviderMethod4)(uint64_t, RustBuffer, int8_t* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
-    );
-
-#endif
-#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD5
-#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_CACHE_PROVIDER_METHOD5
-typedef void (*UniffiCallbackInterfaceCacheProviderMethod5)(uint64_t, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
-    );
-
-#endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_HTTP_CLIENT_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_HTTP_CLIENT_METHOD0
 typedef void (*UniffiCallbackInterfaceHttpClientMethod0)(uint64_t, RustBuffer, RustBuffer, UniffiForeignFutureCompleteRustBuffer _Nonnull, uint64_t, UniffiForeignFutureDroppedCallbackStruct* _Nonnull
@@ -382,20 +340,6 @@ typedef struct UniffiVTableCallbackInterfaceLocalizationStateObserver {
 } UniffiVTableCallbackInterfaceLocalizationStateObserver;
 
 #endif
-#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_CACHE_PROVIDER
-#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_CACHE_PROVIDER
-typedef struct UniffiVTableCallbackInterfaceCacheProvider {
-    UniffiCallbackInterfaceFree _Nonnull uniffiFree;
-    UniffiCallbackInterfaceClone _Nonnull uniffiClone;
-    UniffiCallbackInterfaceCacheProviderMethod0 _Nonnull saveBytes;
-    UniffiCallbackInterfaceCacheProviderMethod1 _Nonnull getBytes;
-    UniffiCallbackInterfaceCacheProviderMethod2 _Nonnull remove;
-    UniffiCallbackInterfaceCacheProviderMethod3 _Nonnull clear;
-    UniffiCallbackInterfaceCacheProviderMethod4 _Nonnull has;
-    UniffiCallbackInterfaceCacheProviderMethod5 _Nonnull dispose;
-} UniffiVTableCallbackInterfaceCacheProvider;
-
-#endif
 #ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_HTTP_CLIENT
 #define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_HTTP_CLIENT
 typedef struct UniffiVTableCallbackInterfaceHttpClient {
@@ -429,7 +373,7 @@ void uniffi_nativeblocks_runtime_fn_free_nativeblocksruntime(uint64_t handle, Ru
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CONSTRUCTOR_NATIVEBLOCKSRUNTIME_NEW
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CONSTRUCTOR_NATIVEBLOCKSRUNTIME_NEW
-uint64_t uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(RustBuffer environment, RustBuffer config, uint64_t http, uint64_t cache, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(RustBuffer environment, RustBuffer config, uint64_t http, RustBuffer cache_dir, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_NATIVEBLOCKSRUNTIME_EXPERIMENT_CLIENT
@@ -672,51 +616,6 @@ void uniffi_nativeblocks_runtime_fn_free_scaffoldclient(uint64_t handle, RustCal
 uint64_t uniffi_nativeblocks_runtime_fn_method_scaffoldclient_get_scaffold(uint64_t ptr
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CLONE_CACHEPROVIDER
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CLONE_CACHEPROVIDER
-uint64_t uniffi_nativeblocks_runtime_fn_clone_cacheprovider(uint64_t handle, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_FREE_CACHEPROVIDER
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_FREE_CACHEPROVIDER
-void uniffi_nativeblocks_runtime_fn_free_cacheprovider(uint64_t handle, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_INIT_CALLBACK_VTABLE_CACHEPROVIDER
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_INIT_CALLBACK_VTABLE_CACHEPROVIDER
-void uniffi_nativeblocks_runtime_fn_init_callback_vtable_cacheprovider(const UniffiVTableCallbackInterfaceCacheProvider* _Nonnull vtable
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_SAVE_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_SAVE_BYTES
-void uniffi_nativeblocks_runtime_fn_method_cacheprovider_save_bytes(uint64_t ptr, RustBuffer key, RustBuffer value, RustBuffer ttl_millis, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_GET_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_GET_BYTES
-RustBuffer uniffi_nativeblocks_runtime_fn_method_cacheprovider_get_bytes(uint64_t ptr, RustBuffer key, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_REMOVE
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_REMOVE
-void uniffi_nativeblocks_runtime_fn_method_cacheprovider_remove(uint64_t ptr, RustBuffer key, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_CLEAR
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_CLEAR
-void uniffi_nativeblocks_runtime_fn_method_cacheprovider_clear(uint64_t ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_HAS
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_HAS
-int8_t uniffi_nativeblocks_runtime_fn_method_cacheprovider_has(uint64_t ptr, RustBuffer key, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_DISPOSE
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_CACHEPROVIDER_DISPOSE
-void uniffi_nativeblocks_runtime_fn_method_cacheprovider_dispose(uint64_t ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CLONE_HTTPCLIENT
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CLONE_HTTPCLIENT
 uint64_t uniffi_nativeblocks_runtime_fn_clone_httpclient(uint64_t handle, RustCallStatus *_Nonnull out_status
@@ -821,6 +720,11 @@ void uniffi_nativeblocks_runtime_fn_init_callback_vtable_logger(const UniffiVTab
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_FUNC_DISPOSE_INSTANCE
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_FUNC_DISPOSE_INSTANCE
 void uniffi_nativeblocks_runtime_fn_func_dispose_instance(RustBuffer instance_name, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_FUNC_IS_VALID_INSTANCE_NAME
+#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_FUNC_IS_VALID_INSTANCE_NAME
+int8_t uniffi_nativeblocks_runtime_fn_func_is_valid_instance_name(RustBuffer name, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_FUNC_PROVIDE_LOGGER
@@ -1099,6 +1003,12 @@ uint16_t uniffi_nativeblocks_runtime_checksum_func_dispose_instance(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_FUNC_IS_VALID_INSTANCE_NAME
+#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_FUNC_IS_VALID_INSTANCE_NAME
+uint16_t uniffi_nativeblocks_runtime_checksum_func_is_valid_instance_name(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_FUNC_PROVIDE_LOGGER
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_FUNC_PROVIDE_LOGGER
 uint16_t uniffi_nativeblocks_runtime_checksum_func_provide_logger(void
@@ -1288,42 +1198,6 @@ uint16_t uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_o
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_SCAFFOLDCLIENT_GET_SCAFFOLD
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_SCAFFOLDCLIENT_GET_SCAFFOLD
 uint16_t uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_get_scaffold(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_SAVE_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_SAVE_BYTES
-uint16_t uniffi_nativeblocks_runtime_checksum_method_cacheprovider_save_bytes(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_GET_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_GET_BYTES
-uint16_t uniffi_nativeblocks_runtime_checksum_method_cacheprovider_get_bytes(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_REMOVE
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_REMOVE
-uint16_t uniffi_nativeblocks_runtime_checksum_method_cacheprovider_remove(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_CLEAR
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_CLEAR
-uint16_t uniffi_nativeblocks_runtime_checksum_method_cacheprovider_clear(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_HAS
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_HAS
-uint16_t uniffi_nativeblocks_runtime_checksum_method_cacheprovider_has(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_DISPOSE
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_CACHEPROVIDER_DISPOSE
-uint16_t uniffi_nativeblocks_runtime_checksum_method_cacheprovider_dispose(void
     
 );
 #endif

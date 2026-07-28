@@ -63,9 +63,6 @@ class NativeblocksManager internal constructor(
                 if (!instanceRegistry.containsKey(name)) {
                     val manager = NativeblocksManager(name, applicationContext, edition)
                     instanceRegistry[name] = manager
-                    CoroutineScope(Dispatchers.IO).launch {
-                        manager.warmup()
-                    }
                 }
                 return instanceRegistry[name]!!
             }
@@ -91,13 +88,6 @@ class NativeblocksManager internal constructor(
 
     init {
         NativeCoreSDKInjector.init(this.name, context, edition)
-    }
-
-    private suspend fun warmup() {
-        runCatching {
-            val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
-            runtimeClient.warmup()
-        }
     }
 
     private fun getKoin() = NativeCoreSDKInjector.get(this.name).koin

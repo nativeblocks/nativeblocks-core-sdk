@@ -544,399 +544,6 @@ fileprivate struct FfiConverterString: FfiConverter {
     }
 }
 
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-fileprivate struct FfiConverterData: FfiConverterRustBuffer {
-    typealias SwiftType = Data
-
-    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Data {
-        let len: Int32 = try readInt(&buf)
-        return Data(try readBytes(&buf, count: Int(len)))
-    }
-
-    package static func write(_ value: Data, into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        writeBytes(&buf, value)
-    }
-}
-
-
-
-
-package protocol CacheProvider: AnyObject, Sendable {
-    
-    func saveBytes(key: String, value: Data, ttlMillis: Int64?) throws 
-    
-    func getBytes(key: String) throws  -> Data?
-    
-    func remove(key: String) throws 
-    
-    func clear() throws 
-    
-    func has(key: String) throws  -> Bool
-    
-    func dispose() throws 
-    
-}
-package class CacheProviderImpl: CacheProvider, @unchecked Sendable {
-    fileprivate let handle: UInt64
-
-    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    package struct NoHandle {
-        package init() {}
-    }
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    required package init(unsafeFromHandle handle: UInt64) {
-        self.handle = handle
-    }
-
-    // This constructor can be used to instantiate a fake object.
-    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    //
-    // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    package init(noHandle: NoHandle) {
-        self.handle = 0
-    }
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    package func uniffiCloneHandle() -> UInt64 {
-        return try! rustCall { uniffi_nativeblocks_runtime_fn_clone_cacheprovider(self.handle, $0) }
-    }
-    // No primary constructor declared for this class.
-
-    deinit {
-        if handle == 0 {
-            // Mock objects have handle=0 don't try to free them
-            return
-        }
-
-        try! rustCall { uniffi_nativeblocks_runtime_fn_free_cacheprovider(handle, $0) }
-    }
-
-    
-
-    
-package func saveBytes(key: String, value: Data, ttlMillis: Int64?)throws   {try rustCallWithError(FfiConverterTypeNBError_lift) {
-    uniffi_nativeblocks_runtime_fn_method_cacheprovider_save_bytes(
-            self.uniffiCloneHandle(),
-        FfiConverterString.lower(key),
-        FfiConverterData.lower(value),
-        FfiConverterOptionInt64.lower(ttlMillis),$0
-    )
-}
-}
-    
-package func getBytes(key: String)throws  -> Data?  {
-    return try  FfiConverterOptionData.lift(try rustCallWithError(FfiConverterTypeNBError_lift) {
-    uniffi_nativeblocks_runtime_fn_method_cacheprovider_get_bytes(
-            self.uniffiCloneHandle(),
-        FfiConverterString.lower(key),$0
-    )
-})
-}
-    
-package func remove(key: String)throws   {try rustCallWithError(FfiConverterTypeNBError_lift) {
-    uniffi_nativeblocks_runtime_fn_method_cacheprovider_remove(
-            self.uniffiCloneHandle(),
-        FfiConverterString.lower(key),$0
-    )
-}
-}
-    
-package func clear()throws   {try rustCallWithError(FfiConverterTypeNBError_lift) {
-    uniffi_nativeblocks_runtime_fn_method_cacheprovider_clear(
-            self.uniffiCloneHandle(),$0
-    )
-}
-}
-    
-package func has(key: String)throws  -> Bool  {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeNBError_lift) {
-    uniffi_nativeblocks_runtime_fn_method_cacheprovider_has(
-            self.uniffiCloneHandle(),
-        FfiConverterString.lower(key),$0
-    )
-})
-}
-    
-package func dispose()throws   {try rustCallWithError(FfiConverterTypeNBError_lift) {
-    uniffi_nativeblocks_runtime_fn_method_cacheprovider_dispose(
-            self.uniffiCloneHandle(),$0
-    )
-}
-}
-    
-
-    
-}
-
-
-
-// Put the implementation in a struct so we don't pollute the top-level namespace
-fileprivate struct UniffiCallbackInterfaceCacheProvider {
-
-    // Create the VTable using a series of closures.
-    // Swift automatically converts these into C callback functions.
-    //
-    // Store the vtable directly.
-    static let vtable: UniffiVTableCallbackInterfaceCacheProvider = UniffiVTableCallbackInterfaceCacheProvider(
-        uniffiFree: { (uniffiHandle: UInt64) -> () in
-            do {
-                try FfiConverterTypeCacheProvider.handleMap.remove(handle: uniffiHandle)
-            } catch {
-                print("Uniffi callback interface CacheProvider: handle missing in uniffiFree")
-            }
-        },
-        uniffiClone: { (uniffiHandle: UInt64) -> UInt64 in
-            do {
-                return try FfiConverterTypeCacheProvider.handleMap.clone(handle: uniffiHandle)
-            } catch {
-                fatalError("Uniffi callback interface CacheProvider: handle missing in uniffiClone")
-            }
-        },
-        saveBytes: { (
-            uniffiHandle: UInt64,
-            key: RustBuffer,
-            value: RustBuffer,
-            ttlMillis: RustBuffer,
-            uniffiOutReturn: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
-        ) in
-            let makeCall = {
-                () throws -> () in
-                guard let uniffiObj = try? FfiConverterTypeCacheProvider.handleMap.get(handle: uniffiHandle) else {
-                    throw UniffiInternalError.unexpectedStaleHandle
-                }
-                return try uniffiObj.saveBytes(
-                     key: try FfiConverterString.lift(key),
-                     value: try FfiConverterData.lift(value),
-                     ttlMillis: try FfiConverterOptionInt64.lift(ttlMillis)
-                )
-            }
-
-            
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
-                makeCall: makeCall,
-                writeReturn: writeReturn,
-                lowerError: FfiConverterTypeNBError_lower
-            )
-        },
-        getBytes: { (
-            uniffiHandle: UInt64,
-            key: RustBuffer,
-            uniffiOutReturn: UnsafeMutablePointer<RustBuffer>,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
-        ) in
-            let makeCall = {
-                () throws -> Data? in
-                guard let uniffiObj = try? FfiConverterTypeCacheProvider.handleMap.get(handle: uniffiHandle) else {
-                    throw UniffiInternalError.unexpectedStaleHandle
-                }
-                return try uniffiObj.getBytes(
-                     key: try FfiConverterString.lift(key)
-                )
-            }
-
-            
-            let writeReturn = { uniffiOutReturn.pointee = FfiConverterOptionData.lower($0) }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
-                makeCall: makeCall,
-                writeReturn: writeReturn,
-                lowerError: FfiConverterTypeNBError_lower
-            )
-        },
-        remove: { (
-            uniffiHandle: UInt64,
-            key: RustBuffer,
-            uniffiOutReturn: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
-        ) in
-            let makeCall = {
-                () throws -> () in
-                guard let uniffiObj = try? FfiConverterTypeCacheProvider.handleMap.get(handle: uniffiHandle) else {
-                    throw UniffiInternalError.unexpectedStaleHandle
-                }
-                return try uniffiObj.remove(
-                     key: try FfiConverterString.lift(key)
-                )
-            }
-
-            
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
-                makeCall: makeCall,
-                writeReturn: writeReturn,
-                lowerError: FfiConverterTypeNBError_lower
-            )
-        },
-        clear: { (
-            uniffiHandle: UInt64,
-            uniffiOutReturn: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
-        ) in
-            let makeCall = {
-                () throws -> () in
-                guard let uniffiObj = try? FfiConverterTypeCacheProvider.handleMap.get(handle: uniffiHandle) else {
-                    throw UniffiInternalError.unexpectedStaleHandle
-                }
-                return try uniffiObj.clear(
-                )
-            }
-
-            
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
-                makeCall: makeCall,
-                writeReturn: writeReturn,
-                lowerError: FfiConverterTypeNBError_lower
-            )
-        },
-        has: { (
-            uniffiHandle: UInt64,
-            key: RustBuffer,
-            uniffiOutReturn: UnsafeMutablePointer<Int8>,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
-        ) in
-            let makeCall = {
-                () throws -> Bool in
-                guard let uniffiObj = try? FfiConverterTypeCacheProvider.handleMap.get(handle: uniffiHandle) else {
-                    throw UniffiInternalError.unexpectedStaleHandle
-                }
-                return try uniffiObj.has(
-                     key: try FfiConverterString.lift(key)
-                )
-            }
-
-            
-            let writeReturn = { uniffiOutReturn.pointee = FfiConverterBool.lower($0) }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
-                makeCall: makeCall,
-                writeReturn: writeReturn,
-                lowerError: FfiConverterTypeNBError_lower
-            )
-        },
-        dispose: { (
-            uniffiHandle: UInt64,
-            uniffiOutReturn: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
-        ) in
-            let makeCall = {
-                () throws -> () in
-                guard let uniffiObj = try? FfiConverterTypeCacheProvider.handleMap.get(handle: uniffiHandle) else {
-                    throw UniffiInternalError.unexpectedStaleHandle
-                }
-                return try uniffiObj.dispose(
-                )
-            }
-
-            
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
-                makeCall: makeCall,
-                writeReturn: writeReturn,
-                lowerError: FfiConverterTypeNBError_lower
-            )
-        }
-    )
-
-    // Rust stores this pointer for future callback invocations, so it must live
-    // for the process lifetime (not just for the init function call).
-    //
-    // `nonisolated(unsafe)` is needed under Swift 6 strict concurrency.
-    // This is safe because the pointee is initialized once during static init
-    // and never mutated by either side of the FFI.  Its fields are C function pointers.
-    nonisolated(unsafe) static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceCacheProvider> = {
-        let ptr = UnsafeMutablePointer<UniffiVTableCallbackInterfaceCacheProvider>.allocate(capacity: 1)
-        ptr.initialize(to: vtable)
-        return UnsafePointer(ptr)
-    }()
-}
-
-private func uniffiCallbackInitCacheProvider() {
-    uniffi_nativeblocks_runtime_fn_init_callback_vtable_cacheprovider(UniffiCallbackInterfaceCacheProvider.vtablePtr)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-package struct FfiConverterTypeCacheProvider: FfiConverter {
-    fileprivate static let handleMap = UniffiHandleMap<CacheProvider>()
-
-    typealias FfiType = UInt64
-    typealias SwiftType = CacheProvider
-
-    package static func lift(_ handle: UInt64) throws -> CacheProvider {
-        if ((handle & 1) == 0) {
-            // Rust-generated handle, construct a new class that uses the handle to implement the
-            // interface
-            return CacheProviderImpl(unsafeFromHandle: handle)
-        } else {
-            // Swift-generated handle, get the object from the handle map
-            return try handleMap.remove(handle: handle)
-        }
-    }
-
-    package static func lower(_ value: CacheProvider) -> UInt64 {
-         if let rustImpl = value as? CacheProviderImpl {
-             // Rust-implemented object.  Clone the handle and return it
-            return rustImpl.uniffiCloneHandle()
-         } else {
-            // Swift object, generate a new vtable handle and return that.
-            return handleMap.insert(obj: value)
-         }
-    }
-
-    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CacheProvider {
-        let handle: UInt64 = try readInt(&buf)
-        return try lift(handle)
-    }
-
-    package static func write(_ value: CacheProvider, into buf: inout [UInt8]) {
-        writeInt(&buf, lower(value))
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-package func FfiConverterTypeCacheProvider_lift(_ handle: UInt64) throws -> CacheProvider {
-    return try FfiConverterTypeCacheProvider.lift(handle)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-package func FfiConverterTypeCacheProvider_lower(_ value: CacheProvider) -> UInt64 {
-    return FfiConverterTypeCacheProvider.lower(value)
-}
-
-
-
 
 
 
@@ -2682,14 +2289,14 @@ package class NativeblocksRuntime: NativeblocksRuntimeProtocol, @unchecked Senda
     package func uniffiCloneHandle() -> UInt64 {
         return try! rustCall { uniffi_nativeblocks_runtime_fn_clone_nativeblocksruntime(self.handle, $0) }
     }
-package convenience init(environment: NativeblocksEnvironment, config: SdkConfig, http: HttpClient, cache: CacheProvider)throws  {
+package convenience init(environment: NativeblocksEnvironment, config: SdkConfig, http: HttpClient, cacheDir: String)throws  {
     let handle =
         try rustCallWithError(FfiConverterTypeNBError_lift) {
     uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(
         FfiConverterTypeNativeblocksEnvironment_lower(environment),
         FfiConverterTypeSdkConfig_lower(config),
         FfiConverterTypeHttpClient_lower(http),
-        FfiConverterTypeCacheProvider_lower(cache),$0
+        FfiConverterString.lower(cacheDir),$0
     )
 }
     self.init(unsafeFromHandle: handle)
@@ -5287,30 +4894,6 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-fileprivate struct FfiConverterOptionData: FfiConverterRustBuffer {
-    typealias SwiftType = Data?
-
-    package static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterData.write(value, into: &buf)
-    }
-
-    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterData.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
 fileprivate struct FfiConverterOptionTypeFrameTypeModel: FfiConverterRustBuffer {
     typealias SwiftType = FrameTypeModel?
 
@@ -5884,6 +5467,13 @@ package func disposeInstance(instanceName: String)  {try! rustCall() {
     )
 }
 }
+package func isValidInstanceName(name: String) -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_nativeblocks_runtime_fn_func_is_valid_instance_name(
+        FfiConverterString.lower(name),$0
+    )
+})
+}
 package func provideLogger(instanceName: String, loggerType: String, logger: Logger)  {try! rustCall() {
     uniffi_nativeblocks_runtime_fn_func_provide_logger(
         FfiConverterString.lower(instanceName),
@@ -5916,6 +5506,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.contractVersionMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_func_dispose_instance() != 8338) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nativeblocks_runtime_checksum_func_is_valid_instance_name() != 60594) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_func_provide_logger() != 17662) {
@@ -6014,24 +5607,6 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_get_scaffold() != 1926) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_cacheprovider_save_bytes() != 4863) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_nativeblocks_runtime_checksum_method_cacheprovider_get_bytes() != 12382) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_nativeblocks_runtime_checksum_method_cacheprovider_remove() != 52519) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_nativeblocks_runtime_checksum_method_cacheprovider_clear() != 33582) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_nativeblocks_runtime_checksum_method_cacheprovider_has() != 9469) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_nativeblocks_runtime_checksum_method_cacheprovider_dispose() != 53034) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_nativeblocks_runtime_checksum_method_httpclient_get() != 8710) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -6056,7 +5631,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_block_property() != 27798) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() != 485) {
+    if (uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() != 50980) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_constructor_scriptengine_new() != 769) {
@@ -6066,7 +5641,6 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
 
-    uniffiCallbackInitCacheProvider()
     uniffiCallbackInitFrameStateObserver()
     uniffiCallbackInitHttpClient()
     uniffiCallbackInitLocalizationStateObserver()

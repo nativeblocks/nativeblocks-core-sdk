@@ -2,15 +2,12 @@ package io.nativeblocks.runtime.di
 
 import android.content.Context
 import io.nativeblocks.runtime.api.NativeblocksEdition
-import io.nativeblocks.runtime.ffi.CacheProvider
 import io.nativeblocks.runtime.ffi.HttpClient
 import io.nativeblocks.runtime.ffi.NativeRuntimeClientManager
 import io.nativeblocks.runtime.experiment.ExperimentUseCase
 import io.nativeblocks.runtime.frame.FrameStateBridgeImpl
 import io.nativeblocks.runtime.frame.FrameViewModel
-import io.nativeblocks.runtime.lib.NativeSqliteHelper
 import io.nativeblocks.runtime.lib.OkHttpHttpClient
-import io.nativeblocks.runtime.lib.SqliteCacheProvider
 import io.nativeblocks.runtime.localization.LocalizationUseCase
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidContext
@@ -77,15 +74,6 @@ internal fun featureModule(instanceName: String): Module {
 }
 
 internal fun ffiModule(instanceName: String, edition: NativeblocksEdition) = module {
-    single<CacheProvider>(named(instanceName)) {
-        SqliteCacheProvider(
-            NativeSqliteHelper(
-                androidContext(),
-                "NATIVEBLOCKS_DATABASE_$instanceName"
-            ),
-        )
-    }
-
     single(named(instanceName)) {
         OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -98,11 +86,20 @@ internal fun ffiModule(instanceName: String, edition: NativeblocksEdition) = mod
     }
 
     single(named(instanceName)) {
+        removeLegacyDatabase(androidContext(), instanceName)
         NativeRuntimeClientManager(
             instanceName = instanceName,
             edition = edition,
             http = get(named(instanceName)),
-            cache = get(named(instanceName)),
+            cacheDir = androidContext().cacheDir.absolutePath,
         )
     }
+}
+
+/**
+ * Drops the SQLite cache written by releases before the runtime owned its own
+ * store. Cached frames are refetched, so nothing needs migrating.
+ */
+private fun removeLegacyDatabase(context: Context, instanceName: String) {
+    runCatching { context.deleteDatabase("NATIVEBLOCKS_DATABASE_$instanceName") }
 }

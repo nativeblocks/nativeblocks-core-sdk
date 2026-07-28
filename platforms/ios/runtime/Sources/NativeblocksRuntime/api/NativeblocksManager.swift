@@ -57,7 +57,6 @@ public class NativeblocksManager {
         }
         let manager = NativeblocksManager(name: name, edition: edition)
         instanceRegistry[name] = manager
-        Task.detached { await manager.injector.runtimeClient.warmup() }
         return manager
     }
 

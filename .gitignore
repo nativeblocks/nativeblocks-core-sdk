@@ -25,6 +25,7 @@ platforms/android/*/.gradle
 platforms/android/*/*.gpg
 
 platforms/ios/*/.build
+platforms/ios/*/build
 platforms/ios/*/.swiftpm
 platforms/ios/*/.xcworkspace
 platforms/ios/*/xcuserdata

@@ -15,14 +15,18 @@ internal final class NativeCoreSDKInjector {
         self.instanceName = name
 
         // ---- ffi module ----
-        let helper = try NativeSqliteHelper(databaseName: "NATIVEBLOCKS_DATABASE_\(name)")
-        let cache = SqliteCacheProvider(helper: helper)
+        let cacheDir = try FileManager.default.url(
+            for: .cachesDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
         let http = URLSessionHttpClient()
         let runtimeClient = try NativeRuntimeClientManager(
             instanceName: name,
             edition: edition,
             http: http,
-            cache: cache
+            cacheDir: cacheDir.path
         )
         self.runtimeClient = runtimeClient
 

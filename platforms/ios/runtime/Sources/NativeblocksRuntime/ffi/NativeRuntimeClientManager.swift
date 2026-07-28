@@ -4,7 +4,6 @@ import NativeblocksRuntimeFFI
 internal final class NativeRuntimeClientManager {
 
     private let instanceName: String
-    private let cache: CacheProvider
     private let runtime: NativeblocksRuntime
 
     let environment: NativeblocksRuntimeFFI.NativeblocksEnvironment
@@ -19,10 +18,9 @@ internal final class NativeRuntimeClientManager {
         instanceName: String,
         edition: NativeblocksEdition,
         http: HttpClient,
-        cache: CacheProvider
+        cacheDir: String
     ) throws {
         self.instanceName = instanceName
-        self.cache = cache
         self.environment = edition.toEngineEnvironment(instanceName: instanceName)
 
         let config = SdkConfig(
@@ -34,7 +32,7 @@ internal final class NativeRuntimeClientManager {
             environment: environment,
             config: config,
             http: http,
-            cache: cache
+            cacheDir: cacheDir
         )
 
         self.frameClient = runtime.frameClient()
@@ -52,12 +50,7 @@ internal final class NativeRuntimeClientManager {
         return localizationClient.stateManager()
     }
 
-    func warmup() async {
-        _ = try? cache.has(key: "nativeblocks_warmup")
-    }
-
     func close() {
-        try? cache.dispose()
         disposeInstance(instanceName: instanceName)
     }
 }

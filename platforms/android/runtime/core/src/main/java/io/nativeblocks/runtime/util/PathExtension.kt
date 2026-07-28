@@ -1,6 +1,5 @@
 package io.nativeblocks.runtime.util
 
-internal fun String.isValidInstanceName(): Boolean {
-    val allowedPattern = "^[A-Za-z0-9_-]+$".toRegex()
-    return this.isNotBlank() && allowedPattern.matches(this)
-}
+import io.nativeblocks.runtime.ffi.isValidInstanceName as ffiIsValidInstanceName
+
+internal fun String.isValidInstanceName(): Boolean = ffiIsValidInstanceName(this)

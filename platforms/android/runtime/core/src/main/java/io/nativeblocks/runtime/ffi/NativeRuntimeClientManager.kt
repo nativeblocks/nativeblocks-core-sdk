@@ -10,7 +10,7 @@ internal class NativeRuntimeClientManager(
     private val instanceName: String,
     edition: NativeblocksEdition,
     http: HttpClient,
-    private val cache: CacheProvider,
+    cacheDir: String,
 ) {
     val environment = edition.toEngineEnvironment(instanceName)
 
@@ -19,7 +19,8 @@ internal class NativeRuntimeClientManager(
         platform = SDKConfig.SDK_PLATFORM,
     )
 
-    private val runtime: NativeblocksRuntime = NativeblocksRuntime(environment, config, http, cache)
+    private val runtime: NativeblocksRuntime =
+        NativeblocksRuntime(environment, config, http, cacheDir)
 
     val frameClient: FrameClient = runtime.frameClient()
     val scaffoldClient: ScaffoldClient = runtime.scaffoldClient()
@@ -30,10 +31,6 @@ internal class NativeRuntimeClientManager(
     fun frameStateManager(): FrameStateManager = frameClient.stateManager()
     fun localizationStateManager(): LocalizationStateManager = localizationClient.stateManager()
 
-    suspend fun warmup() = withContext(Dispatchers.IO) {
-        runCatching { cache.has("nativeblocks_warmup") }
-    }
-
     fun close() {
         runCatching { frameClient.close() }
         runCatching { scaffoldClient.close() }
@@ -42,7 +39,6 @@ internal class NativeRuntimeClientManager(
         runCatching { globalParameterClient.close() }
         runCatching { runtime.close() }
         runCatching { disposeInstance(instanceName) }
-        runCatching { cache.dispose() }
     }
 }
 

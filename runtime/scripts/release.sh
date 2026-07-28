@@ -1,16 +1,5 @@
 #!/usr/bin/env bash
-# release.sh — ONE command to build everything for a release.
-#
-# Run this once per release. It builds the Rust core for every platform,
-# generates the FFI bindings, and stages copy-paste-ready artifacts under dist/,
-# each with a COPY-INSTRUCTIONS.txt telling you exactly where the files go.
-#
-# Missing toolchains are SKIPPED with a hint (not a hard failure), so you can run
-# it on Linux (Android only) or macOS (both platforms).
-#
-# Usage:
-#   ./scripts/release.sh              # build all available platforms
-#   ./scripts/release.sh android ios  # build only the listed ones
+# Build every available platform and stage copy-ready artifacts under dist/. Usage: ./scripts/release.sh [android] [ios]
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -19,11 +8,9 @@ DIST="dist"
 VERSION="$(grep -m1 '^version' Cargo.toml | sed -E 's/.*"(.*)".*/\1/')"
 OS="$(uname -s)"
 
-# ---- pick platforms -------------------------------------------------------
 REQUESTED=("$@")
 [[ ${#REQUESTED[@]} -eq 0 ]] && REQUESTED=(android ios)
 
-# Reject unknown names rather than cleaning dist/ and then staging nothing.
 for p in "${REQUESTED[@]}"; do
   case "$p" in
     android|ios) ;;
@@ -41,7 +28,6 @@ SKIPPED=()
 have() { command -v "$1" >/dev/null 2>&1; }
 target_installed() { rustup target list --installed 2>/dev/null | grep -qx "$1"; }
 
-# ---- start ----------------------------------------------------------------
 echo "=================================================="
 echo " nativeblocks-core-sdk release  v$VERSION  ($OS)"
 echo "=================================================="
@@ -50,9 +36,7 @@ rm -rf "$DIST"
 mkdir -p "$DIST"
 echo "$VERSION" > "$DIST/VERSION"
 
-# Run a platform build; on any failure mark it skipped and keep going (so one
-# missing toolchain never aborts the whole release).
-run_platform() { # $1=name  $2=builder-script  $3=reason-if-missing  $4=ready?(0/1)
+run_platform() {
   local name="$1" builder="$2" reason="$3" ready="$4"
   if [[ "$ready" != "1" ]]; then
     SKIPPED+=("$name ($reason)")
@@ -67,7 +51,6 @@ run_platform() { # $1=name  $2=builder-script  $3=reason-if-missing  $4=ready?(0
   fi
 }
 
-# ---- Android --------------------------------------------------------------
 if want android; then
   ready=0
   if have cargo-ndk && target_installed aarch64-linux-android; then ready=1; fi
@@ -85,7 +68,6 @@ THEN add to the module's build.gradle.kts dependencies:
 EOF
 fi
 
-# ---- iOS ------------------------------------------------------------------
 if want ios; then
   ready=0
   if [[ "$OS" == "Darwin" ]] && have xcodebuild && target_installed aarch64-apple-ios; then ready=1; fi
@@ -103,7 +85,6 @@ target (NativeblocksRuntime) is the only product consumers can import.
 EOF
 fi
 
-# ---- top-level copy guide -------------------------------------------------
 cat > "$DIST/COPY-GUIDE.md" <<EOF
 # Release v$VERSION — copy guide
 
@@ -117,7 +98,6 @@ Built on $OS. Each platform folder has a COPY-INSTRUCTIONS.txt with exact paths.
 See README.md for the copy steps and the host SDK boundary rules.
 EOF
 
-# ---- summary --------------------------------------------------------------
 echo
 echo "=================================================="
 echo " DONE  v$VERSION"

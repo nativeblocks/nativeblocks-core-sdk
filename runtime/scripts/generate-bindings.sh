@@ -1,18 +1,9 @@
 #!/usr/bin/env bash
-# Regenerate FFI bindings for Kotlin and Swift from the Rust core.
-#
-# Kotlin and Swift are the only FFI surfaces.
-#
-# Prereqs:
-#   - Rust toolchain (cargo)
-#
-# Usage:  ./scripts/generate-bindings.sh
+# Regenerate the Kotlin and Swift FFI bindings from the Rust runtime, then seal them.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# Matches [lib] name in Cargo.toml (the shipped artifact name, not the
-# crate/package name `nativeblocks-runtime`).
 LIB_NAME="nativeblocks_runtime"
 
 case "$(uname -s)" in
@@ -23,19 +14,19 @@ esac
 
 LIB="target/debug/lib${LIB_NAME}.${EXT}"
 
+FEATURES="script-quickjs-bindgen,uniffi-cli"
+
 echo "==> Building Rust library"
-cargo build --features script-quickjs-bindgen
+cargo build --features "$FEATURES"
 
 echo "==> Generating Kotlin bindings -> bindings/kotlin"
-cargo run --quiet --bin uniffi-bindgen -- \
+cargo run --quiet --features "$FEATURES" --bin uniffi-bindgen -- \
   generate --library "$LIB" --language kotlin --out-dir bindings/kotlin
 
 echo "==> Generating Swift bindings -> bindings/swift"
-cargo run --quiet --bin uniffi-bindgen -- \
+cargo run --quiet --features "$FEATURES" --bin uniffi-bindgen -- \
   generate --library "$LIB" --language swift --out-dir bindings/swift
 
-# Visibility is narrowed here, before anything is staged or copied into a host
-# SDK, so there is never an unsealed copy of the bindings to pick up by mistake.
 echo "==> Sealing bindings (generated FFI must not become host public API)"
 ./scripts/seal-bindings.sh
 

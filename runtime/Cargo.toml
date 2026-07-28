@@ -12,21 +12,19 @@ name = "nativeblocks_runtime"
 #              library for consumers to embed (see build-ios.sh).
 crate-type = ["lib", "cdylib", "staticlib"]
 
-# Binary that drives UniFFI binding generation for Kotlin & Swift.
 [[bin]]
 name = "uniffi-bindgen"
 path = "src/bin/uniffi-bindgen.rs"
+required-features = ["uniffi-cli"]
 
 [features]
 default = ["script-quickjs"]
-# In-core JavaScript engine (QuickJS via rquickjs) for remote-driven logic.
+uniffi-cli = ["uniffi/cli"]
 script-quickjs = ["dep:rquickjs"]
-# rquickjs ships no precompiled bindings for the mobile triples; cross-compiles
-# generate them at build time with libclang.
 script-quickjs-bindgen = ["script-quickjs", "rquickjs/bindgen"]
 
 [dependencies]
-uniffi = { version = "0.31.2", features = ["cli", "tokio"] }
+uniffi = { version = "0.31.2", features = ["tokio"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rkyv = { version = "0.8.17" }
