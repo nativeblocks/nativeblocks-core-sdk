@@ -38,10 +38,14 @@ private const val PACKAGE_NAME_SUFFIX = ".integration.consumer.action"
 
 internal class ActionProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
 
+    private val integrationKeyTypes = mutableListOf<String>()
+    private val integrations = mutableListOf<ActionFunctionModel>()
+
     override fun process(resolver: Resolver): List<KSAnnotated> {
         val symbols = resolver
             .getSymbolsWithAnnotation(annotationName = NativeAction::class.qualifiedName.orEmpty())
             .filterIsInstance<KSClassDeclaration>()
+            .toList()
 
         val basePackageName = environment.options["basePackageName"].orEmpty()
         val moduleName = environment.options["moduleName"].orEmpty()
@@ -52,13 +56,11 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
 
         val fullPackageName = basePackageName + PACKAGE_NAME_SUFFIX
 
-        if (!symbols.iterator().hasNext()) return emptyList()
-        val sources = resolver.getAllFiles().toList().toTypedArray()
+        if (symbols.isEmpty()) return emptyList()
 
-        val integrationKeyTypes = mutableListOf<String>()
-        val integrations = mutableListOf<ActionFunctionModel>()
+        val (validSymbols, deferredSymbols) = symbols.partition { it.validate() }
 
-        symbols.forEach { klass ->
+        validSymbols.forEach { klass ->
             val containingFile = listOfNotNull(klass.containingFile).toTypedArray()
             // check action duplication (myAction and MyAction are the same from the compiler prospective, we need to normalize it and throw an error)
             val integrationJson =
@@ -124,10 +126,10 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
                         when (val annotation = annotations.first().shortName.asString()) {
                             NativeActionProp::class.simpleName -> {
                                 val propertyJson = param.getAnnotation(annotation).generatePropertyJson(
-                                        param = param,
-                                        kind = integrationJson.kind,
-                                        filePath = param.containingFile?.filePath.orEmpty()
-                                    )
+                                    param = param,
+                                    kind = integrationJson.kind,
+                                    filePath = param.containingFile?.filePath.orEmpty()
+                                )
                                 properties.add(propertyJson)
                             }
 
@@ -211,16 +213,20 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
             file.close()
         }
 
-        val fileName = "${moduleName}ActionProvider"
-        val file: OutputStream = environment.codeGenerator.createNewFile(
-            dependencies = Dependencies(aggregating = true, sources = sources),
-            packageName = "$fullPackageName.provider",
-            fileName = fileName,
-        )
-        ActionProviderVisitor(file, fileName, fullPackageName, integrations)
-        file.close()
+        // the provider aggregates every action, so emit it once all symbols are processed
+        if (deferredSymbols.isEmpty() && integrations.isNotEmpty()) {
+            val sources = resolver.getAllFiles().toList().toTypedArray()
+            val fileName = "${moduleName}ActionProvider"
+            val file: OutputStream = environment.codeGenerator.createNewFile(
+                dependencies = Dependencies(aggregating = true, sources = sources),
+                packageName = "$fullPackageName.provider",
+                fileName = fileName,
+            )
+            ActionProviderVisitor(file, fileName, fullPackageName, integrations)
+            file.close()
+        }
 
-        return symbols.filterNot { it.validate() }.toList()
+        return deferredSymbols
     }
 
     private fun getNativeblocksAnnotations(param: KSValueParameter): List<KSAnnotation> {

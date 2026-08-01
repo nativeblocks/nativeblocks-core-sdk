@@ -51,7 +51,7 @@ mavenPublishing {
 
 dependencies {
     implementation("com.google.devtools.ksp:symbol-processing-api:2.2.0-2.0.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     implementation("com.squareup:kotlinpoet:1.18.1")
 }
 

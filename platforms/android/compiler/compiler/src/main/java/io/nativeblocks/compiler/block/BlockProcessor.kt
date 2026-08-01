@@ -37,10 +37,14 @@ private const val PACKAGE_NAME_SUFFIX = ".integration.consumer.block"
 
 internal class BlockProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
 
+    private val integrationKeyTypes = mutableListOf<String>()
+    private val integrations = mutableListOf<BlockFunctionModel>()
+
     override fun process(resolver: Resolver): List<KSAnnotated> {
         val symbols = resolver
             .getSymbolsWithAnnotation(annotationName = NativeBlock::class.qualifiedName.orEmpty())
             .filterIsInstance<KSFunctionDeclaration>()
+            .toList()
 
         val basePackageName = environment.options["basePackageName"].orEmpty()
         val moduleName = environment.options["moduleName"].orEmpty()
@@ -51,13 +55,11 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
 
         val fullPackageName = basePackageName + PACKAGE_NAME_SUFFIX
 
-        if (!symbols.iterator().hasNext()) return emptyList()
-        val sources = resolver.getAllFiles().toList().toTypedArray()
+        if (symbols.isEmpty()) return emptyList()
 
-        val integrationKeyTypes = mutableListOf<String>()
-        val integrations = mutableListOf<BlockFunctionModel>()
+        val (validSymbols, deferredSymbols) = symbols.partition { it.validate() }
 
-        symbols.forEach { function ->
+        validSymbols.forEach { function ->
             val containingFile = listOfNotNull(function.containingFile).toTypedArray()
             // check component duplication (MyButton and myButton are the same from the compiler prospective, we need to normalize it and throw an error)
             val integrationJson =
@@ -183,15 +185,19 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
             )
             file.close()
         }
-        val fileName = "${moduleName}BlockProvider"
-        val file: OutputStream = environment.codeGenerator.createNewFile(
-            dependencies = Dependencies(aggregating = true, sources = sources),
-            packageName = "$fullPackageName.provider",
-            fileName = fileName,
-        )
-        BlockProviderVisitor(file, fileName, (basePackageName + PACKAGE_NAME_SUFFIX), integrations)
-        file.close()
-        return symbols.filterNot { it.validate() }.toList()
+        // the provider aggregates every block, so emit it once all symbols are processed
+        if (deferredSymbols.isEmpty() && integrations.isNotEmpty()) {
+            val sources = resolver.getAllFiles().toList().toTypedArray()
+            val fileName = "${moduleName}BlockProvider"
+            val file: OutputStream = environment.codeGenerator.createNewFile(
+                dependencies = Dependencies(aggregating = true, sources = sources),
+                packageName = "$fullPackageName.provider",
+                fileName = fileName,
+            )
+            BlockProviderVisitor(file, fileName, (basePackageName + PACKAGE_NAME_SUFFIX), integrations)
+            file.close()
+        }
+        return deferredSymbols
     }
 
     private fun getNativeblocksAnnotations(param: KSValueParameter): List<KSAnnotation> {
