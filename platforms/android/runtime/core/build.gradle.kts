@@ -83,7 +83,7 @@ dependencies {
     //==========================kotlin===========================
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.5.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
     //==========================compose==========================
     implementation(platform("androidx.compose:compose-bom:2026.06.01"))
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
