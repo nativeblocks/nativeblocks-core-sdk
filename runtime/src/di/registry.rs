@@ -19,7 +19,6 @@ pub(crate) fn get_or_create(
     http: Arc<dyn HttpClient>,
     cache: Arc<dyn CacheProvider>,
 ) -> NBResult<Arc<Container>> {
-    environment.validate()?;
     let mut map = registry().lock().expect("di registry poisoned");
     let container = map
         .entry(environment.instance_name().to_string())

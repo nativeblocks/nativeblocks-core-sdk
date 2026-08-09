@@ -14,8 +14,6 @@ pub fn from_bytes<T: DeserializeOwned>(bytes: &[u8]) -> NBResult<T> {
     return serde_json::from_slice(bytes).map_err(|e| ErrorModel::cache(e.to_string()));
 }
 
-/// Runs filesystem work on tokio's blocking pool. One hop per cache call, rather
-/// than the per-syscall hop `tokio::fs` would cost on a write plus rename.
 pub(super) async fn offload<T, F>(work: F) -> NBResult<T>
 where
     F: FnOnce() -> NBResult<T> + Send + 'static,

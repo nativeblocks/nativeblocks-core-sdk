@@ -12,8 +12,6 @@ pub mod feature;
 pub mod library;
 pub mod plugin;
 
-use std::sync::Arc;
-
 use crate::di::Container;
 use crate::feature::experiment::ExperimentClient;
 use crate::feature::frame::FrameClient;
@@ -27,6 +25,7 @@ use crate::library::result::NBError;
 use crate::plugin::global_parameter;
 use crate::plugin::global_parameter::GlobalParameterClient;
 use crate::plugin::logger;
+use std::sync::Arc;
 
 #[derive(uniffi::Object)]
 pub struct NativeblocksRuntime {
@@ -42,8 +41,20 @@ impl NativeblocksRuntime {
         http: Arc<dyn HttpClient>,
         cache_dir: String,
     ) -> Result<Arc<Self>, NBError> {
-        let cache = cache::build_provider(&cache_dir, environment.instance_name())?;
-        let container = di::get_or_create(&environment, &config, http, cache)?;
+        if let Err(error) = environment.validate() {
+            return Err(NBError::from(error));
+        }
+
+        let cache = match cache::build_provider(&cache_dir, environment.instance_name()) {
+            Ok(cache) => cache,
+            Err(error) => return Err(NBError::from(error)),
+        };
+
+        let container = match di::get_or_create(&environment, &config, http, cache) {
+            Ok(container) => container,
+            Err(error) => return Err(NBError::from(error)),
+        };
+
         return Ok(Arc::new(Self { container }));
     }
 
