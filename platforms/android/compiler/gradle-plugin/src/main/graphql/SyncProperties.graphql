@@ -1,0 +1,11 @@
+mutation syncIntegrationProperties($input: SyncIntegrationPropertiesInput!) {
+    syncIntegrationProperties(input: $input) {
+        key
+        type
+        value
+        description
+        valuePicker
+        valuePickerGroup
+        valuePickerOptions
+    }
+}

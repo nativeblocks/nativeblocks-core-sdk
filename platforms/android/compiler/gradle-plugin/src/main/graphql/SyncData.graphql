@@ -1,0 +1,6 @@
+mutation syncIntegrationData($input: SyncIntegrationDataInput!) {
+    syncIntegrationData(input: $input) {
+        key
+        type
+    }
+}
