@@ -1,13 +1,11 @@
 import NativeblocksRuntimeFFI
 import SwiftUI
 
-private let ON_APPEAR = "onAppear"
-private let ON_DISAPPEAR = "onDisappear"
-
 internal struct NativeFrame: View {
 
     private let route: String
     private let args: [String: String]
+    private let state: NativeblocksFrameState
     private let loading: () -> AnyView
     private let error: (String) -> AnyView
     private let instanceName: String
@@ -20,12 +18,14 @@ internal struct NativeFrame: View {
         instanceName: String = "default",
         route: String,
         args: [String: String],
+        state: NativeblocksFrameState = .stateless,
         loading: @escaping () -> AnyView,
         error: @escaping (String) -> AnyView
     ) {
         self.instanceName = instanceName
         self.route = route
         self.args = args
+        self.state = state
         self.loading = loading
         self.error = error
         self._frameViewModel = StateObject(
@@ -45,13 +45,20 @@ internal struct NativeFrame: View {
             }
         }
         .environment(\.nativeWindowWidthClass, currentWindowWidthClass(verticalSizeClass, horizontalSizeClass))
-        .onAppear {
-            frameViewModel.setupFrame(route: route, args: args)
+        .task(id: FrameSetup(instanceName: instanceName, route: route, args: args, stateKey: state.key)) {
+            frameViewModel.setupFrame(route: route, args: args, stateKey: state.key)
         }
         .onDisappear {
             frameViewModel.releaseFrame()
         }
     }
+}
+
+private struct FrameSetup: Equatable {
+    let instanceName: String
+    let route: String
+    let args: [String: String]
+    let stateKey: String?
 }
 
 private struct RootLifecycle: View {
@@ -63,24 +70,16 @@ private struct RootLifecycle: View {
         Group {
             if let rootKey = vm.rootKey {
                 Block(instanceName: instanceName, vm: vm, blockKey: rootKey, listItemIndex: NONE_INDEX)
-                    .onAppear {
-                        handle(rootKey, ON_APPEAR)
+                    .task(id: vm.frameUpdateGeneration) {
+                        vm.rootEntered(rootKey)
                     }
                     .onDisappear {
-                        handle(rootKey, ON_DISAPPEAR)
-                    }
-                    .onChange(of: vm.frameUpdateGeneration) { _ in
-                        handle(rootKey, ON_DISAPPEAR)
-                        handle(rootKey, ON_APPEAR)
+                        vm.rootExited(rootKey)
                     }
             } else {
                 EmptyView()
             }
         }
-    }
-
-    private func handle(_ rootKey: String, _ event: String) {
-        vm.handleAction(NONE_INDEX, vm.actionOf(blockKey: rootKey, eventType: event), event)
     }
 }
 

@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::feature::frame::domain::repository::FrameRepository;
 use crate::feature::frame::presenter::logging::FrameLogger;
-use crate::feature::frame::presenter::state_manager::FrameStateManager;
+use crate::feature::frame::presenter::state_manager::{FrameSnapshot, FrameStateManager};
 use crate::library::environment::model::SdkConfig;
 use crate::library::result::NBError;
 use crate::plugin::global_parameter::GlobalParameterProvider;
@@ -15,6 +15,7 @@ pub struct FrameClient {
     globals: Arc<GlobalParameterProvider>,
     logger: Arc<Mutex<NativeLoggerProvider>>,
     sdk_config: SdkConfig,
+    snapshots: Arc<Mutex<HashMap<String, FrameSnapshot>>>,
 }
 
 impl FrameClient {
@@ -29,6 +30,7 @@ impl FrameClient {
             globals,
             logger,
             sdk_config,
+            snapshots: Arc::new(Mutex::new(HashMap::new())),
         });
     }
 }
@@ -37,7 +39,20 @@ impl FrameClient {
 impl FrameClient {
     pub fn state_manager(&self) -> Arc<FrameStateManager> {
         let logger = FrameLogger::new(self.logger.clone(), self.sdk_config.clone());
-        return FrameStateManager::new(self.repository.clone(), self.globals.clone(), logger);
+        return FrameStateManager::new(
+            self.repository.clone(),
+            self.globals.clone(),
+            logger,
+            self.snapshots.clone(),
+        );
+    }
+
+    pub fn clear_frame_state(&self, state_key: String) {
+        self.snapshots.lock().unwrap().remove(&state_key);
+    }
+
+    pub fn clear_all_frame_states(&self) {
+        self.snapshots.lock().unwrap().clear();
     }
 
     pub async fn sync_frame(

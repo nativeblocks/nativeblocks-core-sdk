@@ -24,7 +24,8 @@ import org.koin.core.qualifier.named
  * Sets up the frame with the provided route and arguments, and handles loading and error states.
  *
  * @param route The route of the frame to display.
- * @param routeArguments A map of arguments to pass to the frame route.
+ * @param arguments A map of arguments to pass to the frame route.
+ * @param state Whether the frame keeps what the user did to it, and under which key.
  * @param loading A composable to display during the loading state.
  * @param error A composable to display in case of an error, accepting an error message.
  */
@@ -32,7 +33,8 @@ import org.koin.core.qualifier.named
 fun NativeblocksFrame(
     instanceName: String = "default",
     route: String,
-    routeArguments: Map<String, String>,
+    arguments: Map<String, String>,
+    state: NativeblocksFrameState = NativeblocksFrameState.Stateless,
     loading: @Composable () -> Unit,
     error: @Composable (String) -> Unit
 ) {
@@ -43,10 +45,10 @@ fun NativeblocksFrame(
         }
         val frameViewModel = koinViewModel<FrameViewModel>(
             qualifier = named(instanceName),
-            key = "$instanceName-$route-${routeArguments.hashCode()}"
+            key = "$instanceName-$route-${arguments.hashCode()}"
         )
-        LaunchedEffect(instanceName, route, routeArguments) {
-            frameViewModel.setupFrame(route, routeArguments)
+        LaunchedEffect(instanceName, route, arguments, state) {
+            frameViewModel.setupFrame(route, arguments, state.key)
         }
         NativeFrame(instanceName, frameViewModel, loading, error)
     }

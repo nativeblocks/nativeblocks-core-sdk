@@ -5,3 +5,4 @@ pub mod observer;
 mod state;
 
 pub use manager::FrameStateManager;
+pub(super) use state::FrameSnapshot;

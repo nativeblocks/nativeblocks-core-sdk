@@ -2,6 +2,11 @@ import Combine
 import Foundation
 import NativeblocksRuntimeFFI
 
+private let ON_APPEAR = "onAppear"
+private let ON_DISAPPEAR = "onDisappear"
+private let ON_STATE_SAVED = "onStateSaved"
+private let ON_STATE_RESTORED = "onStateRestored"
+
 @MainActor
 internal final class FrameViewModel: ObservableObject {
 
@@ -16,6 +21,10 @@ internal final class FrameViewModel: ObservableObject {
 
     private var actions: [String: [NativeActionModel]] = [:]
     private var setupTask: Task<Void, Never>?
+    private var announcedGeneration = -1
+    private var isAppeared = false
+    private var isRestored = false
+    private var isStateful = false
 
     let blockProvider: NativeBlockProvider
 
@@ -38,6 +47,9 @@ internal final class FrameViewModel: ObservableObject {
         },
         onVariableChange: { [weak self] variable in
             self?.updateVariable(key: variable.key, value: variable.value)
+        },
+        onLog: { [weak self] event in
+            self?.frameStateBridge.logAction(event: event)
         }
     )
 
@@ -47,12 +59,14 @@ internal final class FrameViewModel: ObservableObject {
         self.blockProvider = NativeBlockProviderRegistry.getOrCreate(instanceName)
     }
 
-    func setupFrame(route: String, args: [String: String]) {
+    func setupFrame(route: String, args: [String: String], stateKey: String?) {
         setupTask?.cancel()
+        isStateful = stateKey != nil
         setupTask = Task { [frameStateBridge] in
             await frameStateBridge.observeFrame(
                 route: route,
                 args: args,
+                stateKey: stateKey,
                 onFull: { [weak self] frame in
                     Task { @MainActor in self?.applyFull(frame) }
                 },
@@ -83,6 +97,27 @@ internal final class FrameViewModel: ObservableObject {
         frameStateBridge.updateVariable(key: key, value: value)
     }
 
+    func rootEntered(_ rootKey: String) {
+        isAppeared = true
+        guard announcedGeneration != frameUpdateGeneration else {
+            return
+        }
+        announcedGeneration = frameUpdateGeneration
+        fireRootEvent(rootKey, isRestored ? ON_STATE_RESTORED : ON_APPEAR)
+    }
+
+    func rootExited(_ rootKey: String) {
+        guard isAppeared else {
+            return
+        }
+        isAppeared = false
+        fireRootEvent(rootKey, isStateful ? ON_STATE_SAVED : ON_DISAPPEAR)
+    }
+
+    func fireRootEvent(_ rootKey: String, _ event: String) {
+        handleAction(NONE_INDEX, actionOf(blockKey: rootKey, eventType: event), event)
+    }
+
     func releaseFrame() {
         setupTask?.cancel()
         setupTask = nil
@@ -98,6 +133,7 @@ internal final class FrameViewModel: ObservableObject {
         actions = frame.actions.mapValues { list in list.map { $0.toDomain() } }
 
         rootKey = frame.rootKey
+        isRestored = frame.restored
         if frame.state == .ready {
             frameUpdateGeneration += 1
         }

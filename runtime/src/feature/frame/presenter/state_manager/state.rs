@@ -17,6 +17,12 @@ pub(super) struct InternalState {
     blocks: HashMap<String, NativeBlockModel>,
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct FrameSnapshot {
+    variables: HashMap<String, NativeVariableModel>,
+    blocks: HashMap<String, NativeBlockModel>,
+}
+
 impl InternalState {
     pub(super) fn fresh() -> Self {
         return Self::empty(RenderingState::Loading {});
@@ -70,7 +76,28 @@ impl InternalState {
             blocks,
             variables: self.variables.clone(),
             actions: self.base.actions.clone(),
+            restored: false,
         };
+    }
+
+    pub(super) fn snapshot(&self) -> FrameSnapshot {
+        return FrameSnapshot {
+            variables: self.variables.clone(),
+            blocks: self.blocks.clone(),
+        };
+    }
+
+    pub(super) fn restore(&mut self, snapshot: &FrameSnapshot) {
+        for (key, variable) in &snapshot.variables {
+            if self.variables.contains_key(key) {
+                self.variables.insert(key.clone(), variable.clone());
+            }
+        }
+        for (key, block) in &snapshot.blocks {
+            if self.base.blocks.contains_key(key) {
+                self.blocks.insert(key.clone(), block.clone());
+            }
+        }
     }
 
     pub(super) fn change_variable(&mut self, key: &str, value: String) -> Option<FrameDiff> {

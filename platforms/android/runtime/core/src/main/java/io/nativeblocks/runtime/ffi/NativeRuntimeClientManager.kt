@@ -3,8 +3,6 @@ package io.nativeblocks.runtime.ffi
 import io.nativeblocks.runtime.BuildConfig
 import io.nativeblocks.runtime.api.NativeblocksEdition
 import io.nativeblocks.runtime.api.util.SDKConfig
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 internal class NativeRuntimeClientManager(
     private val instanceName: String,

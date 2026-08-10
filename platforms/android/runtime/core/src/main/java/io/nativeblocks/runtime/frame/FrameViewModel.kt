@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.nativeblocks.runtime.api.provider.block.NONE_INDEX
 import io.nativeblocks.runtime.api.provider.block.NativeBlockProviderRegistry
 import io.nativeblocks.runtime.api.provider.model.NativeActionModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
@@ -24,6 +25,11 @@ import java.util.concurrent.ConcurrentHashMap
 import io.nativeblocks.runtime.ffi.NativeBlockModel as RuntimeFFIBlockModel
 import io.nativeblocks.runtime.ffi.NativeVariableModel as RuntimeFFIVariableModel
 
+private const val ON_APPEAR = "onAppear"
+private const val ON_DISAPPEAR = "onDisappear"
+private const val ON_STATE_SAVED = "onStateSaved"
+private const val ON_STATE_RESTORED = "onStateRestored"
+
 internal class FrameViewModel(
     frameStateBridge: FrameStateBridge,
     private val instanceName: String,
@@ -38,6 +44,11 @@ internal class FrameViewModel(
 
     private val _frameUpdateGeneration = MutableStateFlow(0)
     val frameUpdateGeneration = _frameUpdateGeneration.asStateFlow()
+
+    private var announcedGeneration = -1
+    private var isAppeared = false
+    private var isRestored = false
+    private var isStateful = false
 
     private val blocks = ConcurrentHashMap<String, MutableState<NativeBlockModel>>()
     private val variables = ConcurrentHashMap<String, MutableState<NativeVariableModel>>()
@@ -59,14 +70,17 @@ internal class FrameViewModel(
         },
         onVariableChange = { variableModel ->
             updateVariable(variableModel.key, variableModel.value)
-        }
+        },
+        onLog = { event -> logAction(event) }
     )
 
-    fun setupFrame(route: String, routeArguments: Map<String, String>) {
+    fun setupFrame(route: String, routeArguments: Map<String, String>, stateKey: String? = null) {
+        isStateful = stateKey != null
         viewModelScope.launch(Dispatchers.IO) {
             observeFrame(
                 route = route,
                 args = routeArguments,
+                stateKey = stateKey,
                 onFull = {
                     viewModelScope.launch(Dispatchers.IO) { applyFull(it) }
                 },
@@ -93,6 +107,22 @@ internal class FrameViewModel(
         actionTree.handle(index, action, performedEventType)
     }
 
+    fun rootEntered(rootKey: String) {
+        isAppeared = true
+        val generation = _frameUpdateGeneration.value
+        if (announcedGeneration == generation) return
+        announcedGeneration = generation
+        val event = if (isRestored) ON_STATE_RESTORED else ON_APPEAR
+        handleAction(NONE_INDEX, actionOf(rootKey, event), event)
+    }
+
+    fun rootExited(rootKey: String) {
+        if (!isAppeared) return
+        isAppeared = false
+        val event = if (isStateful) ON_STATE_SAVED else ON_DISAPPEAR
+        handleAction(NONE_INDEX, actionOf(rootKey, event), event)
+    }
+
     private fun applyFull(frame: FrameFull) {
         Snapshot.withMutableSnapshot {
             variables.keys.retainAll(frame.variables.keys)
@@ -106,6 +136,7 @@ internal class FrameViewModel(
         })
 
         _rootKey.update { frame.rootKey }
+        isRestored = frame.restored
         if (frame.state is RenderingState.Ready) {
             _frameUpdateGeneration.update { it + 1 }
         }

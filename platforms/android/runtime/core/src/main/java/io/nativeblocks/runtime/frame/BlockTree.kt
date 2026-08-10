@@ -3,6 +3,7 @@ package io.nativeblocks.runtime.frame
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -14,9 +15,6 @@ import io.nativeblocks.runtime.api.provider.block.defaults.RootBlock
 import io.nativeblocks.runtime.api.util.LocalNativeWindowWidthClass
 import io.nativeblocks.runtime.api.util.currentWindowWidthClass
 import io.nativeblocks.runtime.ffi.RenderingState
-
-private const val ON_APPEAR = "onAppear"
-private const val ON_DISAPPEAR = "onDisappear"
 
 @Composable
 internal fun NativeFrame(
@@ -42,13 +40,12 @@ private fun RootLifecycle(instanceName: String, vm: FrameViewModel) {
 
     val rootKey = rootKeyState ?: return
 
-    DisposableEffect(appearGen) {
-        val onAppearAction = vm.actionOf(rootKey, ON_APPEAR)
-        vm.handleAction(NONE_INDEX, onAppearAction, ON_APPEAR)
-        onDispose {
-            val onDisappearAction = vm.actionOf(rootKey, ON_DISAPPEAR)
-            vm.handleAction(NONE_INDEX, onDisappearAction, ON_DISAPPEAR)
-        }
+    DisposableEffect(rootKey) {
+        onDispose { vm.rootExited(rootKey) }
+    }
+
+    LaunchedEffect(appearGen) {
+        vm.rootEntered(rootKey)
     }
 
     Block(instanceName, vm, rootKey, NONE_INDEX)

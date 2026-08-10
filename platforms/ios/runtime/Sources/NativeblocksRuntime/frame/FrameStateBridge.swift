@@ -5,6 +5,7 @@ internal protocol FrameStateBridge {
     func observeFrame(
         route: String,
         args: [String: String],
+        stateKey: String?,
         onFull: @escaping (FrameFull) -> Void,
         onDiff: @escaping (FrameDiff) -> Void
     ) async
@@ -18,6 +19,8 @@ internal protocol FrameStateBridge {
         valueTablet: String,
         valueDesktop: String
     )
+
+    func logAction(event: ActionLogEvent)
 
     func releaseFrame()
 }
@@ -33,12 +36,14 @@ internal final class FrameStateBridgeImpl: FrameStateBridge {
     func observeFrame(
         route: String,
         args: [String: String],
+        stateKey: String?,
         onFull: @escaping (FrameFull) -> Void,
         onDiff: @escaping (FrameDiff) -> Void
     ) async {
         await frameStateManager.setupFrame(
             route: route,
             args: args,
+            stateKey: stateKey,
             observer: FrameStateObserverAdapter(onFull: onFull, onDiff: onDiff)
         )
     }
@@ -61,6 +66,10 @@ internal final class FrameStateBridgeImpl: FrameStateBridge {
             valueTablet: valueTablet,
             valueDesktop: valueDesktop
         )
+    }
+
+    func logAction(event: ActionLogEvent) {
+        frameStateManager.logAction(event: event)
     }
 
     func releaseFrame() {

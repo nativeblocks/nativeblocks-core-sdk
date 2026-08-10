@@ -1,4 +1,5 @@
 import Foundation
+import NativeblocksRuntimeFFI
 
 internal final class ActionTree {
 
@@ -7,19 +8,22 @@ internal final class ActionTree {
     private let onFindBlock: (String) -> NativeBlockModel?
     private let onChangeBlock: (String, String, String, String, String) -> Void
     private let onVariableChange: (NativeVariableModel) -> Void
+    private let onLog: (ActionLogEvent) -> Void
 
     init(
         instanceName: String,
         onFindVariable: @escaping (String) -> NativeVariableModel?,
         onFindBlock: @escaping (String) -> NativeBlockModel?,
         onChangeBlock: @escaping (String, String, String, String, String) -> Void,
-        onVariableChange: @escaping (NativeVariableModel) -> Void
+        onVariableChange: @escaping (NativeVariableModel) -> Void,
+        onLog: @escaping (ActionLogEvent) -> Void
     ) {
         self.instanceName = instanceName
         self.onFindVariable = onFindVariable
         self.onFindBlock = onFindBlock
         self.onChangeBlock = onChangeBlock
         self.onVariableChange = onVariableChange
+        self.onLog = onLog
     }
 
     private var nativeActionProvider: NativeActionProvider {
@@ -27,7 +31,12 @@ internal final class ActionTree {
     }
 
     func handle(index: Int, action: NativeActionModel?, performedEventType: String) {
-        guard let action, action.event == performedEventType else { return }
+        guard let action, action.event == performedEventType else {
+            onLog(.eventIgnored(event: performedEventType))
+            return
+        }
+
+        onLog(.eventTriggered(event: performedEventType, actionKey: action.key))
 
         for trigger in action.triggers where trigger.parentId.isEmpty {
             var rootTrigger = trigger
@@ -62,9 +71,18 @@ internal final class ActionTree {
             trigger.keyType == NativeScriptAction.KEY_TYPE ? NativeScriptAction() : onFind(trigger.keyType)
 
         guard let nativeAction else {
+            onLog(.triggerFallback(keyType: trigger.keyType, name: trigger.name))
             onTriggerFallBack(trigger.keyType, trigger.name)
             return
         }
+
+        onLog(
+            .triggerExecuted(
+                name: trigger.name,
+                keyType: trigger.keyType,
+                then: String(describing: trigger.then)
+            )
+        )
 
         let actionProps = ActionProps(
             instanceName: instanceName,

@@ -678,6 +678,10 @@ package protocol FrameClientProtocol: AnyObject, Sendable {
     
     func clearAll(routes: [String]) async throws 
     
+    func clearAllFrameStates() 
+    
+    func clearFrameState(stateKey: String) 
+    
     func stateManager()  -> FrameStateManager
     
     func syncFrame(route: String, parameters: [String: String]) async throws 
@@ -770,6 +774,21 @@ package func clearAll(routes: [String])async throws   {
         )
 }
     
+package func clearAllFrameStates()  {try! rustCall() {
+    uniffi_nativeblocks_runtime_fn_method_frameclient_clear_all_frame_states(
+            self.uniffiCloneHandle(),$0
+    )
+}
+}
+    
+package func clearFrameState(stateKey: String)  {try! rustCall() {
+    uniffi_nativeblocks_runtime_fn_method_frameclient_clear_frame_state(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(stateKey),$0
+    )
+}
+}
+    
 package func stateManager() -> FrameStateManager  {
     return try!  FfiConverterTypeFrameStateManager_lift(try! rustCall() {
     uniffi_nativeblocks_runtime_fn_method_frameclient_state_manager(
@@ -847,9 +866,11 @@ package func FfiConverterTypeFrameClient_lower(_ value: FrameClient) -> UInt64 {
 
 package protocol FrameStateManagerProtocol: AnyObject, Sendable {
     
+    func logAction(event: ActionLogEvent) 
+    
     func release() 
     
-    func setupFrame(route: String, args: [String: String], observer: FrameStateObserver) async 
+    func setupFrame(route: String, args: [String: String], stateKey: String?, observer: FrameStateObserver) async 
     
     func updateBlockProperty(blockKey: String, propertyKey: String, valueMobile: String, valueTablet: String, valueDesktop: String) 
     
@@ -909,6 +930,14 @@ package class FrameStateManager: FrameStateManagerProtocol, @unchecked Sendable 
     
 
     
+package func logAction(event: ActionLogEvent)  {try! rustCall() {
+    uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_action(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeActionLogEvent_lower(event),$0
+    )
+}
+}
+    
 package func release()  {try! rustCall() {
     uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(
             self.uniffiCloneHandle(),$0
@@ -916,13 +945,13 @@ package func release()  {try! rustCall() {
 }
 }
     
-package func setupFrame(route: String, args: [String: String], observer: FrameStateObserver)async   {
+package func setupFrame(route: String, args: [String: String], stateKey: String?, observer: FrameStateObserver)async   {
     return
         try!  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(
                     self.uniffiCloneHandle(),
-                    FfiConverterString.lower(route),FfiConverterDictionaryStringString.lower(args),FfiConverterTypeFrameStateObserver_lower(observer)
+                    FfiConverterString.lower(route),FfiConverterDictionaryStringString.lower(args),FfiConverterOptionString.lower(stateKey),FfiConverterTypeFrameStateObserver_lower(observer)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_void,
@@ -2994,15 +3023,17 @@ package struct FrameFull: Equatable, Hashable {
     package let blocks: [String: NativeBlockModel]
     package let variables: [String: NativeVariableModel]
     package let actions: [String: [NativeActionModel]]
+    package let restored: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    package init(state: RenderingState, rootKey: String?, blocks: [String: NativeBlockModel], variables: [String: NativeVariableModel], actions: [String: [NativeActionModel]]) {
+    package init(state: RenderingState, rootKey: String?, blocks: [String: NativeBlockModel], variables: [String: NativeVariableModel], actions: [String: [NativeActionModel]], restored: Bool) {
         self.state = state
         self.rootKey = rootKey
         self.blocks = blocks
         self.variables = variables
         self.actions = actions
+        self.restored = restored
     }
 
     
@@ -3025,7 +3056,8 @@ package struct FfiConverterTypeFrameFull: FfiConverterRustBuffer {
                 rootKey: FfiConverterOptionString.read(from: &buf), 
                 blocks: FfiConverterDictionaryStringTypeNativeBlockModel.read(from: &buf), 
                 variables: FfiConverterDictionaryStringTypeNativeVariableModel.read(from: &buf), 
-                actions: FfiConverterDictionaryStringSequenceTypeNativeActionModel.read(from: &buf)
+                actions: FfiConverterDictionaryStringSequenceTypeNativeActionModel.read(from: &buf), 
+                restored: FfiConverterBool.read(from: &buf)
         )
     }
 
@@ -3035,6 +3067,7 @@ package struct FfiConverterTypeFrameFull: FfiConverterRustBuffer {
         FfiConverterDictionaryStringTypeNativeBlockModel.write(value.blocks, into: &buf)
         FfiConverterDictionaryStringTypeNativeVariableModel.write(value.variables, into: &buf)
         FfiConverterDictionaryStringSequenceTypeNativeActionModel.write(value.actions, into: &buf)
+        FfiConverterBool.write(value.restored, into: &buf)
     }
 }
 
@@ -4086,6 +4119,103 @@ package func FfiConverterTypeSdkConfig_lift(_ buf: RustBuffer) throws -> SdkConf
 package func FfiConverterTypeSdkConfig_lower(_ value: SdkConfig) -> RustBuffer {
     return FfiConverterTypeSdkConfig.lower(value)
 }
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+package enum ActionLogEvent: Equatable, Hashable {
+    
+    case eventIgnored(event: String
+    )
+    case eventTriggered(event: String, actionKey: String
+    )
+    case triggerExecuted(name: String, keyType: String, then: String
+    )
+    case triggerFallback(keyType: String, name: String
+    )
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension ActionLogEvent: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package struct FfiConverterTypeActionLogEvent: FfiConverterRustBuffer {
+    typealias SwiftType = ActionLogEvent
+
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ActionLogEvent {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .eventIgnored(event: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 2: return .eventTriggered(event: try FfiConverterString.read(from: &buf), actionKey: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .triggerExecuted(name: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), then: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 4: return .triggerFallback(keyType: try FfiConverterString.read(from: &buf), name: try FfiConverterString.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    package static func write(_ value: ActionLogEvent, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .eventIgnored(event):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(event, into: &buf)
+            
+        
+        case let .eventTriggered(event,actionKey):
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(event, into: &buf)
+            FfiConverterString.write(actionKey, into: &buf)
+            
+        
+        case let .triggerExecuted(name,keyType,then):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(name, into: &buf)
+            FfiConverterString.write(keyType, into: &buf)
+            FfiConverterString.write(then, into: &buf)
+            
+        
+        case let .triggerFallback(keyType,name):
+            writeInt(&buf, Int32(4))
+            FfiConverterString.write(keyType, into: &buf)
+            FfiConverterString.write(name, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeActionLogEvent_lift(_ buf: RustBuffer) throws -> ActionLogEvent {
+    return try FfiConverterTypeActionLogEvent.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeActionLogEvent_lower(_ value: ActionLogEvent) -> RustBuffer {
+    return FfiConverterTypeActionLogEvent.lower(value)
+}
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -5541,6 +5671,12 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all() != 60829) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all_frame_states() != 61622) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_frame_state() != 24260) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager() != 39836) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -5550,10 +5686,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change() != 21114) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_action() != 55091) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_release() != 7950) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 40874) {
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 31603) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property() != 32460) {

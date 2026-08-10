@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::feature::frame::presenter::state_manager::FrameStateManager;
-use crate::feature::frame::presenter::state_manager::model::FrameChangeType;
+use crate::feature::frame::presenter::state_manager::model::{ActionLogEvent, FrameChangeType};
 
 #[uniffi::export(with_foreign)]
 pub trait FrameStateObserver: Send + Sync {
@@ -15,12 +15,17 @@ impl FrameStateManager {
         &self,
         route: String,
         args: HashMap<String, String>,
+        state_key: Option<String>,
         observer: Arc<dyn FrameStateObserver>,
     ) {
         self.logger.set_route(&route);
         let globals = Arc::new(self.globals.get());
-        self.observe(route.clone(), args, globals.clone(), observer);
+        self.observe(route.clone(), args, globals.clone(), state_key, observer);
         let _ = self.repository.load(&route, &globals).await;
+    }
+
+    pub fn log_action(&self, event: ActionLogEvent) {
+        self.logger.action(event);
     }
 
     pub fn release(&self) {

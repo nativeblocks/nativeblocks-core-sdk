@@ -1,9 +1,12 @@
 package io.nativeblocks.sample.instance
 
 import android.content.Context
+import android.util.Log
 import io.nativeblocks.foundation.FoundationProvider
 import io.nativeblocks.runtime.api.NativeblocksEdition
 import io.nativeblocks.runtime.api.NativeblocksManager
+import io.nativeblocks.runtime.api.provider.logger.INativeLogger
+import io.nativeblocks.runtime.api.provider.logger.LoggerEventLevel
 import io.nativeblocks.sample.integration.consumer.block.SampleBlockProvider
 
 class InstanceManager(private val applicationContext: Context) {
@@ -23,6 +26,7 @@ class InstanceManager(private val applicationContext: Context) {
         if (!wasRunning) {
             SampleBlockProvider.provideBlocks(instanceName = instance.instanceKey)
             FoundationProvider.provide(instanceName = instance.instanceKey)
+            manager.provideEventLogger("LOGGER", Logger())
         }
         return manager
     }
@@ -37,4 +41,30 @@ class InstanceManager(private val applicationContext: Context) {
     }
 
     fun stopAll(): Unit = instances.forEach(::stop)
+
+}
+
+internal class Logger : INativeLogger {
+
+    override fun log(level: LoggerEventLevel, event: String, message: String, parameters: Map<String, String>) {
+        val paramsText = if (parameters.isNotEmpty()) {
+            parameters.entries.joinToString("\n") { "║   ${it.key}: ${it.value}" }
+        } else {
+            "║   (none)"
+        }
+        val logString = """
+            |╔═══════════════════════════════════════════════════════════
+            |║ Nativeblocks Log
+            |╠═══════════════════════════════════════════════════════════
+            |║ Level   : ${level.name}
+            |║ Event   : $event
+            |║ Message : 
+            |║   $message
+            |║ Parameters:
+            |$paramsText
+            |╚═══════════════════════════════════════════════════════════
+        """.trimMargin()
+
+        Log.d("Nativeblocks", logString)
+    }
 }

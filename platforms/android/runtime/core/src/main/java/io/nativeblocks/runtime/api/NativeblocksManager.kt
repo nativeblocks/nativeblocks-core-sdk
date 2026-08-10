@@ -12,20 +12,16 @@ import io.nativeblocks.runtime.api.provider.model.NativeScaffoldModel
 import io.nativeblocks.runtime.api.provider.type.INativeType
 import io.nativeblocks.runtime.api.provider.type.NativeTypeProvider
 import io.nativeblocks.runtime.api.provider.type.NativeTypeProviderRegistry
-import io.nativeblocks.runtime.api.provider.wandkit.Wandkit
 import io.nativeblocks.runtime.di.NativeCoreSDKInjector
+import io.nativeblocks.runtime.experiment.ExperimentUseCase
 import io.nativeblocks.runtime.ffi.NativeRuntimeClientManager
 import io.nativeblocks.runtime.ffi.disposeInstance
 import io.nativeblocks.runtime.ffi.provideLogger
 import io.nativeblocks.runtime.ffi.removeLogger
-import io.nativeblocks.runtime.experiment.ExperimentUseCase
 import io.nativeblocks.runtime.localization.LocalizationUseCase
 import io.nativeblocks.runtime.logger.LoggerAdapter
 import io.nativeblocks.runtime.scaffold.toHost
 import io.nativeblocks.runtime.util.isValidInstanceName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.koin.core.qualifier.named
 import kotlin.reflect.KClass
 
@@ -35,7 +31,7 @@ import kotlin.reflect.KClass
 class NativeblocksManager internal constructor(
     private val name: String,
     context: Context,
-    private val edition: NativeblocksEdition
+    edition: NativeblocksEdition
 ) {
 
     companion object {
@@ -99,19 +95,6 @@ class NativeblocksManager internal constructor(
     private val loggerTypes = mutableSetOf<String>()
 
     internal fun providedActionContractors(): List<INativeActionContractor> = actionContractors.toList()
-
-    /**
-     * Configures and sets up the Wandkit.
-     * @param kits Vararg of WandKit implementations to set up.
-     * @return The NativeblocksManager instance for chaining.
-     */
-    fun wandkit(vararg kits: Wandkit): NativeblocksManager {
-        val context: Context by getKoin().inject()
-        kits.forEach { wand ->
-            wand.setup(context, edition, this.name)
-        }
-        return this
-    }
 
     /**
      * Provides a block implementation.
@@ -230,6 +213,25 @@ class NativeblocksManager internal constructor(
     suspend fun clearFrame(route: String): NativeblocksManager {
         val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
         runCatching { runtimeClient.frameClient.clear(route) }
+        return this
+    }
+
+    /**
+     * Throws away the frame kept under [key], so the next visit starts fresh.
+     * @param key The key given to [NativeblocksFrameState.Stateful].
+     */
+    fun clearFrameState(key: String): NativeblocksManager {
+        val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
+        runtimeClient.frameClient.clearFrameState(key)
+        return this
+    }
+
+    /**
+     * Throws away every kept frame.
+     */
+    fun clearAllFrameStates(): NativeblocksManager {
+        val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
+        runtimeClient.frameClient.clearAllFrameStates()
         return this
     }
 

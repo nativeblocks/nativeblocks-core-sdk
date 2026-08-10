@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import io.nativeblocks.runtime.api.NativeblocksError
 import io.nativeblocks.runtime.api.NativeblocksFrame
+import io.nativeblocks.runtime.api.NativeblocksFrameState
 import io.nativeblocks.runtime.api.NativeblocksLoading
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,11 +33,14 @@ fun FrameScreen(
             )
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        Box(Modifier
+            .fillMaxSize()
+            .padding(padding)) {
             NativeblocksFrame(
-                instance = instance,
+                instanceName = instance,
                 route = route,
                 routeArguments = emptyMap(),
+                state = NativeblocksFrameState.Stateful(route),
                 loading = { NativeblocksLoading() },
                 error = { message -> NativeblocksError(message) },
             )

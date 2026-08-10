@@ -2,9 +2,9 @@ package io.nativeblocks.runtime.di
 
 import android.content.Context
 import io.nativeblocks.runtime.api.NativeblocksEdition
+import io.nativeblocks.runtime.experiment.ExperimentUseCase
 import io.nativeblocks.runtime.ffi.HttpClient
 import io.nativeblocks.runtime.ffi.NativeRuntimeClientManager
-import io.nativeblocks.runtime.experiment.ExperimentUseCase
 import io.nativeblocks.runtime.frame.FrameStateBridgeImpl
 import io.nativeblocks.runtime.frame.FrameViewModel
 import io.nativeblocks.runtime.lib.OkHttpHttpClient

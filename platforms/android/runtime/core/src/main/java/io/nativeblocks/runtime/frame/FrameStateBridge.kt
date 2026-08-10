@@ -1,5 +1,6 @@
 package io.nativeblocks.runtime.frame
 
+import io.nativeblocks.runtime.ffi.ActionLogEvent
 import io.nativeblocks.runtime.ffi.FrameChangeType
 import io.nativeblocks.runtime.ffi.FrameDiff
 import io.nativeblocks.runtime.ffi.FrameFull
@@ -10,6 +11,7 @@ internal interface FrameStateBridge {
     suspend fun observeFrame(
         route: String,
         args: Map<String, String>,
+        stateKey: String?,
         onFull: (FrameFull) -> Unit,
         onDiff: (FrameDiff) -> Unit,
     )
@@ -23,6 +25,8 @@ internal interface FrameStateBridge {
         valueDesktop: String
     )
 
+    fun logAction(event: ActionLogEvent)
+
     fun releaseFrame()
 }
 
@@ -33,10 +37,11 @@ internal class FrameStateBridgeImpl(
     override suspend fun observeFrame(
         route: String,
         args: Map<String, String>,
+        stateKey: String?,
         onFull: (FrameFull) -> Unit,
         onDiff: (FrameDiff) -> Unit,
     ) {
-        frameStateManager.setupFrame(route, args, object : FrameStateObserver {
+        frameStateManager.setupFrame(route, args, stateKey, object : FrameStateObserver {
             override fun onFrameChange(change: FrameChangeType) {
                 when (change) {
                     is FrameChangeType.Full -> onFull(change.frame)
@@ -64,6 +69,10 @@ internal class FrameStateBridgeImpl(
             valueTablet,
             valueDesktop
         )
+    }
+
+    override fun logAction(event: ActionLogEvent) {
+        frameStateManager.logAction(event)
     }
 
     override fun releaseFrame() {

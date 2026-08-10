@@ -1,8 +1,13 @@
-use crate::feature::frame::presenter::state_manager::model::RenderingState;
+use crate::feature::frame::presenter::state_manager::model::{ActionLogEvent, RenderingState};
 use crate::library::environment::model::SdkConfig;
-use crate::plugin::logger::keys::parameter::{ERROR_MESSAGE, FRAME_ROUTE, STATE};
-use crate::plugin::logger::keys::state::{FRAME_LOAD_FAILED, FRAME_LOAD_SUCCEED, FRAME_LOADING};
-use crate::plugin::logger::keys::tag::FRAME_STATE;
+use crate::plugin::logger::keys::parameter::{
+    ACTION_NAME, ERROR_MESSAGE, EVENT_NAME, FRAME_ROUTE, KEY_TYPE, STATE, THEN, TRIGGER_NAME,
+};
+use crate::plugin::logger::keys::state::{
+    ACTION_EVENT_IGNORED, ACTION_EVENT_TRIGGERED, FALLBACK_TRIGGER, FRAME_LOAD_FAILED,
+    FRAME_LOAD_SUCCEED, FRAME_LOADING, TRIGGER_EXECUTED,
+};
+use crate::plugin::logger::keys::tag::{FALLBACK_ACTION, FRAME_STATE, HANDLE_ACTION};
 use crate::plugin::logger::{LoggerEventLevel, NativeLoggerProvider};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -67,6 +72,54 @@ impl FrameLogger {
                     params,
                 );
             }
+        }
+    }
+
+    pub(crate) fn action(&self, event: ActionLogEvent) {
+        if !self.enabled() {
+            return;
+        }
+        match event {
+            ActionLogEvent::EventIgnored { event } => self.dispatch(
+                LoggerEventLevel::Debug,
+                HANDLE_ACTION,
+                format!("No action bound to '{event}'"),
+                HashMap::from([
+                    (STATE.to_string(), ACTION_EVENT_IGNORED.to_string()),
+                    (EVENT_NAME.to_string(), event),
+                ]),
+            ),
+            ActionLogEvent::EventTriggered { event, action_key } => self.dispatch(
+                LoggerEventLevel::Info,
+                HANDLE_ACTION,
+                format!("Event '{event}' handled"),
+                HashMap::from([
+                    (STATE.to_string(), ACTION_EVENT_TRIGGERED.to_string()),
+                    (EVENT_NAME.to_string(), event),
+                    (ACTION_NAME.to_string(), action_key),
+                ]),
+            ),
+            ActionLogEvent::TriggerExecuted { name, key_type, then } => self.dispatch(
+                LoggerEventLevel::Debug,
+                HANDLE_ACTION,
+                format!("Trigger '{name}' executed"),
+                HashMap::from([
+                    (STATE.to_string(), TRIGGER_EXECUTED.to_string()),
+                    (TRIGGER_NAME.to_string(), name),
+                    (KEY_TYPE.to_string(), key_type),
+                    (THEN.to_string(), then),
+                ]),
+            ),
+            ActionLogEvent::TriggerFallback { key_type, name } => self.dispatch(
+                LoggerEventLevel::Warning,
+                FALLBACK_ACTION,
+                format!("No action registered for '{key_type}'"),
+                HashMap::from([
+                    (STATE.to_string(), FALLBACK_TRIGGER.to_string()),
+                    (KEY_TYPE.to_string(), key_type),
+                    (TRIGGER_NAME.to_string(), name),
+                ]),
+            ),
         }
     }
 

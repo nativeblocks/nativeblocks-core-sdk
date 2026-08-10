@@ -79,17 +79,6 @@ public class NativeblocksManager {
         return instance
     }
 
-    /// Configures the Wandkit components for the Nativeblocks manager.
-    /// - Parameter kits: A variadic parameter for passing one or more `Wandkit` instances.
-    /// - Returns: The current instance of `NativeblocksManager`.
-    @discardableResult
-    public func wandkit(_ kits: Wandkit...) -> NativeblocksManager {
-        for wand in kits {
-            wand.setup(edition: edition, instanceName: name)
-        }
-        return self
-    }
-
     /// Provides a block implementation.
     /// - Parameters:
     ///   - blockType: The type of the block.
@@ -190,6 +179,21 @@ public class NativeblocksManager {
     @discardableResult
     public func clearFrame(route: String) async -> NativeblocksManager {
         try? await injector.runtimeClient.frameClient.clear(route: route)
+        return self
+    }
+
+    /// Throws away the frame kept under `key`, so the next visit starts fresh.
+    /// - Parameter key: The key given to `NativeblocksFrameState.stateful`.
+    @discardableResult
+    public func clearFrameState(key: String) -> NativeblocksManager {
+        injector.runtimeClient.frameClient.clearFrameState(stateKey: key)
+        return self
+    }
+
+    /// Throws away every kept frame.
+    @discardableResult
+    public func clearAllFrameStates() -> NativeblocksManager {
+        injector.runtimeClient.frameClient.clearAllFrameStates()
         return self
     }
 

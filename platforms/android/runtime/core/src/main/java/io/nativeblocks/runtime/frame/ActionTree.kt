@@ -10,6 +10,7 @@ import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerModel
 import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerThen
 import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
 import io.nativeblocks.runtime.api.provider.model.NativeVariableModel
+import io.nativeblocks.runtime.ffi.ActionLogEvent
 import kotlinx.coroutines.CoroutineScope
 
 internal class ActionTree(
@@ -19,12 +20,18 @@ internal class ActionTree(
     private val onFindBlock: (String) -> NativeBlockModel?,
     private val onChangeBlock: (String, String, String, String, String) -> Unit,
     private val onVariableChange: (NativeVariableModel) -> Unit,
+    private val onLog: (ActionLogEvent) -> Unit,
 ) {
 
     private val nativeActionProvider get() = NativeActionProviderRegistry.getOrCreate(instanceName)
 
     fun handle(index: Int, action: NativeActionModel?, performedEventType: String) {
-        if (action == null || action.event != performedEventType) return
+        if (action == null || action.event != performedEventType) {
+            onLog(ActionLogEvent.EventIgnored(performedEventType))
+            return
+        }
+
+        onLog(ActionLogEvent.EventTriggered(performedEventType, action.key))
 
         action.triggers
             .filter { it.parentId.isEmpty() }
@@ -58,9 +65,12 @@ internal class ActionTree(
         }
 
         if (nativeAction == null) {
+            onLog(ActionLogEvent.TriggerFallback(trigger.keyType, trigger.name))
             onTriggerFallBack(trigger.keyType, trigger.name)
             return
         }
+
+        onLog(ActionLogEvent.TriggerExecuted(trigger.name, trigger.keyType, trigger.then.name))
 
         val actionProps = ActionProps(
             instanceName = instanceName,

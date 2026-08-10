@@ -6,7 +6,7 @@ use crate::feature::frame::presenter::logging::FrameLogger;
 use crate::feature::frame::presenter::state_manager::api::FrameStateObserver;
 use crate::feature::frame::presenter::state_manager::model::FrameChangeType;
 use crate::feature::frame::presenter::state_manager::observer::Observer;
-use crate::feature::frame::presenter::state_manager::state::InternalState;
+use crate::feature::frame::presenter::state_manager::state::{FrameSnapshot, InternalState};
 use crate::library::result::ErrorType;
 use crate::plugin::global_parameter::GlobalParameterProvider;
 
@@ -15,6 +15,8 @@ pub struct FrameStateManager {
     me: Weak<FrameStateManager>,
     internal_state: Mutex<InternalState>,
     subscription: Observer,
+    state_key: Mutex<Option<String>>,
+    snapshots: Arc<Mutex<HashMap<String, FrameSnapshot>>>,
     pub(super) repository: Arc<dyn FrameRepository>,
     pub(super) globals: Arc<GlobalParameterProvider>,
     pub(super) logger: FrameLogger,
@@ -25,11 +27,14 @@ impl FrameStateManager {
         repository: Arc<dyn FrameRepository>,
         globals: Arc<GlobalParameterProvider>,
         logger: FrameLogger,
+        snapshots: Arc<Mutex<HashMap<String, FrameSnapshot>>>,
     ) -> Arc<Self> {
         return Arc::new_cyclic(|me| Self {
             me: me.clone(),
             internal_state: Mutex::new(InternalState::fresh()),
             subscription: Observer::empty(),
+            state_key: Mutex::new(None),
+            snapshots,
             repository,
             globals,
             logger,
@@ -41,8 +46,10 @@ impl FrameStateManager {
         route: String,
         args: HashMap<String, String>,
         globals: Arc<HashMap<String, String>>,
+        state_key: Option<String>,
         observer: Arc<dyn FrameStateObserver>,
     ) {
+        self.set_state_key(state_key);
         *self.internal_state.lock().unwrap() = InternalState::fresh();
 
         let mut frame_receiver = self.repository.subscribe(&route);
@@ -76,6 +83,7 @@ impl FrameStateManager {
         let Some(diff) = diff else {
             return;
         };
+        self.save_snapshot();
         self.logger.variable_changed(key, diff.blocks.len());
         self.subscription
             .emit(FrameChangeType::Diff { frame: diff });
@@ -102,8 +110,32 @@ impl FrameStateManager {
         let Some(diff) = diff else {
             return;
         };
+        self.save_snapshot();
         self.subscription
             .emit(FrameChangeType::Diff { frame: diff });
+    }
+
+    fn save_snapshot(&self) {
+        let Some(key) = self.state_key.lock().unwrap().clone() else {
+            return;
+        };
+        let snapshot = self.internal_state.lock().unwrap().snapshot();
+        self.snapshots.lock().unwrap().insert(key, snapshot);
+    }
+
+    fn set_state_key(&self, state_key: Option<String>) {
+        let mut current = self.state_key.lock().unwrap();
+        if *current == state_key {
+            return;
+        }
+        if let Some(previous) = std::mem::replace(&mut *current, state_key) {
+            self.snapshots.lock().unwrap().remove(&previous);
+        }
+    }
+
+    fn get_active_snapshot(&self) -> Option<FrameSnapshot> {
+        let key = self.state_key.lock().unwrap().clone()?;
+        return self.snapshots.lock().unwrap().get(&key).cloned();
     }
 
     fn apply_frame(
@@ -112,7 +144,8 @@ impl FrameStateManager {
         args: &HashMap<String, String>,
         globals: &HashMap<String, String>,
     ) {
-        let full = {
+        let snapshot = self.get_active_snapshot();
+        let mut full = {
             let mut internal_state = self.internal_state.lock().unwrap();
             *internal_state = match result {
                 Ok(frame) => InternalState::ready(frame, args, globals),
@@ -124,8 +157,12 @@ impl FrameStateManager {
                     }
                 }
             };
+            if let Some(snapshot) = &snapshot {
+                internal_state.restore(snapshot);
+            }
             internal_state.to_frame_full()
         };
+        full.restored = snapshot.is_some();
         let rendering_state = full.state.clone();
         self.subscription
             .emit(FrameChangeType::Full { frame: full });
