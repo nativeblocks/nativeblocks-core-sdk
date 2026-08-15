@@ -15,6 +15,7 @@ public class NativeblocksManager {
     private let typeProvider: NativeTypeProvider
     private var loggerTypes = Set<String>()
     private var actionContractors = [any INativeActionContractor]()
+    private var kits = [any Kit]()
 
     internal func providedActionContractors() -> [any INativeActionContractor] {
         return actionContractors
@@ -137,6 +138,15 @@ public class NativeblocksManager {
     public func provideEventLogger(loggerType: String, logger: any INativeLogger) -> NativeblocksManager {
         provideLogger(instanceName: name, loggerType: loggerType, logger: LoggerAdapter(delegate: logger))
         loggerTypes.insert(loggerType)
+        return self
+    }
+
+    /// Provides a kit.
+    /// - Parameter kit: The kit to provide.
+    @discardableResult
+    public func provideKit(_ kit: any Kit) -> NativeblocksManager {
+        kit.attach(instanceName: name, edition: edition)
+        kits.append(kit)
         return self
     }
 
@@ -310,6 +320,11 @@ public class NativeblocksManager {
 
     /// Destroys the `NativeblocksManager` and releases all associated resources.
     public func destroy() {
+        for kit in kits {
+            kit.detach(instanceName: name)
+        }
+        kits.removeAll()
+
         for loggerType in loggerTypes {
             removeLogger(instanceName: name, loggerType: loggerType)
         }

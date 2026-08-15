@@ -17,6 +17,8 @@ rustc-ice-*.txt
 .idea/
 .DS_Store
 
+**/nativeblocks.json
+
 platforms/android/*/.kotlin
 platforms/android/*/local.properties
 platforms/android/*/secrets.properties

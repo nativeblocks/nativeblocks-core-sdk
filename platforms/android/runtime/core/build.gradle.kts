@@ -72,9 +72,9 @@ mavenPublishing {
             }
         }
         scm {
-            connection = "scm:git:github.com/nativeblocks/nativeblocks-android.git"
-            developerConnection = "scm:git:ssh://github.com/nativeblocks/nativeblocks-android.git"
-            url = "https://github.com/nativeblocks/nativeblocks-android"
+            connection = "scm:git:github.com/nativeblocks/nativeblocks-core-sdk.git"
+            developerConnection = "scm:git:ssh://github.com/nativeblocks/nativeblocks-core-sdk.git"
+            url = "https://github.com/nativeblocks/nativeblocks-core-sdk"
         }
     }
 }

@@ -7,6 +7,7 @@ import io.nativeblocks.runtime.api.provider.action.INativeActionContractor
 import io.nativeblocks.runtime.api.provider.action.NativeActionProviderRegistry
 import io.nativeblocks.runtime.api.provider.block.BlockProps
 import io.nativeblocks.runtime.api.provider.block.NativeBlockProviderRegistry
+import io.nativeblocks.runtime.api.provider.kit.Kit
 import io.nativeblocks.runtime.api.provider.logger.INativeLogger
 import io.nativeblocks.runtime.api.provider.model.NativeScaffoldModel
 import io.nativeblocks.runtime.api.provider.type.INativeType
@@ -30,8 +31,8 @@ import kotlin.reflect.KClass
  */
 class NativeblocksManager internal constructor(
     private val name: String,
-    context: Context,
-    edition: NativeblocksEdition
+    private val context: Context,
+    private val edition: NativeblocksEdition
 ) {
 
     companion object {
@@ -93,6 +94,7 @@ class NativeblocksManager internal constructor(
     private val actionProvider get() = NativeActionProviderRegistry.getOrCreate(this.name)
     private val actionContractors = mutableListOf<INativeActionContractor>()
     private val loggerTypes = mutableSetOf<String>()
+    private val kits = mutableListOf<Kit>()
 
     internal fun providedActionContractors(): List<INativeActionContractor> = actionContractors.toList()
 
@@ -166,22 +168,16 @@ class NativeblocksManager internal constructor(
     }
 
     /**
-     * Cleans up resources and destroys the NativeblocksManager instance.
+     * Provides a kit.
+     * @param kit The kit to provide.
+     * @return The NativeblocksManager instance for chaining.
      */
-    fun destroy() {
-        loggerTypes.forEach { runCatching { removeLogger(this.name, it) } }
-        loggerTypes.clear()
+    fun provideKit(kit: Kit): NativeblocksManager {
         runCatching {
-            val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
-            runtimeClient.close()
+            kit.attach(this.context, this.name, this.edition)
+            kits.add(kit)
         }
-        NativeCoreSDKInjector.destroy(this.name)
-        runCatching { disposeInstance(this.name) }
-        instanceRegistry.remove(this.name)
-        NativeBlockProviderRegistry.remove(this.name)
-        NativeActionProviderRegistry.remove(this.name)
-        NativeTypeProviderRegistry.remove(this.name)
-        actionContractors.clear()
+        return this
     }
 
     /**
@@ -376,4 +372,26 @@ class NativeblocksManager internal constructor(
     fun <T : Any> getTypeConverter(type: KClass<T>): INativeType<T> {
         return typeProvider.getTypeConverter(type)
     }
+
+    /**
+     * Cleans up resources and destroys the NativeblocksManager instance.
+     */
+    fun destroy() {
+        kits.forEach { runCatching { it.detach(this.name) } }
+        kits.clear()
+        loggerTypes.forEach { runCatching { removeLogger(this.name, it) } }
+        loggerTypes.clear()
+        runCatching {
+            val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
+            runtimeClient.close()
+        }
+        NativeCoreSDKInjector.destroy(this.name)
+        runCatching { disposeInstance(this.name) }
+        instanceRegistry.remove(this.name)
+        NativeBlockProviderRegistry.remove(this.name)
+        NativeActionProviderRegistry.remove(this.name)
+        NativeTypeProviderRegistry.remove(this.name)
+        actionContractors.clear()
+    }
+
 }
