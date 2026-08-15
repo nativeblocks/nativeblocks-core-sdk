@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application android:hardwareAccelerated="true">
+        <service
+            android:name=".feature.live.presenter.LiveService"
+            android:exported="false"
+            android:foregroundServiceType="remoteMessaging" />
+
+        <activity
+            android:name=".feature.auth.presenter.AuthActivity"
+            android:configChanges="orientation|screenSize"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Nativeblocksandroid.Auth"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
+        <activity android:name="com.journeyapps.barcodescanner.CaptureActivity" />
+
+        <activity
+            android:name=".feature.preview.presenter.ParameterFormActivity"
+            android:configChanges="orientation|screenSize"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.Nativeblocksandroid"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
+    </application>
+</manifest>

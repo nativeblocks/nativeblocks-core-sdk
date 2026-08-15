@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Nativeblocksandroid.Auth" parent="Theme.Nativeblocksandroid">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">#66212121</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.Nativeblocksandroid" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

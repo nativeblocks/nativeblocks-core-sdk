@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="live_connect_action_open_app_error">Please open the application before starting screen sharing</string>
+    <string name="live_notification_auth_button">Auth</string>
+    <string name="live_notification_connect_button">Connect</string>
+    <string name="live_notification_disconnect_button">Disconnect</string>
+    <string name="live_notification_stop_button">Stop</string>
+    <string name="live_notification_logout_button">Logout</string>
+    <string name="live_notification_channel_name">DevKit Notifications</string>
+    <string name="live_notification_title">Nativeblocks LiveKit</string>
+    <string name="live_notification_connect">You are connected to live kit.</string>
+    <string name="live_notification_not_connect">You can connect to live kit.</string>
+    <string name="live_notification_auth">You need to login for connect to live kit.</string>
+    <string name="live_notification_connecting">Connecting...</string>
+    <string name="auth_title">Get started!</string>
+    <string name="auth_camera_access_required">Camera access is required to scan QR codes for web login. Please grant permission</string>
+    <string name="auth_enable_camera_access">Enable camera access</string>
+    <string name="auth_start_scan">Start scanning</string>
+    <string name="auth_copy_from_clipboard">Copy from clipboard</string>
+</resources>

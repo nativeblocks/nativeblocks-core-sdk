@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="?android:attr/buttonBarStyle"
+        android:orientation="vertical">
+
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="start">
+
+        <TextView
+                android:id="@+id/notification_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Screen Sharing"
+                style="@style/TextAppearance.Compat.Notification.Title" />
+
+        <Button
+                android:id="@+id/button_auth"
+                android:background="@android:color/transparent"
+                style="@style/TextAppearance.Compat.Notification.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="visible"
+
+                android:text="@string/live_notification_auth_button" />
+
+        <Button
+                android:id="@+id/button_connect"
+                android:background="@android:color/transparent"
+                style="@style/TextAppearance.Compat.Notification.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:text="@string/live_notification_connect_button" />
+
+        <Button
+                android:id="@+id/button_disconnect"
+                android:background="@android:color/transparent"
+                style="@style/TextAppearance.Compat.Notification.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:text="@string/live_notification_disconnect_button" />
+
+        <Button
+                android:id="@+id/button_stop"
+                android:background="@android:color/transparent"
+                style="@style/TextAppearance.Compat.Notification.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:text="@string/live_notification_stop_button" />
+    </LinearLayout>
+</LinearLayout>
