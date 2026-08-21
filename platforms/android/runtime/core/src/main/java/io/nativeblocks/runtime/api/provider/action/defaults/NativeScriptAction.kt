@@ -1,6 +1,6 @@
 package io.nativeblocks.runtime.api.provider.action.defaults
 
-import io.nativeblocks.runtime.api.provider.action.ActionProps
+import io.nativeblocks.runtime.api.provider.action.ActionContext
 import io.nativeblocks.runtime.api.provider.action.INativeAction
 import io.nativeblocks.runtime.ffi.ScriptBridge
 import io.nativeblocks.runtime.ffi.ScriptEngine
@@ -65,31 +65,31 @@ internal class NativeScriptAction : INativeAction {
         private val DEFAULT_TIMEOUT_MS = 2000uL
     }
 
-    override fun handle(actionProps: ActionProps) {
-        actionProps.coroutineScope.launch {
-            val trigger = actionProps.trigger
+    override fun handle(actionContext: ActionContext) {
+        actionContext.coroutineScope.launch {
+            val trigger = actionContext.trigger
             val script = trigger?.properties?.get("script")?.value.orEmpty()
 
             if (script.isNotEmpty()) {
                 val processedScript =
-                    script.replace("{{index}}", actionProps.listItemIndex.toString())
-                evaluateScript(processedScript, actionProps)
+                    script.replace("{{index}}", actionContext.listItemIndex.toString())
+                evaluateScript(processedScript, actionContext)
             }
-            trigger?.let { actionProps.onHandleNextTrigger(it) }
+            trigger?.let { actionContext.onHandleNextTrigger(it) }
         }
     }
 
-    private suspend fun evaluateScript(script: String, actionProps: ActionProps) {
+    private suspend fun evaluateScript(script: String, actionContext: ActionContext) {
         withContext(Dispatchers.IO) {
             val bridge = object : ScriptBridge {
                 override fun getVariable(key: String): String? {
-                    return actionProps.onFindVariable(key)?.value
+                    return actionContext.onFindVariable(key)?.value
                 }
 
                 override fun updateVariable(key: String, value: String) {
-                    val variable = actionProps.onFindVariable(key) ?: return
+                    val variable = actionContext.onFindVariable(key) ?: return
                     val castedValue = cast(value, variable.type) ?: value
-                    actionProps.onChangeVariable(variable.copy(value = castedValue))
+                    actionContext.onUpdateVariable(variable.copy(value = castedValue))
                 }
 
                 override fun updateBlockProperty(
@@ -99,10 +99,10 @@ internal class NativeScriptAction : INativeAction {
                     tablet: String?,
                     desktop: String?,
                 ) {
-                    val block = actionProps.onFindBlock(blockKey) ?: return
+                    val block = actionContext.onFindBlock(blockKey) ?: return
                     val properties = block.properties.toMutableMap()
                     val currentProperty = properties[propertyKey] ?: return
-                    actionProps.onChangeBlockProperties(
+                    actionContext.onUpdateBlockProperties(
                         blockKey,
                         propertyKey,
                         mobile ?: currentProperty.valueMobile,

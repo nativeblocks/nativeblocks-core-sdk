@@ -13,9 +13,9 @@ interface INativeAction {
 
     /**
      * Handles the specified action properties.
-     * @param actionProps The properties of the action to handle.
+     * @param actionContext The properties of the action to handle.
      */
-    fun handle(actionProps: ActionProps)
+    fun handle(actionContext: ActionContext)
 }
 
 /**
@@ -37,22 +37,22 @@ interface INativeActionContractor {
  * @param listItemIndex Index of the list item associated with the action.
  * @param coroutineScope Coroutine scope for executing asynchronous operations.
  * @property onFindVariable Lambda function for retrieving a [NativeVariableModel] by its key.
- * @param onChangeVariable Callback invoked when a variable changes.
+ * @param onUpdateVariable Callback invoked when a variable changes.
  * @param onFindBlock Lambda function for retrieving a [NativeBlockModel] by its identifier.
- * @param onChangeBlockProperties Callback invoked when a block changes.
+ * @param onUpdateBlockProperties Callback invoked when a block changes.
  * @param trigger Trigger model representing the conditions and outcomes of the action.
  * @param onHandleNextTrigger Callback invoked to handle the next trigger in the sequence.
  * @param onHandleSuccessNextTrigger Callback invoked to handle the next trigger upon success.
  * @param onHandleFailureNextTrigger Callback invoked to handle the next trigger upon failure.
  */
-data class ActionProps(
+data class ActionContext(
     val instanceName: String,
     val listItemIndex: Int,
     val coroutineScope: CoroutineScope,
     val onFindVariable: (String) -> NativeVariableModel?,
-    val onChangeVariable: (NativeVariableModel?) -> Unit,
+    val onUpdateVariable: (NativeVariableModel?) -> Unit,
     val onFindBlock: (String) -> NativeBlockModel?,
-    val onChangeBlockProperties: (String, String, String, String, String) -> Unit,
+    val onUpdateBlockProperties: (String, String, String, String, String) -> Unit,
     val trigger: NativeActionTriggerModel?,
     val onHandleNextTrigger: (NativeActionTriggerModel) -> Unit,
     val onHandleSuccessNextTrigger: (NativeActionTriggerModel) -> Unit,

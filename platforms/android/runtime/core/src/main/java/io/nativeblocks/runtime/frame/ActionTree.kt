@@ -1,6 +1,6 @@
 package io.nativeblocks.runtime.frame
 
-import io.nativeblocks.runtime.api.provider.action.ActionProps
+import io.nativeblocks.runtime.api.provider.action.ActionContext
 import io.nativeblocks.runtime.api.provider.action.INativeAction
 import io.nativeblocks.runtime.api.provider.action.NativeActionProviderRegistry
 import io.nativeblocks.runtime.api.provider.action.defaults.NativeScriptAction
@@ -72,15 +72,15 @@ internal class ActionTree(
 
         onLog(ActionLogEvent.TriggerExecuted(trigger.name, trigger.keyType, trigger.then.name))
 
-        val actionProps = ActionProps(
+        val actionContext = ActionContext(
             instanceName = instanceName,
             listItemIndex = index,
             coroutineScope = coroutineScope,
             trigger = trigger,
             onFindVariable = onFindVariable,
             onFindBlock = onFindBlock,
-            onChangeBlockProperties = onChangeBlock,
-            onChangeVariable = { variable ->
+            onUpdateBlockProperties = onChangeBlock,
+            onUpdateVariable = { variable ->
                 variable?.let { onVariableChange(it) }
             },
             onHandleNextTrigger = {
@@ -93,7 +93,7 @@ internal class ActionTree(
                 advanceSubTriggers(action, index, trigger, NativeActionTriggerThen.FAILURE, onFind, onTriggerFallBack)
             }
         )
-        nativeAction.handle(actionProps)
+        nativeAction.handle(actionContext)
     }
 
     private fun advanceSubTriggers(

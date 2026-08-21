@@ -9,7 +9,7 @@ import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
-import io.nativeblocks.runtime.api.provider.block.BlockProps
+import io.nativeblocks.runtime.api.provider.block.BlockContext
 import io.nativeblocks.runtime.api.provider.model.NativeBlockPropertyModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockSlotModel
 
@@ -63,17 +63,17 @@ fun findWindowSizeClass(prop: NativeBlockPropertyModel?, windowManager: NativeDe
 /**
  * Provides the [NativeBlockSlotModel] for the specified slot type if the block supports it.
  *
- * @param blockProps The properties of the block, including its sub-blocks.
+ * @param blockContext The properties of the block, including its sub-blocks.
  * @param slotType The type of slot to check and provide.
  * @return The [NativeBlockSlotModel] for the specified slot type if the block supports it, otherwise `null`.
  */
 fun blockProvideSlot(
-    blockProps: BlockProps,
+    blockContext: BlockContext,
     slotType: String,
 ): NativeBlockSlotModel? {
-    val block = blockProps.block
+    val block = blockContext.block
     return if (block.subBlocks.orEmpty().containsKey(slotType)) {
-        blockProps.block.slots[slotType]
+        blockContext.block.slots[slotType]
     } else {
         null
     }

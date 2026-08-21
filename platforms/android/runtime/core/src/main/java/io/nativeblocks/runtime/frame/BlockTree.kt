@@ -8,7 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.nativeblocks.runtime.api.provider.block.BlockProps
+import io.nativeblocks.runtime.api.provider.block.BlockContext
 import io.nativeblocks.runtime.api.provider.block.NONE_INDEX
 import io.nativeblocks.runtime.api.provider.block.defaults.InternalFallbackBlock
 import io.nativeblocks.runtime.api.provider.block.defaults.RootBlock
@@ -65,11 +65,14 @@ private fun Block(instanceName: String, vm: FrameViewModel, blockKey: String, li
     }
 
     val props = remember(block, listItemIndex) {
-        BlockProps(
+        BlockContext(
             instanceName = instanceName,
             listItemIndex = listItemIndex,
-            onFindVariable = { vm.variableOf(it)?.value },
-            onVariableChange = { vm.updateVariable(it.key, it.value) },
+            onFindVisibility = { vm.variableOf(block.visibility)?.value?.value },
+            onFindVariable = { data -> data?.value },
+            onUpdateVariable = { data, value ->
+                vm.updateBlockData(blockKey, data?.key.orEmpty(), value)
+            },
             onFindAction = { vm.actionOf(blockKey, it) },
             onHandleAction = { index, action, event -> vm.handleAction(index, action, event) },
             block = block,

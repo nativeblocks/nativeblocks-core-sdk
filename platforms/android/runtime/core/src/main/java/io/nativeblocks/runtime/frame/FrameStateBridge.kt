@@ -17,6 +17,9 @@ internal interface FrameStateBridge {
     )
 
     fun updateVariable(key: String, value: String)
+
+    fun updateBlockData(blockKey: String, dataKey: String, value: String)
+
     fun updateBlockProperty(
         blockKey: String,
         propertyKey: String,
@@ -53,6 +56,10 @@ internal class FrameStateBridgeImpl(
 
     override fun updateVariable(key: String, value: String) {
         frameStateManager.updateVariable(key, value)
+    }
+
+    override fun updateBlockData(blockKey: String, dataKey: String, value: String) {
+        frameStateManager.updateBlockData(blockKey, dataKey, value)
     }
 
     override fun updateBlockProperty(
