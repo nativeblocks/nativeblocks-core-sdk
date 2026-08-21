@@ -1,8 +1,27 @@
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::thread;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use crate::plugin::script::ScriptEngine;
-use rquickjs::{CatchResultExt, Coerced, Context, Function, Object, Runtime};
+use rquickjs::{CatchResultExt, Coerced, Context, Ctx, Exception, Function, Object, Runtime};
+
+const PRELUDE: &str = include_str!("nb-common.js");
+
+const SEAL: &str = r#"(function () {
+    var seal = function (fn) {
+        Object.defineProperty(Object.getPrototypeOf(fn), "constructor", {
+            value: undefined,
+            writable: false,
+            configurable: false,
+        });
+    };
+    seal(function () {});
+    seal(function* () {});
+    seal(async function () {});
+    seal(async function* () {});
+    delete globalThis.eval;
+    delete globalThis.Function;
+})();"#;
 
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct ScriptResult {
@@ -57,9 +76,15 @@ fn evaluate(script: String, bridge: Arc<dyn ScriptBridge>, timeout_ms: u64) -> S
     };
 
     return context.with(|ctx| {
-        let _ = ctx.eval::<(), _>("delete globalThis.eval; delete globalThis.Function;");
+        if let Err(error) = bind_host_functions(&ctx, &bridge, timeout_ms) {
+            return error_result(error.to_string());
+        }
 
-        if let Err(error) = bind_host_functions(&ctx, &bridge) {
+        if let Err(error) = ctx.eval::<(), _>(PRELUDE).catch(&ctx) {
+            return error_result(error.to_string());
+        }
+
+        if let Err(error) = ctx.eval::<(), _>(SEAL).catch(&ctx) {
             return error_result(error.to_string());
         }
 
@@ -81,8 +106,9 @@ fn evaluate(script: String, bridge: Arc<dyn ScriptBridge>, timeout_ms: u64) -> S
 }
 
 fn bind_host_functions(
-    ctx: &rquickjs::Ctx,
+    ctx: &Ctx,
     bridge: &Arc<dyn ScriptBridge>,
+    timeout_ms: u64,
 ) -> rquickjs::Result<()> {
     let globals = ctx.globals();
 
@@ -114,7 +140,46 @@ fn bind_host_functions(
         )?,
     )?;
 
+    globals.set(
+        "__hostNow",
+        Function::new(ctx.clone(), || {
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|since_epoch| since_epoch.as_millis() as f64)
+                .unwrap_or(0.0)
+        })?,
+    )?;
+
+    globals.set(
+        "__hostDiagnostic",
+        Function::new(ctx.clone(), |message: Coerced<String>| {
+            eprintln!("[nativeblocks script] {}", message.0);
+        })?,
+    )?;
+
+    globals.set(
+        "__hostDelay",
+        Function::new(ctx.clone(), host_delay(timeout_ms))?,
+    )?;
+
     return Ok(());
+}
+
+fn host_delay(timeout_ms: u64) -> impl for<'js> Fn(Ctx<'js>, Coerced<f64>) -> rquickjs::Result<()> {
+    return move |ctx, milliseconds: Coerced<f64>| {
+        let requested = milliseconds.0;
+        if !requested.is_finite() || requested <= 0.0 {
+            return Ok(());
+        }
+        if requested > timeout_ms as f64 {
+            return Err(Exception::throw_message(
+                &ctx,
+                "Delay exceeds the execution timeout",
+            ));
+        }
+        thread::sleep(Duration::from_millis(requested as u64));
+        return Ok(());
+    };
 }
 
 fn error_result(message: String) -> ScriptResult {

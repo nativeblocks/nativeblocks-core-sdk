@@ -1,6 +1,7 @@
 use super::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 type BlockUpdate = (
     String,
@@ -130,4 +131,108 @@ fn block_property_update() {
     assert_eq!(updates[0].2.as_deref(), Some("M"));
     assert_eq!(updates[0].3, None);
     assert_eq!(updates[0].4.as_deref(), Some("D"));
+}
+
+#[test]
+fn prelude_is_preloaded() {
+    assert_eq!(
+        run(r#"__cat(__str(null), __join(__map([1, 2], (x) => __numAdd(x, 1)), "-"))"#)
+            .value
+            .as_deref(),
+        Some("2-3")
+    );
+    assert_eq!(run("__div(1, 0)").value.as_deref(), Some("0"));
+    assert_eq!(run("__get(null, 'a')").value.as_deref(), Some("null"));
+}
+
+#[test]
+fn host_clock_is_bound() {
+    let millis: f64 = run("__now()").value.unwrap().parse().unwrap();
+    assert!(millis > 1_600_000_000_000.0, "got {millis}");
+}
+
+#[test]
+fn diagnostic_is_bound() {
+    assert_eq!(run(r#"__diag("hello"); "ok""#).value.as_deref(), Some("ok"));
+}
+
+#[test]
+fn delay_sleeps() {
+    let started = Instant::now();
+    assert_eq!(
+        run(r#"__delay(150); "done""#).value.as_deref(),
+        Some("done")
+    );
+    assert!(started.elapsed() >= Duration::from_millis(150));
+}
+
+#[test]
+fn delay_longer_than_the_timeout_errors() {
+    let engine = ScriptEngine::new();
+    let started = Instant::now();
+    let result = engine.evaluate(
+        r#"__delay(5000); "done""#.to_string(),
+        Arc::new(MockBridge::default()),
+        100,
+    );
+    assert!(
+        result
+            .error
+            .unwrap()
+            .contains("Delay exceeds the execution timeout")
+    );
+    assert!(started.elapsed() < Duration::from_millis(1000));
+}
+
+#[test]
+fn delay_ignores_junk() {
+    let started = Instant::now();
+    assert_eq!(
+        run(r#"__delay(-5); __delay("nope"); __delay(null); "ok""#)
+            .value
+            .as_deref(),
+        Some("ok")
+    );
+    assert!(started.elapsed() < Duration::from_millis(100));
+}
+
+#[test]
+fn compiler_is_unreachable() {
+    for vector in [
+        r#"eval("2 + 2")"#,
+        r#"new Function("return 2 + 2")()"#,
+        r#"(function () {}).constructor("return 2 + 2")()"#,
+        r#"Object.getPrototypeOf(function () {}).constructor("return 2 + 2")()"#,
+        r#"(function* () {}).constructor("return 2 + 2")"#,
+        r#"(async function () {}).constructor("return 2 + 2")"#,
+        r#"(async function* () {}).constructor("return 2 + 2")"#,
+        r#"__str.constructor("return 2 + 2")()"#,
+    ] {
+        assert!(run(vector).error.is_some(), "reachable: {vector}");
+    }
+}
+
+#[test]
+fn dynamic_import_cannot_run_code() {
+    let engine = ScriptEngine::new();
+    let bridge = Arc::new(MockBridge::default());
+    engine.evaluate(
+        r#"import("data:text/javascript,export default 4").then(function () { updateVariable("k", "PWNED"); });"#
+            .to_string(),
+        bridge.clone(),
+        500,
+    );
+    assert!(bridge.variables.lock().unwrap().is_empty());
+}
+
+#[test]
+fn sealing_leaves_ordinary_constructors_alone() {
+    assert_eq!(
+        run("({}).constructor === Object").value.as_deref(),
+        Some("true")
+    );
+    assert_eq!(
+        run("[].constructor === Array").value.as_deref(),
+        Some("true")
+    );
 }
