@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.nativeblocks.runtime.frame
 
 import io.nativeblocks.runtime.api.provider.action.ActionContext

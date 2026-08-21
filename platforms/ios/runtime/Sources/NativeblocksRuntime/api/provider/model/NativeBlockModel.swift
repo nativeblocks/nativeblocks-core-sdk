@@ -31,6 +31,7 @@ public struct NativeBlockModel: Hashable, Codable {
     public let position: Int
 
     /// A dictionary of properties associated with this block.
+    @available(*, deprecated, message: "Properties are being replaced by data; declare block arguments with @NativeBlockData.")
     public let properties: [String: NativeBlockPropertyModel]
 
     /// A dictionary of data models that belong to this block.
@@ -52,6 +53,7 @@ public struct NativeBlockModel: Hashable, Codable {
 }
 
 /// Represents a property of a native block, including device-specific values and its type.
+@available(*, deprecated, message: "Properties are being replaced by data; declare block arguments with @NativeBlockData.")
 public struct NativeBlockPropertyModel: Hashable, Codable {
     /// The key associated with the property.
     public let key: String

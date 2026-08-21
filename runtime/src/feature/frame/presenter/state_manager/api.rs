@@ -40,6 +40,8 @@ impl FrameStateManager {
         self.change_block_data(&block_key, &data_key, value);
     }
 
+    #[deprecated(note = "Properties are being replaced by data; use update_block_data.")]
+    #[allow(deprecated)]
     pub fn update_block_property(
         &self,
         block_key: String,

@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.nativeblocks.runtime.api.provider.model
 
 /**
@@ -63,6 +65,7 @@ data class NativeActionTriggerModel(
     /**
      * Properties associated with the trigger.
      */
+    @Deprecated("Properties are being replaced by data; declare action arguments with @NativeActionData.")
     val properties: Map<String, NativeActionTriggerPropertyModel>,
 
     /**
@@ -113,6 +116,7 @@ enum class NativeActionTriggerThen(val then: String) {
 /**
  * Represents a property associated with an action trigger, including its key, value, and type.
  */
+@Deprecated("Properties are being replaced by data; declare action arguments with @NativeActionData.")
 data class NativeActionTriggerPropertyModel(
     /**
      * Key identifying the property.

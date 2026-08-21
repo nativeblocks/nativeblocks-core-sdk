@@ -2,12 +2,14 @@ import Foundation
 import SwiftUI
 
 /// The device width bucket a frame is being rendered at.
+@available(*, deprecated, message: "Breakpoints are being dropped along with properties; declare block arguments with @NativeBlockData.")
 public enum NativeDeviceWidth {
     case MOBILE
     case TABLET
     case DESKTOP
 }
 
+@available(*, deprecated, message: "Breakpoints are being dropped along with properties; declare block arguments with @NativeBlockData.")
 private struct NativeWindowWidthClassKey: EnvironmentKey {
     static let defaultValue: NativeDeviceWidth = .MOBILE
 }
@@ -17,6 +19,7 @@ extension EnvironmentValues {
     /// resolves it once and hands it down, so a block reads it a single time and
     /// passes it to `findWindowSizeClass` for every property instead of
     /// re-deriving the size class per property.
+    @available(*, deprecated, message: "Breakpoints are being dropped along with properties; declare block arguments with @NativeBlockData.")
     public var nativeWindowWidthClass: NativeDeviceWidth {
         get { self[NativeWindowWidthClassKey.self] }
         set { self[NativeWindowWidthClassKey.self] = newValue }
@@ -24,6 +27,7 @@ extension EnvironmentValues {
 }
 
 /// Maps SwiftUI's size classes onto the runtime's width buckets.
+@available(*, deprecated, message: "Breakpoints are being dropped along with properties; declare block arguments with @NativeBlockData.")
 internal func currentWindowWidthClass(
     _ vertical: UserInterfaceSizeClass?,
     _ horizontal: UserInterfaceSizeClass?
@@ -43,6 +47,7 @@ internal func currentWindowWidthClass(
 ///   - prop: A `NativeBlockPropertyModel` containing size-related values for different device types.
 ///   - windowManager: The device width for the current frame.
 /// - Returns: The appropriate value, or `nil` when `prop` is nil.
+@available(*, deprecated, message: "Breakpoints are being dropped along with properties; declare block arguments with @NativeBlockData.")
 public func findWindowSizeClass(_ prop: NativeBlockPropertyModel?, _ windowManager: NativeDeviceWidth) -> String? {
     guard let prop else { return nil }
     switch windowManager {

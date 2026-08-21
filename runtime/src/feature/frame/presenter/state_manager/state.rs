@@ -1,3 +1,4 @@
+#[allow(deprecated)]
 use crate::feature::frame::domain::model::{
     NativeBlockModel, NativeBlockPropertyModel, NativeFrameModel, NativeVariableModel,
 };
@@ -126,6 +127,8 @@ impl InternalState {
         return !self.base.variables.contains_key(key) && self.variables.contains_key(key);
     }
 
+    #[deprecated(note = "Properties are being replaced by data.")]
+    #[allow(deprecated)]
     pub(super) fn change_block_property(
         &mut self,
         block_key: String,

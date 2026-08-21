@@ -52,6 +52,7 @@ data class ActionContext(
     val onFindVariable: (String) -> NativeVariableModel?,
     val onUpdateVariable: (NativeVariableModel?) -> Unit,
     val onFindBlock: (String) -> NativeBlockModel?,
+    @property:Deprecated("Properties are being replaced by data.")
     val onUpdateBlockProperties: (String, String, String, String, String) -> Unit,
     val trigger: NativeActionTriggerModel?,
     val onHandleNextTrigger: (NativeActionTriggerModel) -> Unit,

@@ -43,6 +43,7 @@ public struct ActionContext {
     ///   - valueMobile: The new value for mobile devices.
     ///   - valueTablet: The new value for tablets.
     ///   - valueDesktop: The new value for desktop devices.
+    @available(*, deprecated, message: "Properties are being replaced by data.")
     public let onUpdateBlockProperties: (String, String, String, String, String) -> Void
 
     /// The trigger that is associated with this action.

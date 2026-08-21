@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use rkyv::{Archive, Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -29,11 +31,13 @@ pub struct NativeBlockModel {
     pub visibility: String,
     pub position: i32,
     pub data: HashMap<String, NativeBlockDataModel>,
+    #[deprecated(note = "Properties are being replaced by data; declare block arguments as data.")]
     pub properties: HashMap<String, NativeBlockPropertyModel>,
     pub slots: HashMap<String, NativeBlockSlotModel>,
     pub sub_keys: HashMap<String, Vec<String>>,
 }
 
+#[deprecated(note = "Properties are being replaced by data.")]
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeBlockPropertyModel {
     pub key: String,
@@ -71,6 +75,7 @@ pub struct NativeActionTriggerModel {
     pub version: i32,
     pub key_type: String,
     pub then: NativeActionTriggerThen,
+    #[deprecated(note = "Properties are being replaced by data; declare action arguments as data.")]
     pub properties: HashMap<String, NativeActionTriggerPropertyModel>,
     pub data: HashMap<String, NativeActionTriggerDataModel>,
 }
@@ -94,6 +99,7 @@ impl NativeActionTriggerThen {
     }
 }
 
+#[deprecated(note = "Properties are being replaced by data.")]
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeActionTriggerPropertyModel {
     pub key: String,

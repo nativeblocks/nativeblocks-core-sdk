@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use std::collections::HashMap;
 
 use crate::feature::frame::data::network::dto::{

@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 mod data;
 mod domain;
 mod presenter;

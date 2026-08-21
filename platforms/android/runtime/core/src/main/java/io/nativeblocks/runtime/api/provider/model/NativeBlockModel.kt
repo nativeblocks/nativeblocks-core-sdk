@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.nativeblocks.runtime.api.provider.model
 
 import androidx.compose.runtime.Immutable
@@ -61,6 +63,7 @@ data class NativeBlockModel(
     /**
      * Properties associated with the block, including values for different device types.
      */
+    @Deprecated("Properties are being replaced by data; declare block arguments with @NativeBlockData.")
     val properties: Map<String, NativeBlockPropertyModel>,
 
     /**
@@ -77,6 +80,7 @@ data class NativeBlockModel(
 /**
  * Represents a property of a native block, including device-specific values and its type.
  */
+@Deprecated("Properties are being replaced by data; declare block arguments with @NativeBlockData.")
 @Immutable
 data class NativeBlockPropertyModel(
     /**

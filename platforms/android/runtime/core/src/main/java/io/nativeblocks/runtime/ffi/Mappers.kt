@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package io.nativeblocks.runtime.ffi
 
 import io.nativeblocks.runtime.api.provider.logger.LoggerEventLevel
