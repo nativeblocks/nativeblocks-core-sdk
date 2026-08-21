@@ -54,26 +54,26 @@ internal final class NativeScriptAction: INativeAction {
     static let KEY_TYPE = "SCRIPT"
     private static let DEFAULT_TIMEOUT_MS: UInt64 = 2000
 
-    func handle(actionProps: ActionProps) {
+    func handle(actionContext: ActionContext) {
         Task.detached {
-            let trigger = actionProps.trigger
+            let trigger = actionContext.trigger
             let script = trigger?.properties["script"]?.value ?? ""
 
             if !script.isEmpty {
                 let processedScript = script.replacingOccurrences(
                     of: "{{index}}",
-                    with: String(actionProps.listItemIndex)
+                    with: String(actionContext.listItemIndex)
                 )
-                Self.evaluateScript(processedScript, actionProps: actionProps)
+                Self.evaluateScript(processedScript, actionContext: actionContext)
             }
             if let trigger {
-                actionProps.onHandleNextTrigger(trigger)
+                actionContext.onHandleNextTrigger(trigger)
             }
         }
     }
 
-    private static func evaluateScript(_ script: String, actionProps: ActionProps) {
-        let bridge = ScriptBridgeAdapter(actionProps: actionProps)
+    private static func evaluateScript(_ script: String, actionContext: ActionContext) {
+        let bridge = ScriptBridgeAdapter(actionContext: actionContext)
         _ = ScriptEngine().evaluate(script: script, bridge: bridge, timeoutMs: DEFAULT_TIMEOUT_MS)
     }
 
@@ -101,20 +101,20 @@ internal final class NativeScriptAction: INativeAction {
 /// Exposes the frame's variables and blocks to the QuickJS runtime.
 private final class ScriptBridgeAdapter: ScriptBridge, @unchecked Sendable {
 
-    private let actionProps: ActionProps
+    private let actionContext: ActionContext
 
-    init(actionProps: ActionProps) {
-        self.actionProps = actionProps
+    init(actionContext: ActionContext) {
+        self.actionContext = actionContext
     }
 
     func getVariable(key: String) -> String? {
-        return actionProps.onFindVariable(key)?.value
+        return actionContext.onFindVariable(key)?.value
     }
 
     func updateVariable(key: String, value: String) {
-        guard let variable = actionProps.onFindVariable(key) else { return }
+        guard let variable = actionContext.onFindVariable(key) else { return }
         let castedValue = NativeScriptAction.cast(value: value, type: variable.type) ?? value
-        actionProps.onChangeVariable(variable.copy(value: castedValue))
+        actionContext.onUpdateVariable(variable.copy(value: castedValue))
     }
 
     func updateBlockProperty(
@@ -124,11 +124,11 @@ private final class ScriptBridgeAdapter: ScriptBridge, @unchecked Sendable {
         tablet: String?,
         desktop: String?
     ) {
-        guard let block = actionProps.onFindBlock(blockKey),
+        guard let block = actionContext.onFindBlock(blockKey),
             let currentProperty = block.properties[propertyKey]
         else { return }
 
-        actionProps.onChangeBlockProperties(
+        actionContext.onUpdateBlockProperties(
             blockKey,
             propertyKey,
             mobile ?? currentProperty.valueMobile,

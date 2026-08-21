@@ -5,7 +5,7 @@ import SwiftUI
 /// The `NativeBlockProvider` class maintains a registry of blocks that can be dynamically provided based on the block type.
 public class NativeBlockProvider {
     /// A dictionary to store the blocks, where the key is the block type and the value is the corresponding block implementation.
-    private var blocks = [String: ((BlockProps) -> any View)]()
+    private var blocks = [String: ((BlockContext) -> any View)]()
 
     /// Fallback block implementation to be used when a specific block type is not found
     private var fallbackBlock: ((String, String) -> any View)? = nil
@@ -14,7 +14,7 @@ public class NativeBlockProvider {
     /// - Parameters:
     ///   - blockType: The key type for the block to be registered.
     ///   - block: The block instance that implements the `INativeBlock` protocol.
-    func provideBlock(blockType: String, block: @escaping ((BlockProps) -> any View)) {
+    func provideBlock(blockType: String, block: @escaping ((BlockContext) -> any View)) {
         blocks[blockType] = block
     }
 
@@ -28,7 +28,7 @@ public class NativeBlockProvider {
 
     /// Retrieves the dictionary of all registered blocks.
     /// - Returns: A dictionary containing all registered blocks where the key is the block type and the value is the block instance.
-    func getProvidedBlocks() -> [String: ((BlockProps) -> any View)] {
+    func getProvidedBlocks() -> [String: ((BlockContext) -> any View)] {
         return blocks
     }
 

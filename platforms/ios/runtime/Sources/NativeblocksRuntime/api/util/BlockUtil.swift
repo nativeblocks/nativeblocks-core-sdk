@@ -110,10 +110,10 @@ extension Color {
 /// Provides the `NativeBlockSlotModel` for the specified slot type if the block supports it.
 ///
 /// - Parameters:
-///   - blockProps: The properties of the block, including its sub-blocks.
+///   - blockContext: The properties of the block, including its sub-blocks.
 ///   - slotType: The type of slot to check and provide.
 /// - Returns: The `NativeBlockSlotModel` for the specified slot type if the block supports it; otherwise, `nil`.
-public func blockProvideSlot(blockProps: BlockProps, slotType: String) -> NativeBlockSlotModel? {
-    guard blockProps.block.subBlocks?[slotType] != nil else { return nil }
-    return blockProps.block.slots[slotType]
+public func blockProvideSlot(blockContext: BlockContext, slotType: String) -> NativeBlockSlotModel? {
+    guard blockContext.block.subBlocks?[slotType] != nil else { return nil }
+    return blockContext.block.slots[slotType]
 }

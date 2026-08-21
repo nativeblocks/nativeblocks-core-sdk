@@ -2,16 +2,16 @@ import Foundation
 import SwiftUI
 
 internal struct RootBlock: View {
-    var blockProps: BlockProps
+    var blockContext: BlockContext
     @Environment(\.nativeWindowWidthClass) var windowManager
 
     var body: some View {
-        let slots = blockProps.block.slots
+        let slots = blockContext.block.slots
         let contentSlot = slots["content"]
 
         VStack {
             if let contentSlot {
-                blockProps.onSubBlock(blockProps.block.subBlocks ?? [:], contentSlot, NONE_INDEX, nil)
+                blockContext.onSubBlock(blockContext.block.subBlocks ?? [:], contentSlot, NONE_INDEX, nil)
             }
         }
     }

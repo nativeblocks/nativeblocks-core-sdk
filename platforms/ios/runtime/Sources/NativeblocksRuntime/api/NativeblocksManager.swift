@@ -85,7 +85,7 @@ public class NativeblocksManager {
     ///   - blockType: The type of the block.
     ///   - block: The view builder rendering the block.
     @discardableResult
-    public func provideBlock(blockType: String, block: @escaping ((BlockProps) -> any View)) -> NativeblocksManager {
+    public func provideBlock(blockType: String, block: @escaping ((BlockContext) -> any View)) -> NativeblocksManager {
         blockProvider.provideBlock(blockType: blockType, block: block)
         return self
     }

@@ -84,16 +84,16 @@ internal final class ActionTree {
             )
         )
 
-        let actionProps = ActionProps(
+        let actionContext = ActionContext(
             instanceName: instanceName,
             listItemIndex: index,
             onFindVariable: onFindVariable,
-            onChangeVariable: { [weak self] variable in
+            onUpdateVariable: { [weak self] variable in
                 guard let variable else { return }
                 self?.onVariableChange(variable)
             },
             onFindBlock: onFindBlock,
-            onChangeBlockProperties: onChangeBlock,
+            onUpdateBlockProperties: onChangeBlock,
             trigger: trigger,
             onHandleNextTrigger: { [weak self] _ in
                 self?.advanceSubTriggers(
@@ -114,7 +114,7 @@ internal final class ActionTree {
                 )
             }
         )
-        nativeAction.handle(actionProps: actionProps)
+        nativeAction.handle(actionContext: actionContext)
     }
 
     private func advanceSubTriggers(

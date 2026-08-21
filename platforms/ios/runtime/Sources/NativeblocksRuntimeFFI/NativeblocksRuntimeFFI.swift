@@ -872,6 +872,8 @@ package protocol FrameStateManagerProtocol: AnyObject, Sendable {
     
     func setupFrame(route: String, args: [String: String], stateKey: String?, observer: FrameStateObserver) async 
     
+    func updateBlockData(blockKey: String, dataKey: String, value: String) 
+    
     func updateBlockProperty(blockKey: String, propertyKey: String, valueMobile: String, valueTablet: String, valueDesktop: String) 
     
     func updateVariable(key: String, value: String) 
@@ -961,6 +963,16 @@ package func setupFrame(route: String, args: [String: String], stateKey: String?
             errorHandler: nil
             
         )
+}
+    
+package func updateBlockData(blockKey: String, dataKey: String, value: String)  {try! rustCall() {
+    uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_data(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(blockKey),
+        FfiConverterString.lower(dataKey),
+        FfiConverterString.lower(value),$0
+    )
+}
 }
     
 package func updateBlockProperty(blockKey: String, propertyKey: String, valueMobile: String, valueTablet: String, valueDesktop: String)  {try! rustCall() {
@@ -5693,6 +5705,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 31603) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_data() != 26957) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property() != 32460) {

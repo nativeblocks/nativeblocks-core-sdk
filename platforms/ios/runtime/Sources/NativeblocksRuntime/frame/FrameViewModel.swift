@@ -97,6 +97,10 @@ internal final class FrameViewModel: ObservableObject {
         frameStateBridge.updateVariable(key: key, value: value)
     }
 
+    func updateBlockData(blockKey: String, dataKey: String, value: String) {
+        frameStateBridge.updateBlockData(blockKey: blockKey, dataKey: dataKey, value: value)
+    }
+
     func rootEntered(_ rootKey: String) {
         isAppeared = true
         guard announcedGeneration != frameUpdateGeneration else {

@@ -5,8 +5,8 @@ import SwiftUI
 /// The `INativeAction` protocol is used for implementing custom actions that can handle specific properties and operations.
 public protocol INativeAction {
     /// Handles the action with the given properties.
-    /// - Parameter actionProps: The properties and state information needed to execute the action.
-    func handle(actionProps: ActionProps)
+    /// - Parameter actionContext: The properties and state information needed to execute the action.
+    func handle(actionContext: ActionContext)
 }
 
 /// Defines a contract for view-backed action contractors.
@@ -19,8 +19,8 @@ public protocol INativeActionContractor {
 }
 
 /// Represents the properties associated with a native action.
-/// The `ActionProps` struct is used to pass all the necessary information required to perform an action, including variables, blocks, triggers, and callbacks.
-public struct ActionProps {
+/// The `ActionContext` struct is used to pass all the necessary information required to perform an action, including variables, blocks, triggers, and callbacks.
+public struct ActionContext {
     /// Instance name of NativeblocksManager.
     public let instanceName: String
 
@@ -31,7 +31,7 @@ public struct ActionProps {
     public let onFindVariable: (String) -> NativeVariableModel?
 
     /// Callback function to handle changes to a variable.
-    public let onChangeVariable: (NativeVariableModel?) -> Void
+    public let onUpdateVariable: (NativeVariableModel?) -> Void
 
     /// A function for retrieving a [NativeBlockModel] by its key
     public let onFindBlock: (String) -> NativeBlockModel?
@@ -43,7 +43,7 @@ public struct ActionProps {
     ///   - valueMobile: The new value for mobile devices.
     ///   - valueTablet: The new value for tablets.
     ///   - valueDesktop: The new value for desktop devices.
-    public let onChangeBlockProperties: (String, String, String, String, String) -> Void
+    public let onUpdateBlockProperties: (String, String, String, String, String) -> Void
 
     /// The trigger that is associated with this action.
     public let trigger: NativeActionTriggerModel?

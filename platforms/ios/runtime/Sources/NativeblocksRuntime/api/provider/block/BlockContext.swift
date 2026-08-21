@@ -5,19 +5,22 @@ import SwiftUI
 public let NONE_INDEX = -1
 
 /// Represents the properties associated with a native block.
-/// The `BlockProps` struct is used to pass all the necessary information required to render a block, including variables, actions, and callbacks.
-public struct BlockProps {
+/// The `BlockContext` struct is used to pass all the necessary information required to render a block, including variables, actions, and callbacks.
+public struct BlockContext {
     /// Instance name of NativeblocksManager.
     public let instanceName: String
 
     /// The index of the item in the list that the block applies to (if applicable).
     public let listItemIndex: Int
 
-    /// A function for retrieving a [NativeVariableModel] by its key.
-    public let onFindVariable: (String) -> NativeVariableModel?
+    /// A function resolving the block's visibility value.
+    public let onFindVisibility: () -> String?
 
-    /// Callback function to handle changes to a variable.
-    public let onVariableChange: (NativeVariableModel) -> Void
+    /// A function resolving the variable a block data entry points at.
+    public let onFindVariable: (NativeBlockDataModel?) -> String?
+
+    /// Callback function writing a value back to the variable a block data entry points at.
+    public let onUpdateVariable: (NativeBlockDataModel?, String) -> Void
 
     /// A function for retrieving a [NativeActionModel] by its event type.
     public let onFindAction: (String) -> NativeActionModel?

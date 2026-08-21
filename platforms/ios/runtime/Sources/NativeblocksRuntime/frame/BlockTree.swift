@@ -92,9 +92,9 @@ private struct Block: View {
 
     var body: some View {
         if let block = vm.blockOf(blockKey) {
-            let props = makeBlockProps(for: block)
+            let props = makeBlockContext(for: block)
             if block.keyType == "ROOT" {
-                AnyView(RootBlock(blockProps: props))
+                AnyView(RootBlock(blockContext: props))
             } else if let nativeBlock = vm.blockProvider.getProvidedBlocks()[block.keyType] {
                 AnyView(nativeBlock(props))
             } else if let fallbackBlock = vm.blockProvider.getFallbackBlock() {
@@ -107,15 +107,19 @@ private struct Block: View {
         }
     }
 
-    private func makeBlockProps(for block: NativeBlockModel) -> BlockProps {
-        return BlockProps(
+    private func makeBlockContext(for block: NativeBlockModel) -> BlockContext {
+        return BlockContext(
             instanceName: instanceName,
             listItemIndex: listItemIndex,
-            onFindVariable: { key in
-                vm.variableOf(key)
+            onFindVisibility: {
+                vm.variableOf(block.visibility)?.value
             },
-            onVariableChange: { variable in
-                vm.updateVariable(key: variable.key, value: variable.value)
+            onFindVariable: { data in
+                data?.value
+            },
+            onUpdateVariable: { data, value in
+                guard let data = data else { return }
+                vm.updateBlockData(blockKey: blockKey, dataKey: data.key, value: value)
             },
             onFindAction: { eventType in
                 vm.actionOf(blockKey: blockKey, eventType: eventType)
