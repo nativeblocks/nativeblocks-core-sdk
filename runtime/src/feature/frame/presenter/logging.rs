@@ -56,7 +56,7 @@ impl FrameLogger {
             RenderingState::Ready {} => {
                 params.insert(STATE.to_string(), FRAME_LOAD_SUCCEED.to_string());
                 self.dispatch(
-                    LoggerEventLevel::Info,
+                    LoggerEventLevel::Debug,
                     FRAME_STATE,
                     "Frame state: ready".to_string(),
                     params,
@@ -90,7 +90,7 @@ impl FrameLogger {
                 ]),
             ),
             ActionLogEvent::EventTriggered { event, action_key } => self.dispatch(
-                LoggerEventLevel::Info,
+                LoggerEventLevel::Debug,
                 HANDLE_ACTION,
                 format!("Event '{event}' handled"),
                 HashMap::from([
@@ -99,7 +99,11 @@ impl FrameLogger {
                     (ACTION_NAME.to_string(), action_key),
                 ]),
             ),
-            ActionLogEvent::TriggerExecuted { name, key_type, then } => self.dispatch(
+            ActionLogEvent::TriggerExecuted {
+                name,
+                key_type,
+                then,
+            } => self.dispatch(
                 LoggerEventLevel::Debug,
                 HANDLE_ACTION,
                 format!("Trigger '{name}' executed"),
@@ -131,6 +135,18 @@ impl FrameLogger {
             LoggerEventLevel::Debug,
             FRAME_STATE,
             format!("Variable '{key}' changed -> {dirty_count} block(s) invalidated"),
+            HashMap::new(),
+        );
+    }
+
+    pub(crate) fn injected_variable_write(&self, key: &str) {
+        if !self.enabled() {
+            return;
+        }
+        self.dispatch(
+            LoggerEventLevel::Debug,
+            FRAME_STATE,
+            format!("Variable '{key}' is a global or route argument and can not be updated"),
             HashMap::new(),
         );
     }

@@ -36,6 +36,10 @@ impl FrameStateManager {
         self.change_variable(&key, value);
     }
 
+    pub fn update_block_data(&self, block_key: String, data_key: String, value: String) {
+        self.change_block_data(&block_key, &data_key, value);
+    }
+
     pub fn update_block_property(
         &self,
         block_key: String,

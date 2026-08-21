@@ -101,9 +101,29 @@ impl InternalState {
     }
 
     pub(super) fn change_variable(&mut self, key: &str, value: String) -> Option<FrameDiff> {
-        let diff = self.variable_diff(key, value)?;
-        self.variables.extend(diff.variables.clone());
-        return Some(diff);
+        let existing = self.variables.get(key)?;
+        if existing.value == value {
+            return None;
+        }
+        let updated = NativeVariableModel {
+            key: key.to_string(),
+            value,
+            variable_type: existing.variable_type.clone(),
+        };
+        self.variables.insert(key.to_string(), updated.clone());
+        let index = self.sub_key_index();
+        return Some(FrameDiff {
+            variables: HashMap::from([(key.to_string(), updated)]),
+            blocks: self.blocks_using(key, &index),
+        });
+    }
+
+    pub(super) fn variable_key_of(&self, block_key: &str, data_key: &str) -> Option<String> {
+        return Some(self.block_of(block_key)?.data.get(data_key)?.value.clone());
+    }
+
+    pub(super) fn is_injected_variable(&self, key: &str) -> bool {
+        return !self.base.variables.contains_key(key) && self.variables.contains_key(key);
     }
 
     pub(super) fn change_block_property(
@@ -161,6 +181,12 @@ impl InternalState {
     ) -> NativeBlockModel {
         let mut baked = block.clone();
         baked.sub_keys = index.get(block.key.as_str()).cloned().unwrap_or_default();
+        for data in baked.data.values_mut() {
+            let Some(variable) = self.variables.get(data.value.as_str()) else {
+                continue;
+            };
+            data.value = variable.value.clone();
+        }
         return baked;
     }
 
@@ -178,23 +204,6 @@ impl InternalState {
             index.insert(parent.to_string(), group_by_slot(children));
         }
         return index;
-    }
-
-    fn variable_diff(&self, key: &str, value: String) -> Option<FrameDiff> {
-        let existing = self.variables.get(key)?;
-        if existing.value == value {
-            return None;
-        }
-        let updated = NativeVariableModel {
-            key: key.to_string(),
-            value,
-            variable_type: existing.variable_type.clone(),
-        };
-        let index = self.sub_key_index();
-        return Some(FrameDiff {
-            variables: HashMap::from([(key.to_string(), updated)]),
-            blocks: self.blocks_using(key, &index),
-        });
     }
 
     fn blocks_using(

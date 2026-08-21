@@ -78,6 +78,10 @@ impl FrameStateManager {
     pub(super) fn change_variable(&self, key: &str, value: String) {
         let diff = {
             let mut internal_state = self.internal_state.lock().unwrap();
+            if internal_state.is_injected_variable(key) {
+                self.logger.injected_variable_write(key);
+                return;
+            }
             internal_state.change_variable(key, value)
         };
         let Some(diff) = diff else {
@@ -87,6 +91,17 @@ impl FrameStateManager {
         self.logger.variable_changed(key, diff.blocks.len());
         self.subscription
             .emit(FrameChangeType::Diff { frame: diff });
+    }
+
+    pub(super) fn change_block_data(&self, block_key: &str, data_key: &str, value: String) {
+        let key = {
+            let internal_state = self.internal_state.lock().unwrap();
+            internal_state.variable_key_of(block_key, data_key)
+        };
+        let Some(key) = key else {
+            return;
+        };
+        self.change_variable(&key, value);
     }
 
     pub(super) fn change_block_property(

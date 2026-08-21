@@ -103,7 +103,8 @@ pub(in crate::feature::frame::data) struct NativeActionTriggerDataDto {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(in crate::feature::frame::data) struct NativeFrameProductionChecksumDataDto {
-    pub(in crate::feature::frame::data) frame_production_checksum: Option<NativeFrameProductionChecksumDto>,
+    pub(in crate::feature::frame::data) frame_production_checksum:
+        Option<NativeFrameProductionChecksumDto>,
 }
 
 #[derive(Deserialize)]

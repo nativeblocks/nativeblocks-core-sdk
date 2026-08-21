@@ -47,7 +47,9 @@ pub(crate) async fn write_cached_config(
     config: &NativeProjectConfigModel,
 ) -> NBResult<()> {
     let bytes = util::to_bytes(config)?;
-    cache.save(PROJECT_CONFIG_KEY.to_string(), bytes, None).await?;
+    cache
+        .save(PROJECT_CONFIG_KEY.to_string(), bytes, None)
+        .await?;
     cache
         .save(
             PROJECT_CONFIG_FRESH_KEY.to_string(),

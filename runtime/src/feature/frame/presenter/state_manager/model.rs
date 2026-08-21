@@ -32,8 +32,20 @@ pub enum FrameChangeType {
 
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
 pub enum ActionLogEvent {
-    EventIgnored { event: String },
-    EventTriggered { event: String, action_key: String },
-    TriggerExecuted { name: String, key_type: String, then: String },
-    TriggerFallback { key_type: String, name: String },
+    EventIgnored {
+        event: String,
+    },
+    EventTriggered {
+        event: String,
+        action_key: String,
+    },
+    TriggerExecuted {
+        name: String,
+        key_type: String,
+        then: String,
+    },
+    TriggerFallback {
+        key_type: String,
+        name: String,
+    },
 }
