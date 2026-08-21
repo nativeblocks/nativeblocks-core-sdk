@@ -20,7 +20,7 @@ enum ActionCreator {
                 self.action = action
             }
             """
-            try FunctionDeclSyntax("public func handle(actionProps: ActionProps)") {
+            try FunctionDeclSyntax("public func handle(actionContext: ActionContext)") {
                 if actionInfo?.isAsync == true {
                     """
                     Task {
@@ -30,12 +30,12 @@ enum ActionCreator {
 
                 if !metaData.isEmpty {
                     """
-                    let data = actionProps.trigger?.data ?? [:]
+                    let data = actionContext.trigger?.data ?? [:]
                     """
                 }
                 if !metaProp.isEmpty {
                     """
-                    let properties = actionProps.trigger?.properties ?? [:]
+                    let properties = actionContext.trigger?.properties ?? [:]
                     """
                 }
 
@@ -44,7 +44,7 @@ enum ActionCreator {
                 """
                 for data in metaData {
                     """
-                    let \(raw: data.key)Data = actionProps.onFindVariable(data["\(raw: data.key)"]?.value ?? "")
+                    let \(raw: data.key)Data = actionContext.onFindVariable(data["\(raw: data.key)"]?.value ?? "")
                     """
                 }
                 for data in metaData {
@@ -88,7 +88,7 @@ enum ActionCreator {
                             """
                             if var \(param)Updated = \(param)Data {
                                 \(param)Updated.value = String(describing: \(param)Param)
-                                actionProps.onChangeVariable(\(param)Updated)
+                                actionContext.onUpdateVariable(\(param)Updated)
                             }
                             """
                         }.joined())
@@ -96,22 +96,22 @@ enum ActionCreator {
                         case "SUCCESS":
                             return
                                 """
-                                if actionProps.trigger != nil {
-                                    actionProps.onHandleSuccessNextTrigger(actionProps.trigger!)
+                                if actionContext.trigger != nil {
+                                    actionContext.onHandleSuccessNextTrigger(actionContext.trigger!)
                                 }
                                 """
                         case "FAILURE":
                             return
                                 """
-                                if actionProps.trigger != nil {
-                                    actionProps.onHandleFailureNextTrigger(actionProps.trigger!)
+                                if actionContext.trigger != nil {
+                                    actionContext.onHandleFailureNextTrigger(actionContext.trigger!)
                                 }
                                 """
                         case "NEXT":
                             return
                                 """
-                                if actionProps.trigger != nil {
-                                    actionProps.onHandleNextTrigger(actionProps.trigger!)
+                                if actionContext.trigger != nil {
+                                    actionContext.onHandleNextTrigger(actionContext.trigger!)
                                 }
                                 """
                         default: return ""
@@ -157,65 +157,20 @@ enum ActionCreator {
     }
 
     private static func dataTypeMapper(dataItem: DataMeta) -> String? {
-        switch dataItem.type.uppercased() {
-        case "STRING":
-            return
-                """
-                \(dataItem.key)Data?.value ?? "\(dataItem.value)"
-                """
-        case "INT", "INT64", "INT32", "INT16", "INT8", "UINT", "UINT64", "UINT32", "UINT16", "UINT8",
-            "FLOAT", "FLOAT80", "FLOAT64",
-            "FLOAT32", "FLOAT16", "DOUBLE":
-            return
-                """
-                \(dataItem.type)(\(dataItem.key)Data?.value ?? "") ?? \(dataItem.value.isEmpty ? "0" : dataItem.value)
-                """
-        case "CGFLOAT":
-            return
-                """
-                (\(dataItem.key)Data?.value ?? "").toCGFloat() ?? \(dataItem.value.isEmpty ? "0.0" : dataItem.value)
-                """
-        case "BOOL":
-            return
-                """
-                Bool(\(dataItem.key)Data?.value ?? "") ?? \(dataItem.value.isEmpty ? "false" : dataItem.value)
-                """
-        default:
-            return
-                """
-                """
-        }
+        return TypeUtils.valueConversion(
+            type: dataItem.type,
+            source: "\(dataItem.key)Data?.value",
+            defaultValue: dataItem.value,
+            instance: "actionContext.instanceName"
+        )
     }
 
     private static func propTypeMapper(item: PropertyMeta) -> String? {
-        switch item.type.uppercased() {
-        case "STRING":
-            return
-                """
-                properties["\(item.key)"]?.value ?? "\(item.value)"
-                """
-        case "INT", "INT64", "INT32", "INT16", "INT8", "UINT", "UINT64", "UINT32", "UINT16", "UINT8",
-            "FLOAT", "FLOAT80", "FLOAT64",
-            "FLOAT32", "FLOAT16", "DOUBLE":
-            return
-                """
-                \(item.type)(properties["\(item.key)"]?.value ?? "") ?? \(item.value.isEmpty ? "0" : item.value)
-                """
-        case "CGFLOAT":
-            return
-                """
-                (properties["\(item.key)"]?.value ?? "").toCGFloat() ?? \(item.value.isEmpty ? "0.0" : item.value)
-                """
-        case "BOOL":
-            return
-                """
-                Bool(properties["\(item.key)"]?.value ?? "") ??  \(item.value.isEmpty ? "false" : item.value)
-                """
-        default:
-            return
-                """
-                NativeblocksManager.getInstance(name: actionProps.instanceName).getTypeConverter(\(item.type).self).fromString(properties["\(item.key)"]?.value ?? "\(item.value)")
-                """
-        }
+        return TypeUtils.valueConversion(
+            type: item.type,
+            source: "properties[\"\(item.key)\"]?.value",
+            defaultValue: item.value,
+            instance: "actionContext.instanceName"
+        )
     }
 }

@@ -27,7 +27,8 @@ internal data class Data(
     val description: String,
     val deprecated: Boolean,
     val deprecatedReason: String,
-    @Transient val value: String = ""
+    @Transient val value: String = "",
+    @Transient val typeClass: TypeClass = TypeClass()
 )
 
 @Serializable
@@ -41,11 +42,11 @@ internal data class Property(
     val valuePicker: String,
     val valuePickerGroup: String,
     val valuePickerOptions: String,
-    @Transient val typeClass: PropertyType = PropertyType()
+    @Transient val typeClass: TypeClass = TypeClass()
 )
 
 @Serializable
-internal data class PropertyType(
+internal data class TypeClass(
     val packageName: String = "",
     val simpleNames: List<String> = emptyList()
 ) {

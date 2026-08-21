@@ -161,7 +161,7 @@ public enum SyntaxUtils {
         return nil
     }
 
-    static func isPrimitiveTypeSupported(_ type: String) -> Bool {
+    public static func isPrimitiveTypeSupported(_ type: String) -> Bool {
         let supportedTypes: Set<String> = [
             "STRING", "BOOL", "INT", "INT64", "INT32", "INT16", "INT8", "UINT", "UINT64",
             "UINT32", "UINT16", "UINT8", "FLOAT", "FLOAT80", "FLOAT64", "FLOAT32",

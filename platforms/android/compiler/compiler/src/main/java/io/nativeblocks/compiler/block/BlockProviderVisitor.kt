@@ -32,7 +32,7 @@ internal class BlockProviderVisitor(
                 """
                 |.provideBlock(
                 |   blockType = "${it.keyType}",
-                |   block = { props -> ${it.functionName}Block(props) }
+                |   block = { blockContext -> ${it.functionName}Block(blockContext) }
                 |)
                 """.trimMargin()
             )

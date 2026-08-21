@@ -14,12 +14,11 @@ import io.nativeblocks.compiler.meta.Data
 import io.nativeblocks.compiler.meta.Event
 import io.nativeblocks.compiler.meta.ExtraParam
 import io.nativeblocks.compiler.meta.Property
-import io.nativeblocks.compiler.util.PRIMITIVE_PROP_TYPES
+import io.nativeblocks.compiler.util.PRIMITIVE_TYPES
 import io.nativeblocks.compiler.util.camelcase
 import io.nativeblocks.compiler.util.converterVar
-import io.nativeblocks.compiler.util.dataConversion
 import io.nativeblocks.compiler.util.plusAssign
-import io.nativeblocks.compiler.util.propertyConversion
+import io.nativeblocks.compiler.util.valueConversion
 import java.io.OutputStream
 
 internal class ActionVisitor(
@@ -38,7 +37,7 @@ internal class ActionVisitor(
 
     override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
         val importINativeAction = ClassName("io.nativeblocks.runtime.api.provider.action", "INativeAction")
-        val importActionProps = ClassName("io.nativeblocks.runtime.api.provider.action", "ActionProps")
+        val importActionContext = ClassName("io.nativeblocks.runtime.api.provider.action", "ActionContext")
         val importNativeBlockModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeBlockModel")
         val importNativeActionModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionModel")
         val importNativeActionTriggerModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionTriggerModel")
@@ -51,19 +50,31 @@ internal class ActionVisitor(
 
         val func = FunSpec.builder("handle")
             .addModifiers(KModifier.OVERRIDE)
-            .addParameter("actionProps", importActionProps)
-            .beginControlFlow("actionProps.coroutineScope.launch")
+            .addParameter("actionContext", importActionContext)
+            .beginControlFlow("actionContext.coroutineScope.launch")
             .addComment("action meta fields")
             .addCode(
                 """
-                    |val data = actionProps.trigger?.data ?: mapOf()
-                    |val properties = actionProps.trigger?.properties ?: mapOf()
+                    |val data = actionContext.trigger?.data ?: mapOf()
+                    |val properties = actionContext.trigger?.properties ?: mapOf()
                 """.trimMargin()
             )
         func.addStatement("")
+        val customDataTypes =
+            metaData.map { it.typeClass.canonicalName }.filter { it !in PRIMITIVE_TYPES }.distinct()
+        val customTypeClasss =
+            metaProperties.map { it.typeClass.canonicalName }.filter { it !in PRIMITIVE_TYPES }
+                .distinct()
+        if (customDataTypes.isNotEmpty() || customTypeClasss.isNotEmpty()) {
+            func.addStatement("val manager = NativeblocksManager.getInstance(actionContext.instanceName)")
+        }
+        (customDataTypes + customTypeClasss).distinct().forEach {
+            func.addStatement("val ${converterVar(it)} = manager.getTypeConverter($it::class)")
+        }
+
         func.addComment("action trigger data")
         metaData.forEach {
-            func.addStatement("val ${it.key} = actionProps.onFindVariable.invoke(data[\"${it.key}\"]?.value.orEmpty())")
+            func.addStatement("val ${it.key} = actionContext.onFindVariable.invoke(data[\"${it.key}\"]?.value.orEmpty())")
         }
 
         func.addComment("action trigger data value")
@@ -72,13 +83,6 @@ internal class ActionVisitor(
         }
 
         func.addComment("action trigger properties")
-        if (metaProperties.any { it.typeClass.canonicalName !in PRIMITIVE_PROP_TYPES }) {
-            func.addStatement("val manager = NativeblocksManager.getInstance(actionProps.instanceName)")
-        }
-        metaProperties.map { it.typeClass.canonicalName }.filter { it !in PRIMITIVE_PROP_TYPES }.distinct()
-            .forEach {
-                func.addStatement("val ${converterVar(it)} = manager.getTypeConverter($it::class)")
-            }
         metaProperties.forEach {
             func.addStatement("val ${it.key} = ${propTypeMapper(it)}")
         }
@@ -113,25 +117,25 @@ internal class ActionVisitor(
             it.dataBinding.forEachIndexed { index, dataBound ->
                 func.addStatement("val ${dataBound}Updated = $dataBound?.copy(value = p${index}.toString())")
                     .beginControlFlow("if (${dataBound}Updated != null)")
-                    .addStatement("actionProps.onChangeVariable.invoke(${dataBound}Updated)")
+                    .addStatement("actionContext.onUpdateVariable.invoke(${dataBound}Updated)")
                     .endControlFlow()
             }
             when (it.then) {
                 "SUCCESS" -> {
-                    func.beginControlFlow("actionProps.trigger?.let")
-                        .addStatement("actionProps.onHandleSuccessNextTrigger.invoke(it)")
+                    func.beginControlFlow("actionContext.trigger?.let")
+                        .addStatement("actionContext.onHandleSuccessNextTrigger.invoke(it)")
                         .endControlFlow()
                 }
 
                 "FAILURE" -> {
-                    func.beginControlFlow("actionProps.trigger?.let")
-                        .addStatement("actionProps.onHandleFailureNextTrigger.invoke(it)")
+                    func.beginControlFlow("actionContext.trigger?.let")
+                        .addStatement("actionContext.onHandleFailureNextTrigger.invoke(it)")
                         .endControlFlow()
                 }
 
                 "NEXT" -> {
-                    func.beginControlFlow("actionProps.trigger?.let")
-                        .addStatement("actionProps.onHandleNextTrigger.invoke(it)")
+                    func.beginControlFlow("actionContext.trigger?.let")
+                        .addStatement("actionContext.onHandleNextTrigger.invoke(it)")
                         .endControlFlow()
                 }
 
@@ -148,7 +152,7 @@ internal class ActionVisitor(
             .build()
 
         val actionClass = FileSpec.builder(packageName, fileName)
-            .addImport(importActionProps, "")
+            .addImport(importActionContext, "")
             .addImport(importNativeBlockModel, "")
             .addImport(importNativeActionModel, "")
             .addImport(importNativeActionTriggerModel, "")
@@ -175,18 +179,17 @@ internal class ActionVisitor(
     }
 
     private fun propTypeMapper(prop: Property): String =
-        propertyConversion(
+        valueConversion(
             canonicalName = prop.typeClass.canonicalName,
             source = """properties["${prop.key}"]?.value""",
             default = prop.value
         )
 
     private fun dataTypeMapper(dataItem: Data): String =
-        dataConversion(
-            type = dataItem.type,
+        valueConversion(
+            canonicalName = dataItem.typeClass.canonicalName,
             source = "${dataItem.key}?.value",
-            default = dataItem.value,
-            key = dataItem.key
+            default = dataItem.value
         )
 
 }

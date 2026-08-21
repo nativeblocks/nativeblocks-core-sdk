@@ -58,7 +58,7 @@ private fun Block(instanceName: String, vm: FrameViewModel, blockKey: String, li
     val block = vm.blockOf(blockKey)?.value ?: return
 
     val nativeBlock = remember(block.keyType) {
-        if (block.keyType == "ROOT") { props -> RootBlock(props) }
+        if (block.keyType == "ROOT") { blockContext -> RootBlock(blockContext) }
         else vm.blockProvider.getProvidedBlocks()[block.keyType]
     }
     if (nativeBlock == null) {
@@ -66,7 +66,7 @@ private fun Block(instanceName: String, vm: FrameViewModel, blockKey: String, li
         return
     }
 
-    val props = remember(block, listItemIndex) {
+    val blockContext = remember(block, listItemIndex) {
         BlockContext(
             instanceName = instanceName,
             listItemIndex = listItemIndex,
@@ -93,5 +93,5 @@ private fun Block(instanceName: String, vm: FrameViewModel, blockKey: String, li
         )
     }
 
-    nativeBlock.invoke(props)
+    nativeBlock.invoke(blockContext)
 }

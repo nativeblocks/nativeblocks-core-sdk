@@ -73,8 +73,8 @@ public class ProviderGenerator {
                 try FunctionDeclSyntax("public static func provideBlocks(name: String = \"default\")") {
                     for block in blocks {
                         """
-                        NativeblocksManager.getInstance(name: name).provideBlock(blockType: "\(raw: block.keyType)") { props in
-                            \(raw: block.declName)Block(blockProps: props)
+                        NativeblocksManager.getInstance(name: name).provideBlock(blockType: "\(raw: block.keyType)") { blockContext in
+                            \(raw: block.declName)Block(blockContext: blockContext)
                         }
                         """
                     }

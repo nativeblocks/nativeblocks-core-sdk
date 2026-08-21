@@ -45,6 +45,7 @@ annotation class NativeActionFunction
  * @property deprecatedReason Reason for deprecation, if applicable.
  * @property defaultValue The default value for the property, if applicable.
  */
+@Deprecated("Properties are being replaced by data; declare action arguments with @NativeActionData.")
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class NativeActionProp(
     val description: String = "",

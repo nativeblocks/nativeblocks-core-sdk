@@ -92,11 +92,11 @@ private struct Block: View {
 
     var body: some View {
         if let block = vm.blockOf(blockKey) {
-            let props = makeBlockContext(for: block)
+            let blockContext = makeBlockContext(for: block)
             if block.keyType == "ROOT" {
-                AnyView(RootBlock(blockContext: props))
+                AnyView(RootBlock(blockContext: blockContext))
             } else if let nativeBlock = vm.blockProvider.getProvidedBlocks()[block.keyType] {
-                AnyView(nativeBlock(props))
+                AnyView(nativeBlock(blockContext))
             } else if let fallbackBlock = vm.blockProvider.getFallbackBlock() {
                 AnyView(fallbackBlock(block.keyType, blockKey))
             } else {

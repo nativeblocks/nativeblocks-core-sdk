@@ -60,7 +60,7 @@ public enum BlockExtractor {
                     continue
                 }
                 for param in block {
-                    if param.key == "blockProps" && param.type == "BlockProps" {
+                    if param.key == "blockContext" && param.type == "BlockContext" {
                         meta.append(param)
                     }
                 }
@@ -113,10 +113,6 @@ public enum BlockExtractor {
                 position += 1
                 let key = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text ?? ""
                 let type = binding.typeAnnotation?.as(TypeAnnotationSyntax.self)?.type.as(IdentifierTypeSyntax.self)?.name.text ?? ""
-
-                if !SyntaxUtils.isPrimitiveTypeSupported(type) {
-                    diagnostic.append(Diagnostic(node: blockAttribute!, message: DiagnosticType.primitiveTypeSupported))
-                }
 
                 return !key.isEmpty && !type.isEmpty
                     ? DataMeta(

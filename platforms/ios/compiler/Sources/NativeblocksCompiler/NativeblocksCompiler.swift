@@ -20,6 +20,7 @@ public macro NativeBlockData(
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeBlockDataMacro")
 
 @attached(peer)
+@available(*, deprecated, message: "Properties are being replaced by data; declare block arguments with @NativeBlockData.")
 public macro NativeBlockProp(
     description: String = "",
     valuePicker: NativeBlockValuePicker = NativeBlockValuePicker.TEXT_INPUT,
@@ -102,6 +103,7 @@ public macro NativeActionData(
 
 
 @attached(peer)
+@available(*, deprecated, message: "Properties are being replaced by data; declare action arguments with @NativeActionData.")
 public macro NativeActionProp(
     description: String = "",
     valuePicker: NativeActionValuePicker = NativeActionValuePicker.TEXT_INPUT,

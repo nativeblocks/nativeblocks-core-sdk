@@ -10,7 +10,7 @@ import io.nativeblocks.compiler.meta.Event
 import io.nativeblocks.compiler.meta.ExtraParam
 import io.nativeblocks.compiler.meta.Integration
 import io.nativeblocks.compiler.meta.Property
-import io.nativeblocks.compiler.meta.PropertyType
+import io.nativeblocks.compiler.meta.TypeClass
 import io.nativeblocks.compiler.meta.Slot
 import io.nativeblocks.compiler.meta.ValuePickerOption
 import io.nativeblocks.compiler.type.Then
@@ -108,7 +108,7 @@ internal fun KSAnnotation.generatePropertyJson(
     }
 
     val declaration = param.type.resolve().declaration
-    val typeClass = PropertyType(
+    val typeClass = TypeClass(
         packageName = declaration.packageName.asString(),
         simpleNames = generateSequence(declaration) { it.parentDeclaration }
             .map { it.simpleName.asString() }
@@ -170,16 +170,24 @@ internal fun KSAnnotation.generateDataJson(param: KSValueParameter): Data {
     val deprecatedReason = getArgument<String>("deprecatedReason")
     val key = param.name?.asString().orEmpty()
     val defaultValue = getArgument<String>("defaultValue")
+    val declaration = param.type.resolve().declaration
+    val typeClass = TypeClass(
+        packageName = declaration.packageName.asString(),
+        simpleNames = generateSequence(declaration) { it.parentDeclaration }
+            .map { it.simpleName.asString() }
+            .toList()
+            .reversed()
+    )
     val dataJson = Data(
         key = key,
-        type = typeMapper(
-            key,
-            param.type.resolve().declaration.qualifiedName?.asString().orEmpty()
-        ),
+        type = if (isPrimitiveType(typeClass.canonicalName)) {
+            typeMapper(key, typeClass.canonicalName)
+        } else "STRING",
         description = description,
         deprecated = deprecated,
         deprecatedReason = deprecatedReason,
-        value = defaultValue
+        value = defaultValue,
+        typeClass = typeClass
     )
     return dataJson
 }

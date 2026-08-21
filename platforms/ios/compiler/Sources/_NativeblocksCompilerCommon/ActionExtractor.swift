@@ -58,7 +58,7 @@ public struct ActionExtractor {
                     continue
                 }
                 block.forEach { param in
-                    if param.key == "actionProps" && param.type == "ActionProps" {
+                    if param.key == "actionContext" && param.type == "ActionContext" {
                         meta.append(param)
                     }
                 }
@@ -187,10 +187,6 @@ public struct ActionExtractor {
                 position += 1
                 let key = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text ?? ""
                 let type = binding.typeAnnotation?.as(TypeAnnotationSyntax.self)?.type.as(IdentifierTypeSyntax.self)?.name.text ?? ""
-
-                if !SyntaxUtils.isPrimitiveTypeSupported(type) {
-                    diagnostic.append(Diagnostic(node: blockAttribute!, message: DiagnosticType.primitiveTypeSupported))
-                }
 
                 return !key.isEmpty && !type.isEmpty
                     ? DataMeta(

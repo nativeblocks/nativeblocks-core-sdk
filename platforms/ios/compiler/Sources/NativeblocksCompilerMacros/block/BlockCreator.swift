@@ -12,7 +12,7 @@ struct BlockCreator {
         metaExtraParams: [ExtraParamMeta]
     ) throws -> StructDeclSyntax {
         return try StructDeclSyntax("public struct \(raw: structName)Block: View") {
-            try VariableDeclSyntax("var blockProps: BlockProps")
+            try VariableDeclSyntax("var blockContext: BlockContext")
             try VariableDeclSyntax(
                   """
                   public var body: some View
@@ -20,18 +20,18 @@ struct BlockCreator {
             ) {
                 """
                 Group {
-                    if let visibility = blockProps.onFindVariable(blockProps.block.visibility)?.value,
+                    if let visibility = blockContext.onFindVisibility(),
                        visibility == "false" {
                         EmptyView()
                     } else {
-                        InternalView(blockProps: blockProps)
+                        InternalView(blockContext: blockContext)
                     }
                 }
                 """
             }
            
             try StructDeclSyntax("private struct InternalView: View") {
-                try VariableDeclSyntax("var blockProps: BlockProps")
+                try VariableDeclSyntax("var blockContext: BlockContext")
 
                 try VariableDeclSyntax(
                     """
@@ -39,7 +39,7 @@ struct BlockCreator {
                     """
                 )
 
-                for data in metaData {
+                for data in metaData where SyntaxUtils.isPrimitiveTypeSupported(data.type) {
                     try VariableDeclSyntax(
                         """
                         @State private var \(raw: data.key)DataValue = \(raw: dataDefaultMapper(dataItem: data))
@@ -54,12 +54,12 @@ struct BlockCreator {
                 ) {
                     if !metaData.isEmpty {
                         """
-                        let data = blockProps.block.data
+                        let data = blockContext.block.data
                         """
                     }
                     if !metaProp.isEmpty {
                         """
-                        let properties = blockProps.block.properties
+                        let properties = blockContext.block.properties
                         """
                     }
                     """
@@ -67,8 +67,13 @@ struct BlockCreator {
                     """
                     for data in metaData {
                         """
-                        let \(raw: data.key)Data = blockProps.onFindVariable(data["\(raw: data.key)"]?.value ?? "")
+                        let \(raw: data.key)Data = blockContext.onFindVariable(data["\(raw: data.key)"])
                         """
+                        if !SyntaxUtils.isPrimitiveTypeSupported(data.type) {
+                            """
+                            let \(raw: data.key)DataValue = \(raw: TypeUtils.valueConversion(type: data.type, source: "\(data.key)Data", defaultValue: data.value, instance: "blockContext.instanceName"))
+                            """
+                        }
                     }
 
                     """
@@ -85,7 +90,7 @@ struct BlockCreator {
                     """
                     for event in metaEvent {
                         """
-                        let \(raw: event.event)Event = blockProvideEvent(blockProps: blockProps, eventType: "\(raw: event.event)")
+                        let \(raw: event.event)Event = blockProvideEvent(blockContext: blockContext, eventType: "\(raw: event.event)")
                         """
                     }
 
@@ -94,7 +99,7 @@ struct BlockCreator {
                     """
                     for slot in metaSlot {
                         """
-                        let \(raw: slot.slot)Slot = blockProvideSlot(blockProps: blockProps, slotType: "\(raw: slot.slot)")
+                        let \(raw: slot.slot)Slot = blockProvideSlot(blockContext: blockContext, slotType: "\(raw: slot.slot)")
                         """
                     }
 
@@ -123,10 +128,7 @@ struct BlockCreator {
                             \(event.event):\(event.isOptionalFunction ? "\(event.event)Event == nil ? nil :" : "") { \(event.dataBinding.map { "\($0)Param" }.joined(separator: ",")) \(event.dataBinding.isEmpty ? "" : "in")
                             \(event.dataBinding.map { param in
                                 """
-                                if var \(param)Updated = \(param)Data {
-                                    \(param)Updated.value = String(describing: \(param)Param)
-                                    blockProps.onVariableChange(\(param)Updated)
-                                }
+                                blockContext.onUpdateVariable(data["\(param)"], String(describing: \(param)Param))
                                 """
                             }.joined())
                             \(event.event)Event?()
@@ -139,7 +141,7 @@ struct BlockCreator {
                             slot.position,
                             """
                             \(slot.slot): \(slot.slot)Slot == nil ? \(slot.isOptionalFunction ? "nil" : "{ \(slot.hasBlockIndex ? "index" : "")\(slot.hasBlockIndex && slot.hasBlockScope ? ", ":"")\(slot.hasBlockScope ? "scope" : "")\((slot.hasBlockIndex || slot.hasBlockScope) ? " in" : "") AnyView(EmptyView())}") : { \(slot.hasBlockIndex ? "index" : "")\(slot.hasBlockIndex && slot.hasBlockScope ? ", ":"")\(slot.hasBlockScope ? "scope" : "")\((slot.hasBlockIndex || slot.hasBlockScope) ? " in" : "")
-                                (blockProps.onSubBlock(blockProps.block.subBlocks ?? [:], \(slot.slot)Slot!, \(slot.hasBlockIndex ?"index": "-1"), \(slot.hasBlockScope ?"scope": "nil")))
+                                (blockContext.onSubBlock(blockContext.block.subBlocks ?? [:], \(slot.slot)Slot!, \(slot.hasBlockIndex ?"index": "-1"), \(slot.hasBlockScope ?"scope": "nil")))
                             }
                             """
                         )
@@ -162,10 +164,10 @@ struct BlockCreator {
                     """
                     return \(raw: structName)(\n\(raw: arguments)\n)
                     """
-                    for data in metaData {
+                    for data in metaData where SyntaxUtils.isPrimitiveTypeSupported(data.type) {
                         """
                         .task(id: \(raw: data.key)Data) {
-                        let result = \(raw: data.key)Data?.value
+                        let result = \(raw: data.key)Data
                         \(raw: data.key)DataValue = \(raw: dataTypeMapper(dataItem: data))
                         }
                         """
@@ -176,34 +178,12 @@ struct BlockCreator {
     }
 
     private static func dataTypeMapper(dataItem: DataMeta) -> String {
-        switch dataItem.type.uppercased() {
-        case "STRING":
-            return
-                """
-                result ?? "\(dataItem.value)"
-                """
-        case "INT", "INT64", "INT32", "INT16", "INT8", "UINT", "UINT64", "UINT32", "UINT16", "UINT8",
-            "FLOAT", "FLOAT80", "FLOAT64",
-            "FLOAT32", "FLOAT16", "DOUBLE":
-            return
-                """
-                \(dataItem.type)(result ?? "") ?? \(dataItem.value.isEmpty ? "0" : dataItem.value)
-                """
-        case "CGFLOAT":
-            return
-                """
-                (result ?? "").toCGFloat() ?? \(dataItem.value.isEmpty ? "0.0" : dataItem.value)
-                """
-        case "BOOL":
-            return
-                """
-                Bool(result ?? "") ?? \(dataItem.value.isEmpty ? "false" : dataItem.value)
-                """
-        default:
-            return
-                """
-                """
-        }
+        return TypeUtils.valueConversion(
+            type: dataItem.type,
+            source: "result",
+            defaultValue: dataItem.value,
+            instance: "blockContext.instanceName"
+        )
     }
 
     private static func dataDefaultMapper(dataItem: DataMeta) -> String {
@@ -237,34 +217,11 @@ struct BlockCreator {
         }
     }
     private static func propTypeMapper(item: PropertyMeta) -> String? {
-        switch item.type.uppercased() {
-        case "STRING":
-            return
-                """
-                findWindowSizeClass(properties["\(item.key)"], windowManager) ?? "\(item.value)"
-                """
-        case "INT", "INT64", "INT32", "INT16", "INT8", "UINT", "UINT64", "UINT32", "UINT16", "UINT8",
-            "FLOAT", "FLOAT80", "FLOAT64",
-            "FLOAT32", "FLOAT16", "DOUBLE":
-            return
-                """
-                \(item.type)(findWindowSizeClass(properties["\(item.key)"], windowManager) ?? "") ?? \(item.value.isEmpty ? "0" : item.value)
-                """
-        case "CGFLOAT":
-            return
-                """
-                (findWindowSizeClass(properties["\(item.key)"], windowManager) ?? "").toCGFloat() ?? \(item.value.isEmpty ? "0.0" : item.value)
-                """
-        case "BOOL":
-            return
-                """
-                Bool(findWindowSizeClass(properties["\(item.key)"], windowManager) ?? "") ??  \(item.value.isEmpty ? "false" : item.value)
-                """
-        default:
-            return
-                """
-                NativeblocksManager.getInstance(name: blockProps.instanceName).getTypeConverter(\(item.type).self).fromString(findWindowSizeClass(properties["\(item.key)"], windowManager) ?? "\(item.value)")
-                """
-        }
+        return TypeUtils.valueConversion(
+            type: item.type,
+            source: "findWindowSizeClass(properties[\"\(item.key)\"], windowManager)",
+            defaultValue: item.value,
+            instance: "blockContext.instanceName"
+        )
     }
 }

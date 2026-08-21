@@ -16,11 +16,10 @@ import io.nativeblocks.compiler.meta.Property
 import io.nativeblocks.compiler.meta.Slot
 import io.nativeblocks.compiler.util.Diagnostic
 import io.nativeblocks.compiler.util.DiagnosticType
-import io.nativeblocks.compiler.util.PRIMITIVE_PROP_TYPES
+import io.nativeblocks.compiler.util.PRIMITIVE_TYPES
 import io.nativeblocks.compiler.util.converterVar
-import io.nativeblocks.compiler.util.dataConversion
 import io.nativeblocks.compiler.util.plusAssign
-import io.nativeblocks.compiler.util.propertyConversion
+import io.nativeblocks.compiler.util.valueConversion
 import java.io.OutputStream
 
 internal class BlockVisitor(
@@ -39,7 +38,7 @@ internal class BlockVisitor(
         val importComposable = ClassName("androidx.compose.runtime", "Composable")
         val importRemember = ClassName("androidx.compose.runtime", "remember")
 
-        val importBlockProps = ClassName("io.nativeblocks.runtime.api.provider.block", "BlockProps")
+        val importBlockContext = ClassName("io.nativeblocks.runtime.api.provider.block", "BlockContext")
         val importBlockFindWindowSizeClass = ClassName("io.nativeblocks.runtime.api.util", "findWindowSizeClass")
         val importLocalWindowWidthClass = ClassName("io.nativeblocks.runtime.api.util", "LocalNativeWindowWidthClass")
         val importBlockProvideEvent = ClassName("io.nativeblocks.runtime.api.util", "blockProvideEvent")
@@ -49,25 +48,36 @@ internal class BlockVisitor(
 
         val func = FunSpec.builder(fileName)
             .addAnnotation(importComposable)
-            .addParameter("blockProps", importBlockProps)
-            .addStatement("val visibility = blockProps.onFindVariable.invoke(blockProps.block.visibility)")
-            .beginControlFlow("""if ((visibility?.value ?: "true") == "false")""")
+            .addParameter("blockContext", importBlockContext)
+            .addStatement("val visibility = blockContext.onFindVisibility.invoke()")
+            .beginControlFlow("""if ((visibility ?: "true") == "false")""")
             .addStatement("return")
             .endControlFlow()
             .addComment("block meta fields")
             .addCode(
                 """
-                    |val data = blockProps.block.data
-                    |val properties = blockProps.block.properties
+                    |val data = blockContext.block.data
+                    |val properties = blockContext.block.properties
                 """.trimMargin()
             )
         func.addStatement("")
+        val customDataTypes =
+            metaData.map { it.typeClass.canonicalName }.filter { it !in PRIMITIVE_TYPES }.distinct()
+        val customTypeClasss =
+            metaProperties.map { it.typeClass.canonicalName }.filter { it !in PRIMITIVE_TYPES }
+                .distinct()
+        if (customDataTypes.isNotEmpty() || customTypeClasss.isNotEmpty()) {
+            func.addStatement("val manager = NativeblocksManager.getInstance(blockContext.instanceName)")
+        }
         if (metaData.isNotEmpty()) {
             func.addComment("block data")
+            customDataTypes.forEach {
+                func.addStatement("val ${converterVar(it)} = manager.getTypeConverter($it::class)")
+            }
             metaData.forEach {
-                func.addStatement("val ${it.key} = blockProps.onFindVariable.invoke(data[\"${it.key}\"]?.value.orEmpty())")
+                func.addStatement("val ${it.key} = blockContext.onFindVariable.invoke(data[\"${it.key}\"])")
                 func.beginControlFlow("val ${it.key}Value = remember(${it.key})")
-                func.addStatement("val result = ${it.key}?.value")
+                func.addStatement("val result = ${it.key}")
                 func.addStatement("${dataTypeMapper(it)}")
                 func.endControlFlow()
             }
@@ -75,14 +85,10 @@ internal class BlockVisitor(
         if (metaProperties.isNotEmpty()) {
             func.addComment("block properties")
             func.addStatement("val windowManager = LocalNativeWindowWidthClass.current")
-            if (metaProperties.any { it.typeClass.canonicalName !in PRIMITIVE_PROP_TYPES }) {
-                func.addStatement("val manager = NativeblocksManager.getInstance(blockProps.instanceName)")
-            }
             func.beginControlFlow("val resolvedProperties = remember(properties, windowManager)")
-            metaProperties.map { it.typeClass.canonicalName }.filter { it !in PRIMITIVE_PROP_TYPES }.distinct()
-                .forEach {
-                    func.addStatement("val ${converterVar(it)} = manager.getTypeConverter($it::class)")
-                }
+            customTypeClasss.forEach {
+                func.addStatement("val ${converterVar(it)} = manager.getTypeConverter($it::class)")
+            }
             func.addStatement("${fileName}ResolvedProperties(")
             metaProperties.forEach {
                 func.addStatement("${it.key} = ${propTypeMapper(it)},")
@@ -93,13 +99,13 @@ internal class BlockVisitor(
         if (metaSlots.isNotEmpty()) {
             func.addComment("block slots")
             metaSlots.forEach {
-                func.addStatement("val ${it.slot} = blockProvideSlot(blockProps, \"${it.slot}\") ")
+                func.addStatement("val ${it.slot} = blockProvideSlot(blockContext, \"${it.slot}\") ")
             }
         }
         if (metaEvents.isNotEmpty()) {
             func.addComment("block events")
             metaEvents.forEach {
-                func.addStatement("val ${it.event} = blockProvideEvent(blockProps, \"${it.event}\")")
+                func.addStatement("val ${it.event} = blockProvideEvent(blockContext, \"${it.event}\")")
             }
         }
         func.addComment("call the function")
@@ -141,10 +147,10 @@ internal class BlockVisitor(
                 func.beginControlFlow("${it.slot} = if (${it.slot} != null)")
                 if (blockScope.isNullOrEmpty()) {
                     func.addStatement("@Composable { index -> ")
-                    func.addStatement("blockProps.onSubBlock.invoke(blockProps.block?.subBlocks.orEmpty(), ${it.slot}, index, null)")
+                    func.addStatement("blockContext.onSubBlock.invoke(blockContext.block?.subBlocks.orEmpty(), ${it.slot}, index, null)")
                 } else {
                     func.addStatement("@Composable { index, scope -> ")
-                    func.addStatement("blockProps.onSubBlock.invoke(blockProps.block?.subBlocks.orEmpty(), ${it.slot}, index, scope)")
+                    func.addStatement("blockContext.onSubBlock.invoke(blockContext.block?.subBlocks.orEmpty(), ${it.slot}, index, scope)")
                 }
                 func.endControlFlow()
                 func.addStatement("} else {")
@@ -154,11 +160,11 @@ internal class BlockVisitor(
                 if (blockScope.isNullOrEmpty()) {
                     func.addStatement("${it.slot} = @Composable { index -> ")
                     func.beginControlFlow("if (${it.slot} != null)")
-                    func.addStatement("blockProps.onSubBlock.invoke(blockProps.block.subBlocks.orEmpty(), ${it.slot}, index, null)")
+                    func.addStatement("blockContext.onSubBlock.invoke(blockContext.block.subBlocks.orEmpty(), ${it.slot}, index, null)")
                 } else {
                     func.addStatement("${it.slot} = @Composable { index, scope -> ")
                     func.beginControlFlow("if (${it.slot} != null)")
-                    func.addStatement("blockProps.onSubBlock.invoke(blockProps.block.subBlocks.orEmpty(), ${it.slot}, index, scope)")
+                    func.addStatement("blockContext.onSubBlock.invoke(blockContext.block.subBlocks.orEmpty(), ${it.slot}, index, scope)")
                 }
                 func.endControlFlow()
                 func.addStatement("},")
@@ -175,10 +181,7 @@ internal class BlockVisitor(
                 func.beginControlFlow("${it.event} = if (${it.event} != null)")
                 func.addStatement("{ ${items.joinToString()} ->")
                 it.dataBinding.forEachIndexed { index, dataBound ->
-                    func.addStatement("val ${dataBound}Updated = $dataBound?.copy(value = p${index}.toString())")
-                        .beginControlFlow("if (${dataBound}Updated != null)")
-                        .addStatement("blockProps.onVariableChange.invoke(${dataBound}Updated)")
-                        .endControlFlow()
+                    func.addStatement("blockContext.onUpdateVariable.invoke(data[\"$dataBound\"], p${index}.toString())")
                 }
                 func.addStatement("${it.event}.invoke()")
                 func.addStatement("}")
@@ -188,10 +191,7 @@ internal class BlockVisitor(
             } else {
                 func.addStatement("${it.event} = { ${items.joinToString()} ->")
                 it.dataBinding.forEachIndexed { index, dataBound ->
-                    func.addStatement("val ${dataBound}Updated = $dataBound?.copy(value = p${index}.toString())")
-                        .beginControlFlow("if (${dataBound}Updated != null)")
-                        .addStatement("blockProps.onVariableChange.invoke(${dataBound}Updated)")
-                        .endControlFlow()
+                    func.addStatement("blockContext.onUpdateVariable.invoke(data[\"$dataBound\"], p${index}.toString())")
                 }
                 func.addStatement("${it.event}?.invoke()")
                 func.addStatement("},")
@@ -237,17 +237,16 @@ internal class BlockVisitor(
     }
 
     private fun propTypeMapper(prop: Property): String =
-        propertyConversion(
+        valueConversion(
             canonicalName = prop.typeClass.canonicalName,
             source = """findWindowSizeClass(properties["${prop.key}"], windowManager)""",
             default = prop.value
         )
 
     private fun dataTypeMapper(dataItem: Data): String =
-        dataConversion(
-            type = dataItem.type,
+        valueConversion(
+            canonicalName = dataItem.typeClass.canonicalName,
             source = "result",
-            default = dataItem.value,
-            key = dataItem.key
+            default = dataItem.value
         )
 }

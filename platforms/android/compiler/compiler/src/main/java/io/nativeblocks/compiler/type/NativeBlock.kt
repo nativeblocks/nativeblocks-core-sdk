@@ -38,6 +38,7 @@ annotation class NativeBlock(
  * @property deprecatedReason Reason for deprecation, if applicable.
  * @property defaultValue The default value for the property, if applicable.
  */
+@Deprecated("Properties are being replaced by data; declare block arguments with @NativeBlockData.")
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class NativeBlockProp(
     val description: String = "",
