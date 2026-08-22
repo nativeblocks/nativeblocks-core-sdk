@@ -48,7 +48,8 @@ Single-platform rebuilds: `scripts/build-android.sh`, `build-ios.sh`. Each
 ### 3. Copy into the host SDK
 
 Every release: re-run `./scripts/release.sh` and re-copy — a Rust change moves the native libs _and_ the bindings
-together.
+together. Pass `--sync-platforms` to skip the manual copy: it drops the freshly built artifacts straight into
+`platforms/android/runtime/core/` and `platforms/ios/runtime/` (only for the platforms that actually built).
 
 **Android** — both folders go into the **same** Gradle module as the hand-written wrapper (the binding is `internal`,
 which is module-scoped):

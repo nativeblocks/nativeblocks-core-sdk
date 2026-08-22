@@ -1,24 +1,29 @@
 #!/usr/bin/env bash
-# Build every available platform and stage copy-ready artifacts under dist/. Usage: ./scripts/release.sh [android] [ios]
+# Build every available platform and stage copy-ready artifacts under dist/.
+# Usage: ./scripts/release.sh [android] [ios] [--sync-platforms]
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 DIST="dist"
+PLATFORMS="../platforms"
 VERSION="$(grep -m1 '^version' Cargo.toml | sed -E 's/.*"(.*)".*/\1/')"
 OS="$(uname -s)"
 
-REQUESTED=("$@")
-[[ ${#REQUESTED[@]} -eq 0 ]] && REQUESTED=(android ios)
+SYNC=0
+REQUESTED=()
 
-for p in "${REQUESTED[@]}"; do
-  case "$p" in
-    android|ios) ;;
+for arg in "$@"; do
+  case "$arg" in
+    --sync-platforms) SYNC=1 ;;
+    android|ios) REQUESTED+=("$arg") ;;
     *)
-      echo "ERROR: unknown platform '$p' (expected: android, ios)" >&2
+      echo "ERROR: unknown argument '$arg' (expected: android, ios, --sync-platforms)" >&2
       exit 2 ;;
   esac
 done
+
+[[ ${#REQUESTED[@]} -eq 0 ]] && REQUESTED=(android ios)
 
 want() { printf '%s\n' "${REQUESTED[@]}" | grep -qx "$1"; }
 
@@ -85,6 +90,53 @@ target (NativeblocksRuntime) is the only product consumers can import.
 EOF
 fi
 
+built() { [[ ${#BUILT[@]} -gt 0 ]] && printf '%s\n' "${BUILT[*]}" | grep -qw "$1"; }
+
+sync_android() {
+  local module="$PLATFORMS/android/runtime/core/src/main"
+  local ffi="$module/java/io/nativeblocks/runtime/ffi"
+  if [[ ! -d "$module" ]]; then
+    echo "  ERROR: android module not found at $module" >&2
+    return 1
+  fi
+  mkdir -p "$module/jniLibs" "$ffi"
+  rm -rf "${module:?}/jniLibs"/*
+  cp -R "$DIST/android/jniLibs/." "$module/jniLibs/"
+  cp "$DIST/android/java/io/nativeblocks/runtime/ffi/NativeblocksRuntime.kt" "$ffi/"
+  echo "  android -> $module/{jniLibs,java/io/nativeblocks/runtime/ffi}"
+}
+
+sync_ios() {
+  local pkg="$PLATFORMS/ios/runtime"
+  if [[ ! -f "$pkg/Package.swift" ]]; then
+    echo "  ERROR: ios package not found at $pkg" >&2
+    return 1
+  fi
+  mkdir -p "$pkg/Frameworks" "$pkg/Sources/NativeblocksRuntimeFFI"
+  rm -rf "$pkg/Frameworks/NativeblocksRuntimeCFFI.xcframework"
+  cp -R "$DIST/ios/NativeblocksRuntimeCFFI.xcframework" "$pkg/Frameworks/"
+  cp "$DIST/ios/NativeblocksRuntimeFFI.swift" "$pkg/Sources/NativeblocksRuntimeFFI/"
+  echo "  ios -> $pkg/{Frameworks,Sources/NativeblocksRuntimeFFI}"
+}
+
+SYNCED=()
+if [[ "$SYNC" == "1" ]]; then
+  echo
+  echo "==> Syncing artifacts into platforms/"
+  for p in android ios; do
+    want "$p" || continue
+    if ! built "$p"; then
+      echo "  skipped $p (not built this run)"
+      continue
+    fi
+    if "sync_$p"; then
+      SYNCED+=("$p")
+    else
+      SKIPPED+=("$p sync (see error above)")
+    fi
+  done
+fi
+
 cat > "$DIST/COPY-GUIDE.md" <<EOF
 # Release v$VERSION — copy guide
 
@@ -95,6 +147,8 @@ Built on $OS. Each platform folder has a COPY-INSTRUCTIONS.txt with exact paths.
 | Android  | \`dist/android/\`     | \`jniLibs/\` + \`java/\` of a library module     |
 | iOS      | \`dist/ios/\`         | the \`.xcframework\` + \`.swift\` into the target |
 
+Re-run with \`--sync-platforms\` to copy these into \`platforms/\` automatically.
+
 See README.md for the copy steps and the host SDK boundary rules.
 EOF
 
@@ -103,6 +157,7 @@ echo "=================================================="
 echo " DONE  v$VERSION"
 echo "=================================================="
 [[ ${#BUILT[@]}   -gt 0 ]] && printf '  built:   %s\n' "${BUILT[*]}"
+[[ ${#SYNCED[@]}  -gt 0 ]] && printf '  synced:  %s\n' "${SYNCED[*]}"
 [[ ${#SKIPPED[@]} -gt 0 ]] && for s in "${SKIPPED[@]}"; do printf '  skipped: %s\n' "$s"; done
 echo
 echo "  Artifacts in ./$DIST/  — read $DIST/COPY-GUIDE.md"
