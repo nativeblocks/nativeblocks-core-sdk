@@ -3,8 +3,8 @@ package io.nativeblocks.runtime.api.provider.block
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import io.nativeblocks.runtime.api.provider.model.NativeActionModel
-import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockDataModel
+import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockSlotModel
 
 const val NONE_INDEX = -1
@@ -12,16 +12,17 @@ const val NONE_INDEX = -1
 internal typealias BlockComposable = @Composable (blockContext: BlockContext) -> Unit
 
 /**
- * Represents the properties required for rendering and handling a native block.
- * @param instanceName instance name of NativeblocksManager.
- * @param listItemIndex Index of the list item associated with the block (optional).
- * @param onFindVisibility Lambda function resolving the block's visibility value.
- * @param onFindVariable Lambda function resolving the variable a block data entry points at.
- * @param onUpdateVariable Callback invoked to write a value back to the variable a block data entry points at.
- * @param onFindAction Lambda function for retrieving a [NativeActionModel] by its event type.
- * @param onHandleAction Callback invoked to handle an action with the given index, action model, and type (optional).
- * @param block The model representing the block to be rendered (optional).
- * @param onSubBlock Composable callback to render a slot's sub-blocks; receives child block keys grouped by slot name, the slot, index, and scope (optional).
+ * Everything a block needs while it renders, handed to it by the tree.
+ *
+ * @param instanceName Instance name of NativeblocksManager.
+ * @param listItemIndex Index of the list item this block belongs to, or [NONE_INDEX] outside a list.
+ * @param onFindVisibility Resolves the block's visibility value.
+ * @param onFindVariable Resolves the value a block data entry points at.
+ * @param onUpdateVariable Writes a value back to the variable a block data entry points at.
+ * @param onFindAction Finds the action bound to the given event type.
+ * @param onHandleAction Runs an action for the given list item index and event type.
+ * @param block The block being rendered.
+ * @param onSubBlock Renders the child blocks of a slot, handing them the index and the slot's scope.
  */
 @Immutable
 data class BlockContext(

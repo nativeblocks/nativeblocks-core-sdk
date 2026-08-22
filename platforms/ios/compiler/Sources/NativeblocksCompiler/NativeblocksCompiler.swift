@@ -5,6 +5,7 @@ public macro NativeBlock(
     name: String,
     keyType: String,
     description: String,
+    scope: String = "",
     version: Int = 1,
     versionName: String = "",
     deprecated: Bool = false,
@@ -42,6 +43,7 @@ public macro NativeBlockEvent(
 @attached(peer)
 public macro NativeBlockSlot(
     description: String = "",
+    scope: String = "",
     deprecated: Bool = false,
     deprecatedReason: String = ""
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeBlockSlotMacro")
@@ -76,6 +78,7 @@ public macro NativeAction(
     name: String,
     keyType: String,
     description: String,
+    scope: String = "",
     version: Int = 1,
     versionName: String = "",
     deprecated: Bool = false,

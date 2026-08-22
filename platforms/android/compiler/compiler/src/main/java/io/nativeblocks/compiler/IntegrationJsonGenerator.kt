@@ -28,6 +28,7 @@ internal fun KSAnnotation.generateIntegrationJson(
 ): Integration {
     val keyType = getArgument<String>("keyType")
     val name = getArgument<String>("name")
+    val scope = getArgument<String>("scope").ifEmpty { null }
     val description = getArgument<String>("description")
     val version = getArgument<Int>("version")
     val versionName = getArgument<String>("versionName")
@@ -51,6 +52,7 @@ internal fun KSAnnotation.generateIntegrationJson(
     // now we have all things to create integration json
     val integrationJson = Integration(
         name = name,
+        scope = scope,
         description = description,
         version = version,
         versionName = versionName,
@@ -208,6 +210,7 @@ internal fun KSAnnotation.generateSlotJson(param: KSValueParameter): Slot {
     val deprecatedReason = getArgument<String>("deprecatedReason")
     val slotJson = Slot(
         slot = param.name?.asString().orEmpty(),
+        scope = getArgument<String>("scope").ifEmpty { null },
         description = description,
         deprecated = deprecated,
         deprecatedReason = deprecatedReason,

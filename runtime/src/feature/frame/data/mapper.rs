@@ -126,6 +126,7 @@ fn map_block(dto: NativeBlockDto, key_by_id: &HashMap<String, String>) -> Native
         slot: text(dto.slot),
         key_type: text(dto.key_type),
         key: text(dto.key),
+        scope: dto.scope,
         visibility: text(dto.visibility_key),
         position: dto.position.unwrap_or(0),
         data: keyed(dto.data, map_block_data, |model| &model.key),
@@ -156,6 +157,7 @@ fn map_block_property(dto: NativeBlockPropertyDto) -> NativeBlockPropertyModel {
 fn map_block_slot(dto: NativeBlockSlotDto) -> NativeBlockSlotModel {
     return NativeBlockSlotModel {
         slot: text(dto.slot),
+        scope: dto.scope,
     };
 }
 

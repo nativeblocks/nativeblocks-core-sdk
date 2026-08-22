@@ -3,6 +3,7 @@ import SwiftSyntax
 public struct Integration: Encodable {
     public var declName: String
     public var name: String
+    public var scope: String?
     public var keyType: String
     public var description: String
     public var version: Int
@@ -22,6 +23,7 @@ public struct Integration: Encodable {
 
     private enum CodingKeys: String, CodingKey {
         case name,
+            scope,
             description,
             documentation,
             imageIcon,

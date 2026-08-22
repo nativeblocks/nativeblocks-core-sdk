@@ -12,8 +12,6 @@ extension RuntimeFFILoggerEventLevel {
     internal func toDomain() -> LoggerEventLevel {
         switch self {
         case .debug: return .DEBUG
-        case .info: return .INFO
-        case .warning: return .WARNING
         case .error: return .ERROR
         }
     }
@@ -39,6 +37,7 @@ extension RuntimeFFIBlockModel {
             slot: slot,
             keyType: keyType,
             key: key,
+            scope: scope,
             visibility: visibility,
             position: Int(position),
             properties: properties.mapValues { property in
@@ -54,7 +53,7 @@ extension RuntimeFFIBlockModel {
                 NativeBlockDataModel(key: data.key, value: data.value, type: data.dataType)
             },
             slots: slots.mapValues { slot in
-                NativeBlockSlotModel(slot: slot.slot)
+                NativeBlockSlotModel(slot: slot.slot, scope: slot.scope)
             },
             subBlocks: subKeys
         )

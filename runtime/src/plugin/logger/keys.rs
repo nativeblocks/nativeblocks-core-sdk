@@ -13,6 +13,7 @@ pub mod tag {
     pub const FALLBACK_ACTION: &str = "FALLBACK_ACTION";
     pub const FALLBACK_BLOCK: &str = "FALLBACK_BLOCK";
     pub const FRAME_CLEAR: &str = "FRAME_CLEAR";
+    pub const BLOCK_SCOPE: &str = "BLOCK_SCOPE";
 }
 
 pub mod state {
@@ -28,6 +29,7 @@ pub mod state {
     pub const LOCALIZATION_SET: &str = "LOCALIZATION_SET";
     pub const FALLBACK_TRIGGER: &str = "FALLBACK_TRIGGER";
     pub const FALLBACK_BLOCK: &str = "FALLBACK_BLOCK";
+    pub const BLOCK_SCOPE_MISMATCH: &str = "BLOCK_SCOPE_MISMATCH";
     pub const SCAFFOLD_FETCH_FAILED: &str = "SCAFFOLD_FETCH_FAILED";
     pub const SCAFFOLD_FETCH_SUCCEED: &str = "SCAFFOLD_FETCH_SUCCEED";
     pub const EXPERIMENT_FETCH_FAILED: &str = "EXPERIMENT_FETCH_FAILED";
@@ -60,4 +62,6 @@ pub mod parameter {
     pub const NEW_VALUE: &str = "new_value";
     pub const VARIABLE_TYPE: &str = "variable_type";
     pub const BLOCK_KEY: &str = "block_key";
+    pub const REQUIRED_SCOPE: &str = "required_scope";
+    pub const PROVIDED_SCOPE: &str = "provided_scope";
 }

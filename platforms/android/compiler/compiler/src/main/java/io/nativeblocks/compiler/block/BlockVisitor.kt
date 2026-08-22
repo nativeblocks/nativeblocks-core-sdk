@@ -63,10 +63,10 @@ internal class BlockVisitor(
         func.addStatement("")
         val customDataTypes =
             metaData.map { it.typeClass.canonicalName }.filter { it !in PRIMITIVE_TYPES }.distinct()
-        val customTypeClasss =
+        val customTypeClasses =
             metaProperties.map { it.typeClass.canonicalName }.filter { it !in PRIMITIVE_TYPES }
                 .distinct()
-        if (customDataTypes.isNotEmpty() || customTypeClasss.isNotEmpty()) {
+        if (customDataTypes.isNotEmpty() || customTypeClasses.isNotEmpty()) {
             func.addStatement("val manager = NativeblocksManager.getInstance(blockContext.instanceName)")
         }
         if (metaData.isNotEmpty()) {
@@ -86,7 +86,7 @@ internal class BlockVisitor(
             func.addComment("block properties")
             func.addStatement("val windowManager = LocalNativeWindowWidthClass.current")
             func.beginControlFlow("val resolvedProperties = remember(properties, windowManager)")
-            customTypeClasss.forEach {
+            customTypeClasses.forEach {
                 func.addStatement("val ${converterVar(it)} = manager.getTypeConverter($it::class)")
             }
             func.addStatement("${fileName}ResolvedProperties(")

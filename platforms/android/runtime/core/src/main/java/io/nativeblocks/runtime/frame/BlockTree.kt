@@ -50,18 +50,25 @@ private fun RootLifecycle(instanceName: String, vm: FrameViewModel) {
         vm.rootEntered(rootKey)
     }
 
-    Block(instanceName, vm, rootKey, NONE_INDEX)
+    Block(instanceName, vm, rootKey, NONE_INDEX, appearGen)
 }
 
 @Composable
-private fun Block(instanceName: String, vm: FrameViewModel, blockKey: String, listItemIndex: Int) {
-    val block = vm.blockOf(blockKey)?.value ?: return
+private fun Block(
+    instanceName: String,
+    vm: FrameViewModel,
+    blockKey: String,
+    listItemIndex: Int,
+    frameGeneration: Int,
+) {
+    val block = vm.blockOf(blockKey) ?: return
 
     val nativeBlock = remember(block.keyType) {
         if (block.keyType == "ROOT") { blockContext -> RootBlock(blockContext) }
         else vm.blockProvider.getProvidedBlocks()[block.keyType]
     }
     if (nativeBlock == null) {
+        vm.logBlockFallback(block.keyType, blockKey)
         vm.blockProvider.getFallbackBlock()?.invoke(block.keyType, blockKey) ?: InternalFallbackBlock(block.keyType)
         return
     }
@@ -71,10 +78,8 @@ private fun Block(instanceName: String, vm: FrameViewModel, blockKey: String, li
             instanceName = instanceName,
             listItemIndex = listItemIndex,
             onFindVisibility = { vm.variableOf(block.visibility)?.value?.value },
-            onFindVariable = { data -> data?.value },
-            onUpdateVariable = { data, value ->
-                vm.updateBlockData(blockKey, data?.key.orEmpty(), value)
-            },
+            onFindVariable = { data -> vm.variableOf(data?.value.orEmpty())?.value?.value },
+            onUpdateVariable = { data, value -> vm.updateVariable(data?.value.orEmpty(), value) },
             onFindAction = { vm.actionOf(blockKey, it) },
             onHandleAction = { index, action, event -> vm.handleAction(index, action, event) },
             block = block,
@@ -86,6 +91,7 @@ private fun Block(instanceName: String, vm: FrameViewModel, blockKey: String, li
                             vm = vm,
                             blockKey = childKey,
                             listItemIndex = if (itemIndex == NONE_INDEX) listItemIndex else itemIndex,
+                            frameGeneration = frameGeneration,
                         )
                     }
                 }

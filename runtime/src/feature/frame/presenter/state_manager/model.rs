@@ -21,7 +21,6 @@ pub struct FrameFull {
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct FrameDiff {
     pub variables: HashMap<String, NativeVariableModel>,
-    pub blocks: HashMap<String, NativeBlockModel>,
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]
@@ -47,5 +46,20 @@ pub enum ActionLogEvent {
     TriggerFallback {
         key_type: String,
         name: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
+pub enum BlockLogEvent {
+    BlockFallback {
+        key_type: String,
+        block_key: String,
+    },
+    ScopeMismatch {
+        block_key: String,
+        key_type: String,
+        required: String,
+        provided: String,
+        dropped: bool,
     },
 }

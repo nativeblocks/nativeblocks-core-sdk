@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use crate::feature::frame::data::db::db_source;
-use crate::feature::frame::data::db::query;
 use crate::feature::frame::data::key::{self, error_code};
 use crate::feature::frame::data::mapper;
 use crate::feature::frame::data::network::dto::{
     NativeFrameDataDto, NativeFrameProductionChecksumDataDto,
 };
+use crate::feature::frame::data::network::query;
 use crate::feature::frame::domain::model::NativeFrameModel;
 use crate::library::cache::CacheProvider;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};

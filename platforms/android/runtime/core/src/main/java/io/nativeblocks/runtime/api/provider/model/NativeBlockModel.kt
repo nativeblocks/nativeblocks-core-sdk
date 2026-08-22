@@ -46,6 +46,11 @@ data class NativeBlockModel(
     val key: String,
 
     /**
+     * Scope this block requires from the slot it sits in, null when it accepts any.
+     */
+    val scope: String?,
+
+    /**
      * Visibility state of the block (e.g., visible, hidden).
      */
     val visibility: String,
@@ -138,5 +143,10 @@ data class NativeBlockSlotModel(
     /**
      * Name of the slot.
      */
-    val slot: String
+    val slot: String,
+
+    /**
+     * Scope this slot hands to the blocks inside it, null when it declares none.
+     */
+    val scope: String?
 )

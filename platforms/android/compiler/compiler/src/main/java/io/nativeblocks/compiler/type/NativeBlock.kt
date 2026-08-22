@@ -21,6 +21,7 @@ annotation class NativeBlock(
     val keyType: String,
     val name: String,
     val description: String,
+    val scope: String = "",
     val version: Int = 1,
     val versionName: String = "",
     val deprecated: Boolean = false,
@@ -94,6 +95,7 @@ annotation class NativeBlockEvent(
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class NativeBlockSlot(
     val description: String = "",
+    val scope: String = "",
     val deprecated: Boolean = false,
     val deprecatedReason: String = ""
 )

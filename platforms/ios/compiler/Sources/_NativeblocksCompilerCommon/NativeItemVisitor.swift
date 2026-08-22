@@ -23,6 +23,7 @@ public class NativeItemVisitor: SyntaxVisitor {
             let structName = node.name.text
             let keyType = getStringValue(name: "keyType", from: attribute)
             let name = getStringValue(name: "name", from: attribute)
+            let scope = getStringValue(name: "scope", from: attribute)
             let description = getStringValue(name: "description", from: attribute)
             let version = getIntValue(name: "version", from: attribute)
             let versionName = getStringValue(name: "versionName", from: attribute)
@@ -32,6 +33,7 @@ public class NativeItemVisitor: SyntaxVisitor {
                 Integration(
                     declName: structName,
                     name: name!,
+                    scope: (scope?.isEmpty ?? true) ? nil : scope,
                     keyType: keyType!,
                     description: description!,
                     version: version ?? 1,
@@ -53,6 +55,7 @@ public class NativeItemVisitor: SyntaxVisitor {
             let structName = node.name.text
             let keyType = getStringValue(name: "keyType", from: attribute)
             let name = getStringValue(name: "name", from: attribute)
+            let scope = getStringValue(name: "scope", from: attribute)
             let description = getStringValue(name: "description", from: attribute)
             let version = getIntValue(name: "version", from: attribute)
             let versionName = getStringValue(name: "versionName", from: attribute)
@@ -62,6 +65,7 @@ public class NativeItemVisitor: SyntaxVisitor {
                 Integration(
                     declName: structName,
                     name: name!,
+                    scope: (scope?.isEmpty ?? true) ? nil : scope,
                     keyType: keyType!,
                     description: description!,
                     version: version ?? 1,

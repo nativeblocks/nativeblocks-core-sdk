@@ -16,10 +16,11 @@ internal final class FrameViewModel: ObservableObject {
     @Published private(set) var renderingState: RenderingState = .loading
     @Published private(set) var rootKey: String? = nil
     @Published private(set) var frameUpdateGeneration: Int = 0
-    @Published private(set) var blocks: [String: NativeBlockModel] = [:]
+    
     @Published private(set) var variables: [String: NativeVariableModel] = [:]
-
+    private(set) var blocks: [String: NativeBlockModel] = [:]
     private var actions: [String: [NativeActionModel]] = [:]
+    
     private var setupTask: Task<Void, Never>?
     private var announcedGeneration = -1
     private var isAppeared = false
@@ -89,16 +90,16 @@ internal final class FrameViewModel: ObservableObject {
         return actions[blockKey]?.first { $0.event == eventType }
     }
 
+    func logBlockFallback(keyType: String, blockKey: String) {
+        frameStateBridge.logBlock(event: .blockFallback(keyType: keyType, blockKey: blockKey))
+    }
+
     func handleAction(_ index: Int, _ action: NativeActionModel?, _ performedEventType: String) {
         actionTree.handle(index: index, action: action, performedEventType: performedEventType)
     }
 
     func updateVariable(key: String, value: String) {
         frameStateBridge.updateVariable(key: key, value: value)
-    }
-
-    func updateBlockData(blockKey: String, dataKey: String, value: String) {
-        frameStateBridge.updateBlockData(blockKey: blockKey, dataKey: dataKey, value: value)
     }
 
     func rootEntered(_ rootKey: String) {
@@ -131,10 +132,8 @@ internal final class FrameViewModel: ObservableObject {
     private func applyFull(_ frame: FrameFull) {
         variables = variables.filter { frame.variables.keys.contains($0.key) }
         syncVariables(frame.variables)
-        blocks = blocks.filter { frame.blocks.keys.contains($0.key) }
         syncBlocks(frame.blocks)
-
-        actions = frame.actions.mapValues { list in list.map { $0.toDomain() } }
+        syncActions(frame.actions)
 
         rootKey = frame.rootKey
         isRestored = frame.restored
@@ -145,12 +144,8 @@ internal final class FrameViewModel: ObservableObject {
     }
 
     private func applyDiff(_ diff: FrameDiff) {
-        if !diff.variables.isEmpty {
-            syncVariables(diff.variables)
-        }
-        if !diff.blocks.isEmpty {
-            syncBlocks(diff.blocks)
-        }
+        guard !diff.variables.isEmpty else { return }
+        syncVariables(diff.variables)
     }
 
     private func syncVariables(_ runtimeVariables: [String: RuntimeFFIVariableModel]) {
@@ -159,9 +154,11 @@ internal final class FrameViewModel: ObservableObject {
         }
     }
 
+    private func syncActions(_ runtimeActions: [String: [RuntimeFFIActionModel]]) {
+        actions = runtimeActions.mapValues { list in list.map { $0.toDomain() } }
+    }
+
     private func syncBlocks(_ runtimeBlocks: [String: RuntimeFFIBlockModel]) {
-        for (key, block) in runtimeBlocks {
-            blocks[key] = block.toDomain()
-        }
+        blocks = runtimeBlocks.mapValues { $0.toDomain() }
     }
 }

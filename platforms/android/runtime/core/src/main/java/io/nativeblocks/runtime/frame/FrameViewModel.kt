@@ -13,6 +13,7 @@ import io.nativeblocks.runtime.api.provider.block.NativeBlockProviderRegistry
 import io.nativeblocks.runtime.api.provider.model.NativeActionModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
 import io.nativeblocks.runtime.api.provider.model.NativeVariableModel
+import io.nativeblocks.runtime.ffi.BlockLogEvent
 import io.nativeblocks.runtime.ffi.FrameDiff
 import io.nativeblocks.runtime.ffi.FrameFull
 import io.nativeblocks.runtime.ffi.RenderingState
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
+import io.nativeblocks.runtime.ffi.NativeActionModel as RuntimeFFIActionModel
 import io.nativeblocks.runtime.ffi.NativeBlockModel as RuntimeFFIBlockModel
 import io.nativeblocks.runtime.ffi.NativeVariableModel as RuntimeFFIVariableModel
 
@@ -52,7 +54,7 @@ internal class FrameViewModel(
     private var isRestored = false
     private var isStateful = false
 
-    private val blocks = ConcurrentHashMap<String, MutableState<NativeBlockModel>>()
+    private val blocks = ConcurrentHashMap<String, NativeBlockModel>()
     private val variables = ConcurrentHashMap<String, MutableState<NativeVariableModel>>()
     private val actions = ConcurrentHashMap<String, List<NativeActionModel>>()
 
@@ -65,7 +67,7 @@ internal class FrameViewModel(
             variableOf(key)?.value
         },
         onFindBlock = { key ->
-            blockOf(key)?.value
+            blockOf(key)
         },
         onChangeBlock = { blockKey, propertyKey, valueMobile, valueTablet, valueDesktop ->
             updateBlockProperty(blockKey, propertyKey, valueMobile, valueTablet, valueDesktop)
@@ -97,12 +99,16 @@ internal class FrameViewModel(
         return variables[key]
     }
 
-    fun blockOf(key: String): State<NativeBlockModel>? {
+    fun blockOf(key: String): NativeBlockModel? {
         return blocks[key]
     }
 
     fun actionOf(blockKey: String, eventType: String): NativeActionModel? {
         return actions[blockKey]?.firstOrNull { it.event == eventType }
+    }
+
+    fun logBlockFallback(keyType: String, blockKey: String) {
+        logBlock(BlockLogEvent.BlockFallback(keyType = keyType, blockKey = blockKey))
     }
 
     fun handleAction(index: Int, action: NativeActionModel?, performedEventType: String) {
@@ -129,13 +135,9 @@ internal class FrameViewModel(
         Snapshot.withMutableSnapshot {
             variables.keys.retainAll(frame.variables.keys)
             syncVariables(frame.variables)
-            blocks.keys.retainAll(frame.blocks.keys)
-            syncBlocks(frame.blocks)
         }
-        actions.clear()
-        actions.putAll(frame.actions.mapValues { entry ->
-            entry.value.map { it.toDomain() }
-        })
+        syncBlocks(frame.blocks)
+        syncActions(frame.actions)
 
         _rootKey.update { frame.rootKey }
         isRestored = frame.restored
@@ -146,13 +148,9 @@ internal class FrameViewModel(
     }
 
     private fun applyDiff(diff: FrameDiff) {
+        if (diff.variables.isEmpty()) return
         Snapshot.withMutableSnapshot {
-            if (diff.variables.isNotEmpty()) {
-                syncVariables(diff.variables)
-            }
-            if (diff.blocks.isNotEmpty()) {
-                syncBlocks(diff.blocks)
-            }
+            syncVariables(diff.variables)
         }
     }
 
@@ -164,12 +162,14 @@ internal class FrameViewModel(
         }
     }
 
+    private fun syncActions(runtimeActions: Map<String, List<RuntimeFFIActionModel>>) {
+        actions.clear()
+        actions.putAll(runtimeActions.mapValues { entry -> entry.value.map { it.toDomain() } })
+    }
+
     private fun syncBlocks(runtimeBlocks: Map<String, RuntimeFFIBlockModel>) {
-        runtimeBlocks.forEach { (key, block) ->
-            val domain = block.toDomain()
-            val cell = blocks[key]
-            if (cell == null) blocks[key] = mutableStateOf(domain) else cell.value = domain
-        }
+        blocks.clear()
+        runtimeBlocks.forEach { (key, block) -> blocks[key] = block.toDomain() }
     }
 
     override fun onCleared() {

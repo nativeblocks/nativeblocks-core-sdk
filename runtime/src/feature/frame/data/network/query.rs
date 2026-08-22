@@ -12,6 +12,7 @@ pub(in crate::feature::frame::data) const FRAME_QUERY: &str = r#"query frame($ro
             slot
             keyType
             key
+            scope
             visibilityKey
             position
             properties {
@@ -28,6 +29,7 @@ pub(in crate::feature::frame::data) const FRAME_QUERY: &str = r#"query frame($ro
             }
             slots {
                 slot
+                scope
             }
         }
         actions {
@@ -71,6 +73,7 @@ pub(in crate::feature::frame::data) const FRAME_PRODUCTION_QUERY: &str = r#"quer
             keyType
             integrationVersion
             key
+            scope
             visibilityKey
             position
             properties {
@@ -87,6 +90,7 @@ pub(in crate::feature::frame::data) const FRAME_PRODUCTION_QUERY: &str = r#"quer
             }
             slots {
                 slot
+                scope
             }
         }
         actions {

@@ -11,7 +11,12 @@ internal struct RootBlock: View {
 
         VStack {
             if let contentSlot {
-                blockContext.onSubBlock(blockContext.block.subBlocks ?? [:], contentSlot, NONE_INDEX, nil)
+                blockContext.onSubBlock(
+                    blockContext.block.subBlocks ?? [:],
+                    contentSlot,
+                    NONE_INDEX,
+                    nil
+                )
             }
         }
     }

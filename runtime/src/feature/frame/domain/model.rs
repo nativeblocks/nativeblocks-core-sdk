@@ -28,6 +28,7 @@ pub struct NativeBlockModel {
     pub slot: String,
     pub key_type: String,
     pub key: String,
+    pub scope: Option<String>,
     pub visibility: String,
     pub position: i32,
     pub data: HashMap<String, NativeBlockDataModel>,
@@ -57,6 +58,7 @@ pub struct NativeBlockDataModel {
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeBlockSlotModel {
     pub slot: String,
+    pub scope: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]

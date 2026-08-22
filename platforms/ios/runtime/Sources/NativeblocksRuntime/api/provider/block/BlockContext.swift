@@ -4,43 +4,26 @@ import SwiftUI
 /// A constant representing an invalid or non-existent index.
 public let NONE_INDEX = -1
 
-/// Represents the properties associated with a native block.
-/// The `BlockContext` struct is used to pass all the necessary information required to render a block, including variables, actions, and callbacks.
+/// Everything a block needs while it renders, handed to it by the tree.
+///
+/// - Parameters:
+///   - instanceName: Instance name of NativeblocksManager.
+///   - listItemIndex: Index of the list item this block belongs to, or `NONE_INDEX` outside a list.
+///   - onFindVisibility: Resolves the block's visibility value.
+///   - onFindVariable: Resolves the value a block data entry points at.
+///   - onUpdateVariable: Writes a value back to the variable a block data entry points at.
+///   - onFindAction: Finds the action bound to the given event type.
+///   - onHandleAction: Runs an action for the given list item index and event type.
+///   - block: The block being rendered.
+///   - onSubBlock: Renders the child blocks of a slot, handing them the index and the slot's scope.
 public struct BlockContext {
-    /// Instance name of NativeblocksManager.
     public let instanceName: String
-
-    /// The index of the item in the list that the block applies to (if applicable).
     public let listItemIndex: Int
-
-    /// A function resolving the block's visibility value.
     public let onFindVisibility: () -> String?
-
-    /// A function resolving the variable a block data entry points at.
     public let onFindVariable: (NativeBlockDataModel?) -> String?
-
-    /// Callback function writing a value back to the variable a block data entry points at.
     public let onUpdateVariable: (NativeBlockDataModel?, String) -> Void
-
-    /// A function for retrieving a [NativeActionModel] by its event type.
     public let onFindAction: (String) -> NativeActionModel?
-
-    /// Callback function to handle an action.
-    /// - Parameters:
-    ///   - listItemIndex: The index of the item in the list that the action applies to.
-    ///   - action: The action model to be executed.
-    ///   - type: The type of action being performed.
     public let onHandleAction: (Int, NativeActionModel?, String) -> Void
-
-    /// The block model representing the current block.
     public let block: NativeBlockModel
-
-    /// Callback function to render a slot's sub-blocks.
-    /// - Parameters:
-    ///   - blockKeys: Child block keys grouped by slot name.
-    ///   - subSlot: The slot whose children should be rendered.
-    ///   - itemIndex: The index of the item in the list for which sub-blocks are rendered.
-    ///   - scope: Optional layout scope forwarded by the parent block.
-    /// - Returns: An `AnyView` containing the rendered sub-blocks.
     public let onSubBlock: ([String: [String]], NativeBlockSlotModel, Int, Any?) -> AnyView
 }

@@ -17,7 +17,7 @@ internal fun RootBlock(blockContext: BlockContext) {
                 blockContext.block.subBlocks.orEmpty(),
                 contentSlot,
                 NONE_INDEX,
-                this
+                null,
             )
         }
     }

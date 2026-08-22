@@ -5,7 +5,7 @@ import Foundation
 public protocol INativeLogger {
     /// Logs an event with the specified name and parameters.
     /// - Parameters:
-    ///   - level: The severity of the log (DEBUG, INFO, WARNING, ERROR).
+    ///   - level: The severity of the log (DEBUG, ERROR).
     ///   - event: The event type (from LoggerEventType).
     ///   - message: A human-readable message for the log.
     ///   - parameters: Optional key-value pairs with event-specific data.
@@ -34,7 +34,5 @@ extension INativeLogger {
 
 public enum LoggerEventLevel: String {
     case DEBUG
-    case INFO
-    case WARNING
     case ERROR
 }

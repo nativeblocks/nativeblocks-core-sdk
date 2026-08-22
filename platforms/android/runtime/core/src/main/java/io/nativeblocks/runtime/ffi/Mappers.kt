@@ -23,9 +23,7 @@ import io.nativeblocks.runtime.ffi.NativeVariableModel as RuntimeFFIVariableMode
 internal fun RuntimeFFILoggerEventLevel.toDomain(): LoggerEventLevel {
     return when (this) {
         RuntimeFFILoggerEventLevel.DEBUG -> LoggerEventLevel.DEBUG
-        RuntimeFFILoggerEventLevel.INFO -> LoggerEventLevel.INFO
-        RuntimeFFILoggerEventLevel.WARNING -> LoggerEventLevel.WARNING
-        RuntimeFFILoggerEventLevel.ERROR -> LoggerEventLevel.ERROR
+                RuntimeFFILoggerEventLevel.ERROR -> LoggerEventLevel.ERROR
     }
 }
 
@@ -46,6 +44,7 @@ internal fun RuntimeFFIBlockModel.toDomain(): NativeBlockModel {
         slot = slot,
         keyType = keyType,
         key = key,
+        scope = scope,
         visibility = visibility,
         position = position,
         data = data.mapValues { (_, data) ->
@@ -60,7 +59,9 @@ internal fun RuntimeFFIBlockModel.toDomain(): NativeBlockModel {
                 type = property.propertyType,
             )
         },
-        slots = slots.mapValues { (_, slot) -> NativeBlockSlotModel(slot = slot.slot) },
+        slots = slots.mapValues { (_, slot) ->
+            NativeBlockSlotModel(slot = slot.slot, scope = slot.scope)
+        },
         subBlocks = subKeys,
     )
 }

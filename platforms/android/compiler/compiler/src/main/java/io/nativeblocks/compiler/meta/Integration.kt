@@ -6,6 +6,7 @@ import kotlinx.serialization.Transient
 @Serializable
 internal data class Integration(
     val name: String,
+    val scope: String?,
     val description: String,
     val version: Int,
     val versionName: String,
@@ -74,6 +75,7 @@ internal data class Event(
 @Serializable
 internal data class Slot(
     val slot: String,
+    val scope: String?,
     val description: String,
     val deprecated: Boolean,
     val deprecatedReason: String,

@@ -815,19 +815,19 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_frameclient_sync_frame(
     ): Int
-    external fun uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change(
-    ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_action(
+    ): Int
+    external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_block(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_release(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame(
     ): Int
-    external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_data(
-    ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable(
+    ): Int
+    external fun uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_localizationclient_get_localization(
     ): Int
@@ -942,6 +942,22 @@ external fun uniffi_nativeblocks_runtime_fn_method_frameclient_state_manager(`pt
 ): Long
 external fun uniffi_nativeblocks_runtime_fn_method_frameclient_sync_frame(`ptr`: Long,`route`: RustBuffer.ByValue,`parameters`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_nativeblocks_runtime_fn_clone_framestatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_nativeblocks_runtime_fn_free_framestatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_action(`ptr`: Long,`event`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_block(`ptr`: Long,`event`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(`ptr`: Long,`route`: RustBuffer.ByValue,`args`: RustBuffer.ByValue,`stateKey`: RustBuffer.ByValue,`observer`: Long,
+): Long
+external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_property(`ptr`: Long,`blockKey`: RustBuffer.ByValue,`propertyKey`: RustBuffer.ByValue,`valueMobile`: RustBuffer.ByValue,`valueTablet`: RustBuffer.ByValue,`valueDesktop`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_variable(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_nativeblocks_runtime_fn_clone_framestateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_nativeblocks_runtime_fn_free_framestateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -949,22 +965,6 @@ external fun uniffi_nativeblocks_runtime_fn_free_framestateobserver(`handle`: Lo
 external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_framestateobserver(`vtable`: UniffiVTableCallbackInterfaceFrameStateObserver,
 ): Unit
 external fun uniffi_nativeblocks_runtime_fn_method_framestateobserver_on_frame_change(`ptr`: Long,`change`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_clone_framestatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_framestatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_action(`ptr`: Long,`event`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(`ptr`: Long,`route`: RustBuffer.ByValue,`args`: RustBuffer.ByValue,`stateKey`: RustBuffer.ByValue,`observer`: Long,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_data(`ptr`: Long,`blockKey`: RustBuffer.ByValue,`dataKey`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_property(`ptr`: Long,`blockKey`: RustBuffer.ByValue,`propertyKey`: RustBuffer.ByValue,`valueMobile`: RustBuffer.ByValue,`valueTablet`: RustBuffer.ByValue,`valueDesktop`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_variable(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_nativeblocks_runtime_fn_clone_localizationclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
@@ -1223,16 +1223,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_frame_state() != 24260) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager() != 39836) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager() != 2735) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_sync_frame() != 57963) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change() != 21114) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_action() != 55091) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_action() != 55091) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_block() != 25667) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_release() != 7950) {
@@ -1241,13 +1241,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 31603) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_data() != 26957) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property() != 32460) {
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property() != 19031) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable() != 34459) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change() != 21114) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_get_localization() != 34135) {
@@ -2475,11 +2475,11 @@ internal interface FrameStateManagerInterface {
     
     fun `logAction`(`event`: ActionLogEvent)
     
+    fun `logBlock`(`event`: BlockLogEvent)
+    
     fun `release`()
     
     suspend fun `setupFrame`(`route`: kotlin.String, `args`: Map<kotlin.String, kotlin.String>, `stateKey`: kotlin.String?, `observer`: FrameStateObserver)
-    
-    fun `updateBlockData`(`blockKey`: kotlin.String, `dataKey`: kotlin.String, `value`: kotlin.String)
     
     fun `updateBlockProperty`(`blockKey`: kotlin.String, `propertyKey`: kotlin.String, `valueMobile`: kotlin.String, `valueTablet`: kotlin.String, `valueDesktop`: kotlin.String)
     
@@ -2596,6 +2596,18 @@ internal open class FrameStateManager: Disposable, AutoCloseable, FrameStateMana
     
     
 
+    override fun `logBlock`(`event`: BlockLogEvent)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_block(
+        it,
+        FfiConverterTypeBlockLogEvent.lower(`event`),_status)
+}
+    }
+    
+    
+
     override fun `release`()
         = 
     callWithHandle {
@@ -2628,18 +2640,6 @@ internal open class FrameStateManager: Disposable, AutoCloseable, FrameStateMana
         UniffiNullRustCallStatusErrorHandler,
     )
     }
-
-    override fun `updateBlockData`(`blockKey`: kotlin.String, `dataKey`: kotlin.String, `value`: kotlin.String)
-        = 
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_data(
-        it,
-        FfiConverterString.lower(`blockKey`),FfiConverterString.lower(`dataKey`),FfiConverterString.lower(`value`),_status)
-}
-    }
-    
-    
 
     override fun `updateBlockProperty`(`blockKey`: kotlin.String, `propertyKey`: kotlin.String, `valueMobile`: kotlin.String, `valueTablet`: kotlin.String, `valueDesktop`: kotlin.String)
         = 
@@ -5887,8 +5887,6 @@ internal object FfiConverterTypeScriptEngine: FfiConverter<ScriptEngine, Long> {
 
 internal data class FrameDiff (
     val `variables`: Map<kotlin.String, NativeVariableModel>
-    , 
-    val `blocks`: Map<kotlin.String, NativeBlockModel>
     
 ){
     
@@ -5906,18 +5904,15 @@ internal object FfiConverterTypeFrameDiff: FfiConverterRustBuffer<FrameDiff> {
     override fun read(buf: ByteBuffer): FrameDiff {
         return FrameDiff(
             FfiConverterMapStringTypeNativeVariableModel.read(buf),
-            FfiConverterMapStringTypeNativeBlockModel.read(buf),
         )
     }
 
     override fun allocationSize(value: FrameDiff) = (
-            FfiConverterMapStringTypeNativeVariableModel.allocationSize(value.`variables`) +
-            FfiConverterMapStringTypeNativeBlockModel.allocationSize(value.`blocks`)
+            FfiConverterMapStringTypeNativeVariableModel.allocationSize(value.`variables`)
     )
 
     override fun write(value: FrameDiff, buf: ByteBuffer) {
             FfiConverterMapStringTypeNativeVariableModel.write(value.`variables`, buf)
-            FfiConverterMapStringTypeNativeBlockModel.write(value.`blocks`, buf)
     }
 }
 
@@ -6299,6 +6294,8 @@ internal data class NativeBlockModel (
     , 
     val `key`: kotlin.String
     , 
+    val `scope`: kotlin.String?
+    , 
     val `visibility`: kotlin.String
     , 
     val `position`: kotlin.Int
@@ -6333,6 +6330,7 @@ internal object FfiConverterTypeNativeBlockModel: FfiConverterRustBuffer<NativeB
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterString.read(buf),
             FfiConverterInt.read(buf),
             FfiConverterMapStringTypeNativeBlockDataModel.read(buf),
@@ -6350,6 +6348,7 @@ internal object FfiConverterTypeNativeBlockModel: FfiConverterRustBuffer<NativeB
             FfiConverterString.allocationSize(value.`slot`) +
             FfiConverterString.allocationSize(value.`keyType`) +
             FfiConverterString.allocationSize(value.`key`) +
+            FfiConverterOptionalString.allocationSize(value.`scope`) +
             FfiConverterString.allocationSize(value.`visibility`) +
             FfiConverterInt.allocationSize(value.`position`) +
             FfiConverterMapStringTypeNativeBlockDataModel.allocationSize(value.`data`) +
@@ -6366,6 +6365,7 @@ internal object FfiConverterTypeNativeBlockModel: FfiConverterRustBuffer<NativeB
             FfiConverterString.write(value.`slot`, buf)
             FfiConverterString.write(value.`keyType`, buf)
             FfiConverterString.write(value.`key`, buf)
+            FfiConverterOptionalString.write(value.`scope`, buf)
             FfiConverterString.write(value.`visibility`, buf)
             FfiConverterInt.write(value.`position`, buf)
             FfiConverterMapStringTypeNativeBlockDataModel.write(value.`data`, buf)
@@ -6432,6 +6432,8 @@ internal object FfiConverterTypeNativeBlockPropertyModel: FfiConverterRustBuffer
 
 internal data class NativeBlockSlotModel (
     val `slot`: kotlin.String
+    , 
+    val `scope`: kotlin.String?
     
 ){
     
@@ -6449,15 +6451,18 @@ internal object FfiConverterTypeNativeBlockSlotModel: FfiConverterRustBuffer<Nat
     override fun read(buf: ByteBuffer): NativeBlockSlotModel {
         return NativeBlockSlotModel(
             FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
     override fun allocationSize(value: NativeBlockSlotModel) = (
-            FfiConverterString.allocationSize(value.`slot`)
+            FfiConverterString.allocationSize(value.`slot`) +
+            FfiConverterOptionalString.allocationSize(value.`scope`)
     )
 
     override fun write(value: NativeBlockSlotModel, buf: ByteBuffer) {
             FfiConverterString.write(value.`slot`, buf)
+            FfiConverterOptionalString.write(value.`scope`, buf)
     }
 }
 
@@ -6919,6 +6924,109 @@ internal object FfiConverterTypeActionLogEvent : FfiConverterRustBuffer<ActionLo
 
 
 
+internal sealed class BlockLogEvent {
+    
+    data class BlockFallback(
+        val `keyType`: kotlin.String, 
+        val `blockKey`: kotlin.String) : BlockLogEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class ScopeMismatch(
+        val `blockKey`: kotlin.String, 
+        val `keyType`: kotlin.String, 
+        val `required`: kotlin.String, 
+        val `provided`: kotlin.String, 
+        val `dropped`: kotlin.Boolean) : BlockLogEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+internal object FfiConverterTypeBlockLogEvent : FfiConverterRustBuffer<BlockLogEvent>{
+    override fun read(buf: ByteBuffer): BlockLogEvent {
+        return when(buf.getInt()) {
+            1 -> BlockLogEvent.BlockFallback(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            2 -> BlockLogEvent.ScopeMismatch(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: BlockLogEvent) = when(value) {
+        is BlockLogEvent.BlockFallback -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`keyType`)
+                + FfiConverterString.allocationSize(value.`blockKey`)
+            )
+        }
+        is BlockLogEvent.ScopeMismatch -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`blockKey`)
+                + FfiConverterString.allocationSize(value.`keyType`)
+                + FfiConverterString.allocationSize(value.`required`)
+                + FfiConverterString.allocationSize(value.`provided`)
+                + FfiConverterBoolean.allocationSize(value.`dropped`)
+            )
+        }
+    }
+
+    override fun write(value: BlockLogEvent, buf: ByteBuffer) {
+        when(value) {
+            is BlockLogEvent.BlockFallback -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`keyType`, buf)
+                FfiConverterString.write(value.`blockKey`, buf)
+                Unit
+            }
+            is BlockLogEvent.ScopeMismatch -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`blockKey`, buf)
+                FfiConverterString.write(value.`keyType`, buf)
+                FfiConverterString.write(value.`required`, buf)
+                FfiConverterString.write(value.`provided`, buf)
+                FfiConverterBoolean.write(value.`dropped`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
 
 internal enum class ErrorType {
     
@@ -7163,8 +7271,6 @@ internal object FfiConverterTypeLocalizationState : FfiConverterRustBuffer<Local
 internal enum class LoggerEventLevel {
     
     DEBUG,
-    INFO,
-    WARNING,
     ERROR;
 
     

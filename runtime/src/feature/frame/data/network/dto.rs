@@ -32,6 +32,7 @@ pub(in crate::feature::frame::data) struct NativeBlockDto {
     pub(in crate::feature::frame::data) slot: Option<String>,
     pub(in crate::feature::frame::data) key_type: Option<String>,
     pub(in crate::feature::frame::data) key: Option<String>,
+    pub(in crate::feature::frame::data) scope: Option<String>,
     pub(in crate::feature::frame::data) visibility_key: Option<String>,
     pub(in crate::feature::frame::data) position: Option<i32>,
     pub(in crate::feature::frame::data) data: Option<Vec<NativeBlockDataDto>>,
@@ -61,6 +62,7 @@ pub(in crate::feature::frame::data) struct NativeBlockDataDto {
 #[derive(Deserialize)]
 pub(in crate::feature::frame::data) struct NativeBlockSlotDto {
     pub(in crate::feature::frame::data) slot: Option<String>,
+    pub(in crate::feature::frame::data) scope: Option<String>,
 }
 
 #[derive(Deserialize)]

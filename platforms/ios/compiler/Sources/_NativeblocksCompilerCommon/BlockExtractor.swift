@@ -341,6 +341,7 @@ public enum BlockExtractor {
                     ? SlotMeta(
                         position: position,
                         slot: slot,
+                        scope: SyntaxUtils.extractScope(from: blockAttribute!).flatMap { $0.isEmpty ? nil : $0 },
                         description: description,
                         deprecated: deprecated,
                         deprecatedReason: deprecatedReason ?? "",

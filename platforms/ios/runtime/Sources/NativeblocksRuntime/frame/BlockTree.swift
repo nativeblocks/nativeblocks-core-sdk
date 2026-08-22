@@ -44,7 +44,6 @@ internal struct NativeFrame: View {
                 error(message)
             }
         }
-        .environment(\.nativeWindowWidthClass, currentWindowWidthClass(verticalSizeClass, horizontalSizeClass))
         .task(id: FrameSetup(instanceName: instanceName, route: route, args: args, stateKey: state.key)) {
             frameViewModel.setupFrame(route: route, args: args, stateKey: state.key)
         }
@@ -69,7 +68,12 @@ private struct RootLifecycle: View {
     var body: some View {
         Group {
             if let rootKey = vm.rootKey {
-                Block(instanceName: instanceName, vm: vm, blockKey: rootKey, listItemIndex: NONE_INDEX)
+                Block(
+                    instanceName: instanceName,
+                    vm: vm,
+                    blockKey: rootKey,
+                    listItemIndex: NONE_INDEX
+                )
                     .task(id: vm.frameUpdateGeneration) {
                         vm.rootEntered(rootKey)
                     }
@@ -99,8 +103,10 @@ private struct Block: View {
                 AnyView(nativeBlock(blockContext))
             } else if let fallbackBlock = vm.blockProvider.getFallbackBlock() {
                 AnyView(fallbackBlock(block.keyType, blockKey))
+                    .onAppear { vm.logBlockFallback(keyType: block.keyType, blockKey: blockKey) }
             } else {
                 InternalFallbackBlock(key: block.keyType)
+                    .onAppear { vm.logBlockFallback(keyType: block.keyType, blockKey: blockKey) }
             }
         } else {
             EmptyView()
@@ -115,11 +121,11 @@ private struct Block: View {
                 vm.variableOf(block.visibility)?.value
             },
             onFindVariable: { data in
-                data?.value
+                vm.variableOf(data?.value ?? "")?.value
             },
             onUpdateVariable: { data, value in
                 guard let data = data else { return }
-                vm.updateBlockData(blockKey: blockKey, dataKey: data.key, value: value)
+                vm.updateVariable(key: data.value, value: value)
             },
             onFindAction: { eventType in
                 vm.actionOf(blockKey: blockKey, eventType: eventType)
@@ -129,7 +135,7 @@ private struct Block: View {
             },
             block: block,
             onSubBlock: { blockKeys, subSlot, itemIndex, _ in
-                AnyView(
+                return AnyView(
                     ForEach(blockKeys[subSlot.slot] ?? [], id: \.self) { childKey in
                         Block(
                             instanceName: instanceName,

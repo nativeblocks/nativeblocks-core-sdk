@@ -24,6 +24,9 @@ public struct NativeBlockModel: Hashable, Codable {
     /// The key associated with this block.
     public let key: String
 
+    /// Scope this block requires from the slot it sits in, nil when it accepts any.
+    public let scope: String?
+
     /// Visibility of the block (e.g., visible, hidden).
     public let visibility: String
 
@@ -100,8 +103,11 @@ public struct NativeBlockSlotModel: Hashable, Codable {
     /// The slot identifier.
     public let slot: String
 
+    /// Scope this slot hands to the blocks inside it, nil when it declares none.
+    public let scope: String?
+
     /// Equality operator to compare two `NativeBlockSlotModel` instances.
     public static func == (lhs: NativeBlockSlotModel, rhs: NativeBlockSlotModel) -> Bool {
-        return lhs.slot == rhs.slot
+        return lhs.slot == rhs.slot && lhs.scope == rhs.scope
     }
 }

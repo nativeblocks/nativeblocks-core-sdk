@@ -868,11 +868,11 @@ package protocol FrameStateManagerProtocol: AnyObject, Sendable {
     
     func logAction(event: ActionLogEvent) 
     
+    func logBlock(event: BlockLogEvent) 
+    
     func release() 
     
     func setupFrame(route: String, args: [String: String], stateKey: String?, observer: FrameStateObserver) async 
-    
-    func updateBlockData(blockKey: String, dataKey: String, value: String) 
     
     func updateBlockProperty(blockKey: String, propertyKey: String, valueMobile: String, valueTablet: String, valueDesktop: String) 
     
@@ -940,6 +940,14 @@ package func logAction(event: ActionLogEvent)  {try! rustCall() {
 }
 }
     
+package func logBlock(event: BlockLogEvent)  {try! rustCall() {
+    uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_block(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeBlockLogEvent_lower(event),$0
+    )
+}
+}
+    
 package func release()  {try! rustCall() {
     uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(
             self.uniffiCloneHandle(),$0
@@ -963,16 +971,6 @@ package func setupFrame(route: String, args: [String: String], stateKey: String?
             errorHandler: nil
             
         )
-}
-    
-package func updateBlockData(blockKey: String, dataKey: String, value: String)  {try! rustCall() {
-    uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_data(
-            self.uniffiCloneHandle(),
-        FfiConverterString.lower(blockKey),
-        FfiConverterString.lower(dataKey),
-        FfiConverterString.lower(value),$0
-    )
-}
 }
     
 package func updateBlockProperty(blockKey: String, propertyKey: String, valueMobile: String, valueTablet: String, valueDesktop: String)  {try! rustCall() {
@@ -2977,13 +2975,11 @@ package func FfiConverterTypeScriptEngine_lower(_ value: ScriptEngine) -> UInt64
 
 package struct FrameDiff: Equatable, Hashable {
     package let variables: [String: NativeVariableModel]
-    package let blocks: [String: NativeBlockModel]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    package init(variables: [String: NativeVariableModel], blocks: [String: NativeBlockModel]) {
+    package init(variables: [String: NativeVariableModel]) {
         self.variables = variables
-        self.blocks = blocks
     }
 
     
@@ -3002,14 +2998,12 @@ package struct FfiConverterTypeFrameDiff: FfiConverterRustBuffer {
     package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FrameDiff {
         return
             try FrameDiff(
-                variables: FfiConverterDictionaryStringTypeNativeVariableModel.read(from: &buf), 
-                blocks: FfiConverterDictionaryStringTypeNativeBlockModel.read(from: &buf)
+                variables: FfiConverterDictionaryStringTypeNativeVariableModel.read(from: &buf)
         )
     }
 
     package static func write(_ value: FrameDiff, into buf: inout [UInt8]) {
         FfiConverterDictionaryStringTypeNativeVariableModel.write(value.variables, into: &buf)
-        FfiConverterDictionaryStringTypeNativeBlockModel.write(value.blocks, into: &buf)
     }
 }
 
@@ -3491,6 +3485,7 @@ package struct NativeBlockModel: Equatable, Hashable {
     package let slot: String
     package let keyType: String
     package let key: String
+    package let scope: String?
     package let visibility: String
     package let position: Int32
     package let data: [String: NativeBlockDataModel]
@@ -3500,7 +3495,7 @@ package struct NativeBlockModel: Equatable, Hashable {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    package init(id: String, parentId: String, parentKey: String, version: Int32, slot: String, keyType: String, key: String, visibility: String, position: Int32, data: [String: NativeBlockDataModel], properties: [String: NativeBlockPropertyModel], slots: [String: NativeBlockSlotModel], subKeys: [String: [String]]) {
+    package init(id: String, parentId: String, parentKey: String, version: Int32, slot: String, keyType: String, key: String, scope: String?, visibility: String, position: Int32, data: [String: NativeBlockDataModel], properties: [String: NativeBlockPropertyModel], slots: [String: NativeBlockSlotModel], subKeys: [String: [String]]) {
         self.id = id
         self.parentId = parentId
         self.parentKey = parentKey
@@ -3508,6 +3503,7 @@ package struct NativeBlockModel: Equatable, Hashable {
         self.slot = slot
         self.keyType = keyType
         self.key = key
+        self.scope = scope
         self.visibility = visibility
         self.position = position
         self.data = data
@@ -3539,6 +3535,7 @@ package struct FfiConverterTypeNativeBlockModel: FfiConverterRustBuffer {
                 slot: FfiConverterString.read(from: &buf), 
                 keyType: FfiConverterString.read(from: &buf), 
                 key: FfiConverterString.read(from: &buf), 
+                scope: FfiConverterOptionString.read(from: &buf), 
                 visibility: FfiConverterString.read(from: &buf), 
                 position: FfiConverterInt32.read(from: &buf), 
                 data: FfiConverterDictionaryStringTypeNativeBlockDataModel.read(from: &buf), 
@@ -3556,6 +3553,7 @@ package struct FfiConverterTypeNativeBlockModel: FfiConverterRustBuffer {
         FfiConverterString.write(value.slot, into: &buf)
         FfiConverterString.write(value.keyType, into: &buf)
         FfiConverterString.write(value.key, into: &buf)
+        FfiConverterOptionString.write(value.scope, into: &buf)
         FfiConverterString.write(value.visibility, into: &buf)
         FfiConverterInt32.write(value.position, into: &buf)
         FfiConverterDictionaryStringTypeNativeBlockDataModel.write(value.data, into: &buf)
@@ -3649,11 +3647,13 @@ package func FfiConverterTypeNativeBlockPropertyModel_lower(_ value: NativeBlock
 
 package struct NativeBlockSlotModel: Equatable, Hashable {
     package let slot: String
+    package let scope: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    package init(slot: String) {
+    package init(slot: String, scope: String?) {
         self.slot = slot
+        self.scope = scope
     }
 
     
@@ -3672,12 +3672,14 @@ package struct FfiConverterTypeNativeBlockSlotModel: FfiConverterRustBuffer {
     package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NativeBlockSlotModel {
         return
             try NativeBlockSlotModel(
-                slot: FfiConverterString.read(from: &buf)
+                slot: FfiConverterString.read(from: &buf), 
+                scope: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     package static func write(_ value: NativeBlockSlotModel, into buf: inout [UInt8]) {
         FfiConverterString.write(value.slot, into: &buf)
+        FfiConverterOptionString.write(value.scope, into: &buf)
     }
 }
 
@@ -4232,6 +4234,84 @@ package func FfiConverterTypeActionLogEvent_lower(_ value: ActionLogEvent) -> Ru
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
+package enum BlockLogEvent: Equatable, Hashable {
+    
+    case blockFallback(keyType: String, blockKey: String
+    )
+    case scopeMismatch(blockKey: String, keyType: String, required: String, provided: String, dropped: Bool
+    )
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension BlockLogEvent: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package struct FfiConverterTypeBlockLogEvent: FfiConverterRustBuffer {
+    typealias SwiftType = BlockLogEvent
+
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlockLogEvent {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .blockFallback(keyType: try FfiConverterString.read(from: &buf), blockKey: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 2: return .scopeMismatch(blockKey: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), required: try FfiConverterString.read(from: &buf), provided: try FfiConverterString.read(from: &buf), dropped: try FfiConverterBool.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    package static func write(_ value: BlockLogEvent, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .blockFallback(keyType,blockKey):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(keyType, into: &buf)
+            FfiConverterString.write(blockKey, into: &buf)
+            
+        
+        case let .scopeMismatch(blockKey,keyType,required,provided,dropped):
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(blockKey, into: &buf)
+            FfiConverterString.write(keyType, into: &buf)
+            FfiConverterString.write(required, into: &buf)
+            FfiConverterString.write(provided, into: &buf)
+            FfiConverterBool.write(dropped, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeBlockLogEvent_lift(_ buf: RustBuffer) throws -> BlockLogEvent {
+    return try FfiConverterTypeBlockLogEvent.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeBlockLogEvent_lower(_ value: BlockLogEvent) -> RustBuffer {
+    return FfiConverterTypeBlockLogEvent.lower(value)
+}
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 package enum ErrorType: Equatable, Hashable {
     
     case network
@@ -4533,8 +4613,6 @@ package func FfiConverterTypeLocalizationState_lower(_ value: LocalizationState)
 package enum LoggerEventLevel: Equatable, Hashable {
     
     case debug
-    case info
-    case warning
     case error
 
 
@@ -4559,11 +4637,7 @@ package struct FfiConverterTypeLoggerEventLevel: FfiConverterRustBuffer {
         
         case 1: return .debug
         
-        case 2: return .info
-        
-        case 3: return .warning
-        
-        case 4: return .error
+        case 2: return .error
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -4577,16 +4651,8 @@ package struct FfiConverterTypeLoggerEventLevel: FfiConverterRustBuffer {
             writeInt(&buf, Int32(1))
         
         
-        case .info:
-            writeInt(&buf, Int32(2))
-        
-        
-        case .warning:
-            writeInt(&buf, Int32(3))
-        
-        
         case .error:
-            writeInt(&buf, Int32(4))
+            writeInt(&buf, Int32(2))
         
         }
     }
@@ -5689,16 +5755,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_frame_state() != 24260) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager() != 39836) {
+    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager() != 2735) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_frameclient_sync_frame() != 57963) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change() != 21114) {
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_action() != 55091) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_action() != 55091) {
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_block() != 25667) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_release() != 7950) {
@@ -5707,13 +5773,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 31603) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_data() != 26957) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property() != 32460) {
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property() != 19031) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable() != 34459) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change() != 21114) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_get_localization() != 34135) {

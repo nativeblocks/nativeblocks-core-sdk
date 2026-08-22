@@ -28,6 +28,18 @@ public enum SyntaxUtils {
         return attrs
     }
 
+    public static func extractScope(from attribute: AttributeSyntax) -> String? {
+        guard let arguments = attribute.arguments?.as(LabeledExprListSyntax.self) else { return nil }
+        for argument in arguments where argument.label?.text == "scope" {
+            if let segments = argument.expression.as(StringLiteralExprSyntax.self)?.segments.as(
+                StringLiteralSegmentListSyntax.self)
+            {
+                return segments.first?.as(StringSegmentSyntax.self)?.content.text
+            }
+        }
+        return nil
+    }
+
     static func extractDescription(from attribute: AttributeSyntax) -> String? {
         guard let arguments = attribute.arguments?.as(LabeledExprListSyntax.self) else { return nil }
         for argument in arguments where argument.label?.text == "description" {

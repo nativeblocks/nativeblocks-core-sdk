@@ -1,6 +1,7 @@
 package io.nativeblocks.runtime.frame
 
 import io.nativeblocks.runtime.ffi.ActionLogEvent
+import io.nativeblocks.runtime.ffi.BlockLogEvent
 import io.nativeblocks.runtime.ffi.FrameChangeType
 import io.nativeblocks.runtime.ffi.FrameDiff
 import io.nativeblocks.runtime.ffi.FrameFull
@@ -18,7 +19,6 @@ internal interface FrameStateBridge {
 
     fun updateVariable(key: String, value: String)
 
-    fun updateBlockData(blockKey: String, dataKey: String, value: String)
 
     fun updateBlockProperty(
         blockKey: String,
@@ -29,6 +29,8 @@ internal interface FrameStateBridge {
     )
 
     fun logAction(event: ActionLogEvent)
+
+    fun logBlock(event: BlockLogEvent)
 
     fun releaseFrame()
 }
@@ -58,10 +60,6 @@ internal class FrameStateBridgeImpl(
         frameStateManager.updateVariable(key, value)
     }
 
-    override fun updateBlockData(blockKey: String, dataKey: String, value: String) {
-        frameStateManager.updateBlockData(blockKey, dataKey, value)
-    }
-
     override fun updateBlockProperty(
         blockKey: String,
         propertyKey: String,
@@ -80,6 +78,10 @@ internal class FrameStateBridgeImpl(
 
     override fun logAction(event: ActionLogEvent) {
         frameStateManager.logAction(event)
+    }
+
+    override fun logBlock(event: BlockLogEvent) {
+        frameStateManager.logBlock(event)
     }
 
     override fun releaseFrame() {

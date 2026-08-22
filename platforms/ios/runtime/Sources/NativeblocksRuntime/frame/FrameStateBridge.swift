@@ -12,8 +12,6 @@ internal protocol FrameStateBridge {
 
     func updateVariable(key: String, value: String)
 
-    func updateBlockData(blockKey: String, dataKey: String, value: String)
-
     func updateBlockProperty(
         blockKey: String,
         propertyKey: String,
@@ -23,6 +21,8 @@ internal protocol FrameStateBridge {
     )
 
     func logAction(event: ActionLogEvent)
+
+    func logBlock(event: BlockLogEvent)
 
     func releaseFrame()
 }
@@ -54,10 +54,6 @@ internal final class FrameStateBridgeImpl: FrameStateBridge {
         frameStateManager.updateVariable(key: key, value: value)
     }
 
-    func updateBlockData(blockKey: String, dataKey: String, value: String) {
-        frameStateManager.updateBlockData(blockKey: blockKey, dataKey: dataKey, value: value)
-    }
-
     func updateBlockProperty(
         blockKey: String,
         propertyKey: String,
@@ -76,6 +72,10 @@ internal final class FrameStateBridgeImpl: FrameStateBridge {
 
     func logAction(event: ActionLogEvent) {
         frameStateManager.logAction(event: event)
+    }
+
+    func logBlock(event: BlockLogEvent) {
+        frameStateManager.logBlock(event: event)
     }
 
     func releaseFrame() {

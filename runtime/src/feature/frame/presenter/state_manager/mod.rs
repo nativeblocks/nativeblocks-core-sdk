@@ -1,8 +1,11 @@
+mod action;
 mod api;
-mod manager;
+mod block;
 pub mod model;
 pub mod observer;
+mod snapshot;
 mod state;
+mod variable;
 
-pub use manager::FrameStateManager;
-pub(super) use state::FrameSnapshot;
+pub use api::FrameStateManager;
+pub(super) use snapshot::FrameSnapshot;

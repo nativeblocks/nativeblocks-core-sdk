@@ -178,6 +178,7 @@ public struct EventMeta: NativeMeta {
 public struct SlotMeta: NativeMeta {
     public var position: Int
     public var slot: String
+    public var scope: String?
     public var description: String
     public var deprecated: Bool
     public var deprecatedReason: String
@@ -190,6 +191,7 @@ public struct SlotMeta: NativeMeta {
     init(
         position: Int,
         slot: String,
+        scope: String?,
         description: String,
         deprecated: Bool,
         deprecatedReason: String,
@@ -201,6 +203,7 @@ public struct SlotMeta: NativeMeta {
     ) {
         self.position = position
         self.slot = slot
+        self.scope = scope
         self.description = description
         self.hasBlockIndex = hasBlockIndex
         self.hasBlockScope = hasBlockScope
@@ -212,7 +215,7 @@ public struct SlotMeta: NativeMeta {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case slot, description, deprecated, deprecatedReason
+        case slot, scope, description, deprecated, deprecatedReason
     }
 }
 
