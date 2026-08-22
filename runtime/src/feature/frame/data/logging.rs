@@ -19,7 +19,7 @@ pub(super) fn log_sync_success(
     dispatch(
         logger,
         sdk_config,
-        LoggerEventLevel::Info,
+        LoggerEventLevel::Debug,
         "Successfully synced frame",
         params,
     );

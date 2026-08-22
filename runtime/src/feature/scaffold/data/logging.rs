@@ -22,7 +22,7 @@ pub(super) fn log_success(
     dispatch(
         logger,
         sdk_config,
-        LoggerEventLevel::Info,
+        LoggerEventLevel::Debug,
         "Successfully fetched scaffold",
         params,
     );

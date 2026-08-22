@@ -29,7 +29,7 @@ pub(super) fn log_success(
     dispatch(
         logger,
         sdk_config,
-        LoggerEventLevel::Info,
+        LoggerEventLevel::Debug,
         &format!("Get experiment with key: {key}"),
         params,
     );

@@ -27,8 +27,6 @@ pub(crate) fn error_parameters(error: &ErrorModel) -> HashMap<String, String> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
 pub enum LoggerEventLevel {
     Debug,
-    Info,
-    Warning,
     Error,
 }
 

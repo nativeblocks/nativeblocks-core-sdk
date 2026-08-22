@@ -30,7 +30,7 @@ impl GlobalParameterClient {
 impl GlobalParameterClient {
     pub fn set(&self, parameters: HashMap<String, String>) {
         self.globals.set(parameters.clone());
-        self.log(LoggerEventLevel::Info, "Global parameters set", parameters);
+        self.log(LoggerEventLevel::Debug, "Global parameters set", parameters);
     }
 
     pub fn get(&self) -> HashMap<String, String> {

@@ -115,7 +115,7 @@ impl FrameLogger {
                 ]),
             ),
             ActionLogEvent::TriggerFallback { key_type, name } => self.dispatch(
-                LoggerEventLevel::Warning,
+                LoggerEventLevel::Error,
                 FALLBACK_ACTION,
                 format!("No action registered for '{key_type}'"),
                 HashMap::from([

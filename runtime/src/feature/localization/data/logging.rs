@@ -22,7 +22,7 @@ pub(super) fn log_sync_success(
     dispatch(
         logger,
         sdk_config,
-        LoggerEventLevel::Info,
+        LoggerEventLevel::Debug,
         keys::tag::LOCALIZATION_SYNC_STATE,
         "Localization synced",
         params,
@@ -71,7 +71,7 @@ pub(super) fn log_load_success(
     dispatch(
         logger,
         sdk_config,
-        LoggerEventLevel::Info,
+        LoggerEventLevel::Debug,
         keys::tag::LOCALIZATION_STATE,
         "Localization loaded",
         params,
@@ -120,7 +120,7 @@ pub(super) fn log_language_set(
     dispatch(
         logger,
         sdk_config,
-        LoggerEventLevel::Info,
+        LoggerEventLevel::Debug,
         keys::tag::LOCALIZATION_STATE,
         "Language changed",
         params,
