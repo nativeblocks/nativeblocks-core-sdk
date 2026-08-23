@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package io.nativeblocks.runtime.api.provider.action.defaults
 
 import io.nativeblocks.runtime.api.provider.action.ActionContext
@@ -16,7 +14,7 @@ import kotlinx.coroutines.withContext
  *
  * ## Configuration
  *
- * **Properties:**
+ * **Data:**
  * - `script`: The JavaScript code to execute.
  *
  * ## Dynamic Placeholders
@@ -61,7 +59,8 @@ internal class NativeScriptAction : INativeAction {
     override fun handle(actionContext: ActionContext) {
         actionContext.coroutineScope.launch {
             val trigger = actionContext.trigger
-            val script = trigger?.properties?.get("script")?.value.orEmpty()
+            val scriptKey = trigger?.data?.get("script")?.value.orEmpty()
+            val script = actionContext.onFindVariable(scriptKey)?.value.orEmpty()
 
             if (script.isNotEmpty()) {
                 val processedScript =

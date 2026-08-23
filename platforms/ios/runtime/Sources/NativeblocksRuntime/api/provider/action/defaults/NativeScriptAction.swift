@@ -8,7 +8,7 @@ internal let SCRIPT_NEXT_EVENT = "NEXT"
 ///
 /// ## Configuration
 ///
-/// **Properties:**
+/// **Data:**
 /// - `script`: The JavaScript code to execute.
 ///
 /// ## Dynamic Placeholders
@@ -30,7 +30,8 @@ internal final class NativeScriptAction: INativeAction {
     func handle(actionContext: ActionContext) {
         Task.detached {
             let trigger = actionContext.trigger
-            let script = trigger?.properties["script"]?.value ?? ""
+            let scriptKey = trigger?.data["script"]?.value ?? ""
+            let script = actionContext.onFindVariable(scriptKey)?.value ?? ""
 
             if !script.isEmpty {
                 let processedScript = script.replacingOccurrences(
