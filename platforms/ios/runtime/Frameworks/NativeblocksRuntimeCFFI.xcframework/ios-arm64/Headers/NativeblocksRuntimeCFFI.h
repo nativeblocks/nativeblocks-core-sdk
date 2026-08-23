@@ -304,13 +304,6 @@ typedef void (*UniffiCallbackInterfaceScriptBridgeMethod1)(uint64_t, RustBuffer,
     );
 
 #endif
-#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_SCRIPT_BRIDGE_METHOD2
-#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_SCRIPT_BRIDGE_METHOD2
-typedef void (*UniffiCallbackInterfaceScriptBridgeMethod2)(uint64_t, RustBuffer, RustBuffer, RustBuffer, RustBuffer, RustBuffer, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
-    );
-
-#endif
 #ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_LOGGER
 #define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_LOGGER
 typedef struct UniffiVTableCallbackInterfaceLogger {
@@ -357,7 +350,6 @@ typedef struct UniffiVTableCallbackInterfaceScriptBridge {
     UniffiCallbackInterfaceClone _Nonnull uniffiClone;
     UniffiCallbackInterfaceScriptBridgeMethod0 _Nonnull getVariable;
     UniffiCallbackInterfaceScriptBridgeMethod1 _Nonnull updateVariable;
-    UniffiCallbackInterfaceScriptBridgeMethod2 _Nonnull updateBlockProperty;
 } UniffiVTableCallbackInterfaceScriptBridge;
 
 #endif
@@ -484,11 +476,6 @@ void uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(uint64_t pt
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_FRAMESTATEMANAGER_SETUP_FRAME
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_FRAMESTATEMANAGER_SETUP_FRAME
 uint64_t uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(uint64_t ptr, RustBuffer route, RustBuffer args, RustBuffer state_key, uint64_t observer
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_FRAMESTATEMANAGER_UPDATE_BLOCK_PROPERTY
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_FRAMESTATEMANAGER_UPDATE_BLOCK_PROPERTY
-void uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_property(uint64_t ptr, RustBuffer block_key, RustBuffer property_key, RustBuffer _value_mobile, RustBuffer _value_tablet, RustBuffer _value_desktop, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_FRAMESTATEMANAGER_UPDATE_VARIABLE
@@ -725,11 +712,6 @@ RustBuffer uniffi_nativeblocks_runtime_fn_method_scriptbridge_get_variable(uint6
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_SCRIPTBRIDGE_UPDATE_VARIABLE
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_SCRIPTBRIDGE_UPDATE_VARIABLE
 void uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_variable(uint64_t ptr, RustBuffer key, RustBuffer value, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_SCRIPTBRIDGE_UPDATE_BLOCK_PROPERTY
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_SCRIPTBRIDGE_UPDATE_BLOCK_PROPERTY
-void uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_block_property(uint64_t ptr, RustBuffer block_key, RustBuffer property_key, RustBuffer mobile, RustBuffer tablet, RustBuffer desktop, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_INIT_CALLBACK_VTABLE_LOGGER
@@ -1137,12 +1119,6 @@ uint16_t uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_fra
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_FRAMESTATEMANAGER_UPDATE_BLOCK_PROPERTY
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_FRAMESTATEMANAGER_UPDATE_BLOCK_PROPERTY
-uint16_t uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_FRAMESTATEMANAGER_UPDATE_VARIABLE
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_FRAMESTATEMANAGER_UPDATE_VARIABLE
 uint16_t uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable(void
@@ -1284,12 +1260,6 @@ uint16_t uniffi_nativeblocks_runtime_checksum_method_scriptbridge_get_variable(v
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_SCRIPTBRIDGE_UPDATE_VARIABLE
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_SCRIPTBRIDGE_UPDATE_VARIABLE
 uint16_t uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_SCRIPTBRIDGE_UPDATE_BLOCK_PROPERTY
-#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_SCRIPTBRIDGE_UPDATE_BLOCK_PROPERTY
-uint16_t uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_block_property(void
     
 );
 #endif

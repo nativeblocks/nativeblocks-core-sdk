@@ -128,20 +128,6 @@ public enum SyntaxUtils {
         return nil
     }
 
-    static func extractThen(from attribute: AttributeSyntax) -> String? {
-        guard let arguments = attribute.arguments?.as(LabeledExprListSyntax.self) else {
-            return nil
-        }
-
-        for argument in arguments where argument.label?.text == "then" {
-            if let declName = argument.expression.as(MemberAccessExprSyntax.self)?.declName.as(
-                DeclReferenceExprSyntax.self)
-            {
-                return declName.baseName.text
-            }
-        }
-        return nil
-    }
 
     static func extractDefaultValue(from initializer: InitializerClauseSyntax?) -> String {
         guard let initializer = initializer?.value else { return "" }

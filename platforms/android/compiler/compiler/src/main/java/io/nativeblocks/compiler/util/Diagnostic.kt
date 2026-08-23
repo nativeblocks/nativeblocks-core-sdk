@@ -36,14 +36,6 @@ object Diagnostic {
                 return IllegalArgumentException("'@NativeActionFunction' Requires one parameter data class annotated with '@NativeActionParameter'")
             }
 
-            is DiagnosticType.ThenUniqueness -> {
-                return IllegalArgumentException("NativeActionEvent supports only NEXT, FAILURE, SUCCESS, and END events, and each must be used exactly once without repetition")
-            }
-
-            is DiagnosticType.ThenConflict -> {
-                return IllegalArgumentException("NativeActionEvent containing NEXT or END cannot also contain SUCCESS or FAILURE")
-            }
-
             is DiagnosticType.SlotMustBeComposable -> {
                 return IllegalArgumentException("Slot should be a composable function")
             }
@@ -64,8 +56,6 @@ sealed interface DiagnosticType {
     data object ConflictAnnotation : DiagnosticType
     data object RequireFunctionAnnotation : DiagnosticType
     data object RequireFunctionParameterAnnotation : DiagnosticType
-    data object ThenUniqueness : DiagnosticType
-    data object ThenConflict : DiagnosticType
     data object SlotMustBeComposable : DiagnosticType
     data object SlotComposableIndex : DiagnosticType
 }

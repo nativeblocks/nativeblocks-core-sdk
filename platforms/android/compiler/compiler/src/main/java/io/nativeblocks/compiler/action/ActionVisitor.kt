@@ -41,7 +41,6 @@ internal class ActionVisitor(
         val importNativeBlockModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeBlockModel")
         val importNativeActionModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionModel")
         val importNativeActionTriggerModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionTriggerModel")
-        val importNativeActionTriggerThen = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionTriggerThen")
         val importNativeActionTriggerPropertyModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionTriggerPropertyModel")
         val importNativeActionTriggerDataModel = ClassName("io.nativeblocks.runtime.api.provider.model", "NativeActionTriggerDataModel")
         val importCoroutinesLaunch = ClassName("kotlinx.coroutines", "launch")
@@ -120,27 +119,7 @@ internal class ActionVisitor(
                     .addStatement("actionContext.onUpdateVariable.invoke(${dataBound}Updated)")
                     .endControlFlow()
             }
-            when (it.then) {
-                "SUCCESS" -> {
-                    func.beginControlFlow("actionContext.trigger?.let")
-                        .addStatement("actionContext.onHandleSuccessNextTrigger.invoke(it)")
-                        .endControlFlow()
-                }
-
-                "FAILURE" -> {
-                    func.beginControlFlow("actionContext.trigger?.let")
-                        .addStatement("actionContext.onHandleFailureNextTrigger.invoke(it)")
-                        .endControlFlow()
-                }
-
-                "NEXT" -> {
-                    func.beginControlFlow("actionContext.trigger?.let")
-                        .addStatement("actionContext.onHandleNextTrigger.invoke(it)")
-                        .endControlFlow()
-                }
-
-                "END" -> {}
-            }
+            func.addStatement("actionContext.onHandleEvent.invoke(\"${it.event}\")")
             func.addStatement("},")
         }
         func.addCode(")")
@@ -156,7 +135,6 @@ internal class ActionVisitor(
             .addImport(importNativeBlockModel, "")
             .addImport(importNativeActionModel, "")
             .addImport(importNativeActionTriggerModel, "")
-            .addImport(importNativeActionTriggerThen, "")
             .addImport(importNativeActionTriggerPropertyModel, "")
             .addImport(importNativeActionTriggerDataModel, "")
             .addImport(importCoroutinesLaunch, "")

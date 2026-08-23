@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Weak};
 
-use crate::feature::frame::domain::model::NativeBlockModel;
+use crate::feature::frame::domain::model::{NativeActionModel, NativeBlockModel};
 use crate::feature::frame::domain::repository::{FrameRepository, FrameResult};
 use crate::feature::frame::presenter::logging::FrameLogger;
 use crate::feature::frame::presenter::state_manager::model::{
@@ -130,6 +130,7 @@ impl FrameStateManager {
             frame_full(
                 &internal_state,
                 block::render(&internal_state, &self.logger),
+                action::render(&internal_state, &self.logger),
             )
         };
         full.restored = snapshot.is_some();
@@ -140,13 +141,17 @@ impl FrameStateManager {
     }
 }
 
-fn frame_full(state: &InternalState, blocks: HashMap<String, NativeBlockModel>) -> FrameFull {
+fn frame_full(
+    state: &InternalState,
+    blocks: HashMap<String, NativeBlockModel>,
+    actions: HashMap<String, Vec<NativeActionModel>>,
+) -> FrameFull {
     return FrameFull {
         state: state.state.clone(),
         root_key: state.root_key.clone(),
         blocks,
         variables: state.variables.clone(),
-        actions: action::all(state),
+        actions,
         restored: false,
     };
 }
@@ -180,17 +185,5 @@ impl FrameStateManager {
 
     pub fn update_variable(&self, key: String, value: String) {
         self.change_variable(&key, value);
-    }
-
-    #[deprecated(note = "Properties are being replaced by data; update the variable instead.")]
-    pub fn update_block_property(
-        &self,
-        block_key: String,
-        property_key: String,
-        _value_mobile: String,
-        _value_tablet: String,
-        _value_desktop: String,
-    ) {
-        self.logger.block_property_write(&block_key, &property_key);
     }
 }

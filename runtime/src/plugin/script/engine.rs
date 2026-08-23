@@ -3,7 +3,7 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use crate::plugin::script::ScriptEngine;
-use rquickjs::{CatchResultExt, Coerced, Context, Ctx, Exception, Function, Object, Runtime};
+use rquickjs::{CatchResultExt, Coerced, Context, Ctx, Exception, Function, Runtime};
 
 const PRELUDE: &str = include_str!("nb-common.js");
 
@@ -33,14 +33,6 @@ pub struct ScriptResult {
 pub trait ScriptBridge: Send + Sync {
     fn get_variable(&self, key: String) -> Option<String>;
     fn update_variable(&self, key: String, value: String);
-    fn update_block_property(
-        &self,
-        block_key: String,
-        property_key: String,
-        mobile: Option<String>,
-        tablet: Option<String>,
-        desktop: Option<String>,
-    );
 }
 
 #[uniffi::export]
@@ -124,20 +116,6 @@ fn bind_host_functions(
         Function::new(ctx.clone(), move |key: String, value: Coerced<String>| {
             update.update_variable(key, value.0)
         })?,
-    )?;
-
-    let block = bridge.clone();
-    globals.set(
-        "updateBlockProperties",
-        Function::new(
-            ctx.clone(),
-            move |block_key: String, property_key: String, values: Object| {
-                let mobile: Option<String> = values.get("mobile").unwrap_or(None);
-                let tablet: Option<String> = values.get("tablet").unwrap_or(None);
-                let desktop: Option<String> = values.get("desktop").unwrap_or(None);
-                block.update_block_property(block_key, property_key, mobile, tablet, desktop)
-            },
-        )?,
     )?;
 
     globals.set(

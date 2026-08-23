@@ -92,30 +92,7 @@ enum ActionCreator {
                             }
                             """
                         }.joined())
-                        \({ switch event.then {
-                        case "SUCCESS":
-                            return
-                                """
-                                if actionContext.trigger != nil {
-                                    actionContext.onHandleSuccessNextTrigger(actionContext.trigger!)
-                                }
-                                """
-                        case "FAILURE":
-                            return
-                                """
-                                if actionContext.trigger != nil {
-                                    actionContext.onHandleFailureNextTrigger(actionContext.trigger!)
-                                }
-                                """
-                        case "NEXT":
-                            return
-                                """
-                                if actionContext.trigger != nil {
-                                    actionContext.onHandleNextTrigger(actionContext.trigger!)
-                                }
-                                """
-                        default: return ""
-                        }}())
+                        actionContext.onHandleEvent("\(event.event)")
                         }
                         """
                     )

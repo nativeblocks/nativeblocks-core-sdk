@@ -4,15 +4,15 @@ use crate::feature::frame::presenter::state_manager::model::{
 use crate::library::environment::model::SdkConfig;
 use crate::plugin::logger::keys::parameter::{
     ACTION_NAME, BLOCK_KEY, ERROR_MESSAGE, EVENT_NAME, FRAME_ROUTE, KEY, KEY_TYPE, PROVIDED_SCOPE,
-    REQUIRED_SCOPE, STATE, THEN, TRIGGER_NAME,
+    REQUIRED_SCOPE, STATE, TRIGGER_NAME,
 };
 use crate::plugin::logger::keys::state::{
-    ACTION_EVENT_IGNORED, ACTION_EVENT_TRIGGERED, BLOCK_SCOPE_MISMATCH, FALLBACK_TRIGGER,
-    FRAME_LOAD_FAILED, FRAME_LOAD_SUCCEED, FRAME_LOADING, TRIGGER_EXECUTED,
-    FALLBACK_BLOCK as FALLBACK_BLOCK_STATE,
+    ACTION_EVENT_IGNORED, ACTION_EVENT_TRIGGERED, ACTION_SCOPE_MISMATCH, BLOCK_SCOPE_MISMATCH,
+    FALLBACK_BLOCK as FALLBACK_BLOCK_STATE, FALLBACK_TRIGGER, FRAME_LOAD_FAILED,
+    FRAME_LOAD_SUCCEED, FRAME_LOADING, TRIGGER_EXECUTED,
 };
 use crate::plugin::logger::keys::tag::{
-    BLOCK_CHANGE, BLOCK_SCOPE, FALLBACK_ACTION, FALLBACK_BLOCK, FRAME_STATE, HANDLE_ACTION,
+    ACTION_SCOPE, BLOCK_SCOPE, FALLBACK_ACTION, FALLBACK_BLOCK, FRAME_STATE, HANDLE_ACTION,
 };
 use crate::plugin::logger::{LoggerEventLevel, NativeLoggerProvider};
 use std::collections::HashMap;
@@ -108,7 +108,7 @@ impl FrameLogger {
             ActionLogEvent::TriggerExecuted {
                 name,
                 key_type,
-                then,
+                event,
             } => self.dispatch(
                 LoggerEventLevel::Debug,
                 HANDLE_ACTION,
@@ -117,7 +117,7 @@ impl FrameLogger {
                     (STATE.to_string(), TRIGGER_EXECUTED.to_string()),
                     (TRIGGER_NAME.to_string(), name),
                     (KEY_TYPE.to_string(), key_type),
-                    (THEN.to_string(), then),
+                    (EVENT_NAME.to_string(), event),
                 ]),
             ),
             ActionLogEvent::TriggerFallback { key_type, name } => self.dispatch(
@@ -128,6 +128,36 @@ impl FrameLogger {
                     (STATE.to_string(), FALLBACK_TRIGGER.to_string()),
                     (KEY_TYPE.to_string(), key_type),
                     (TRIGGER_NAME.to_string(), name),
+                ]),
+            ),
+            ActionLogEvent::ScopeMismatch {
+                trigger_name,
+                key_type,
+                required,
+                provided,
+                dropped,
+            } => self.dispatch(
+                if dropped {
+                    LoggerEventLevel::Error
+                } else {
+                    LoggerEventLevel::Debug
+                },
+                ACTION_SCOPE,
+                if dropped {
+                    format!(
+                        "Trigger '{trigger_name}' requires '{required}' scope but sits under an event providing '{provided}', dropped"
+                    )
+                } else {
+                    format!(
+                        "Trigger '{trigger_name}' requires '{required}' scope but its parent event declares none, running without it"
+                    )
+                },
+                HashMap::from([
+                    (STATE.to_string(), ACTION_SCOPE_MISMATCH.to_string()),
+                    (TRIGGER_NAME.to_string(), trigger_name),
+                    (KEY_TYPE.to_string(), key_type),
+                    (REQUIRED_SCOPE.to_string(), required),
+                    (PROVIDED_SCOPE.to_string(), provided),
                 ]),
             ),
         }
@@ -205,24 +235,6 @@ impl FrameLogger {
             FRAME_STATE,
             format!("Variable '{key}' is a global or route argument and can not be updated"),
             HashMap::new(),
-        );
-    }
-
-    pub(crate) fn block_property_write(&self, block_key: &str, property_key: &str) {
-        if !self.enabled() {
-            return;
-        }
-        self.dispatch(
-            LoggerEventLevel::Error,
-            BLOCK_CHANGE,
-            format!(
-                "Property '{property_key}' of block '{block_key}' was not changed. Properties are \
-                 being replaced by data: update the variable the block reads instead."
-            ),
-            HashMap::from([
-                (BLOCK_KEY.to_string(), block_key.to_string()),
-                (KEY.to_string(), property_key.to_string()),
-            ]),
         );
     }
 

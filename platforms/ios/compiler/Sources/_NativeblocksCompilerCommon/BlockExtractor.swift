@@ -252,6 +252,7 @@ public enum BlockExtractor {
                         kind: .block,
                         position: position,
                         event: event,
+                        scope: nil,
                         description: description,
                         deprecated: deprecated,
                         deprecatedReason: deprecatedReason ?? "",

@@ -5,23 +5,17 @@ internal final class ActionTree {
 
     private let instanceName: String
     private let onFindVariable: (String) -> NativeVariableModel?
-    private let onFindBlock: (String) -> NativeBlockModel?
-    private let onChangeBlock: (String, String, String, String, String) -> Void
     private let onVariableChange: (NativeVariableModel) -> Void
     private let onLog: (ActionLogEvent) -> Void
 
     init(
         instanceName: String,
         onFindVariable: @escaping (String) -> NativeVariableModel?,
-        onFindBlock: @escaping (String) -> NativeBlockModel?,
-        onChangeBlock: @escaping (String, String, String, String, String) -> Void,
         onVariableChange: @escaping (NativeVariableModel) -> Void,
         onLog: @escaping (ActionLogEvent) -> Void
     ) {
         self.instanceName = instanceName
         self.onFindVariable = onFindVariable
-        self.onFindBlock = onFindBlock
-        self.onChangeBlock = onChangeBlock
         self.onVariableChange = onVariableChange
         self.onLog = onLog
     }
@@ -80,7 +74,7 @@ internal final class ActionTree {
             .triggerExecuted(
                 name: trigger.name,
                 keyType: trigger.keyType,
-                then: String(describing: trigger.then)
+                event: trigger.event
             )
         )
 
@@ -92,24 +86,10 @@ internal final class ActionTree {
                 guard let variable else { return }
                 self?.onVariableChange(variable)
             },
-            onFindBlock: onFindBlock,
-            onUpdateBlockProperties: onChangeBlock,
             trigger: trigger,
-            onHandleNextTrigger: { [weak self] _ in
+            onHandleEvent: { [weak self] event in
                 self?.advanceSubTriggers(
-                    action: action, index: index, trigger: trigger, then: .next,
-                    onFind: onFind, onTriggerFallBack: onTriggerFallBack
-                )
-            },
-            onHandleSuccessNextTrigger: { [weak self] _ in
-                self?.advanceSubTriggers(
-                    action: action, index: index, trigger: trigger, then: .success,
-                    onFind: onFind, onTriggerFallBack: onTriggerFallBack
-                )
-            },
-            onHandleFailureNextTrigger: { [weak self] _ in
-                self?.advanceSubTriggers(
-                    action: action, index: index, trigger: trigger, then: .failure,
+                    action: action, index: index, trigger: trigger, event: event,
                     onFind: onFind, onTriggerFallBack: onTriggerFallBack
                 )
             }
@@ -121,11 +101,11 @@ internal final class ActionTree {
         action: NativeActionModel,
         index: Int,
         trigger: NativeActionTriggerModel,
-        then: NativeActionTriggerThen,
+        event: String,
         onFind: @escaping (String) -> (any INativeAction)?,
         onTriggerFallBack: @escaping (String, String) -> Void
     ) {
-        for subTrigger in action.triggers where subTrigger.parentId == trigger.id && subTrigger.then == then {
+        for subTrigger in action.triggers where subTrigger.parentId == trigger.id && subTrigger.event == event {
             handleTrigger(
                 action: action,
                 index: index,

@@ -3,18 +3,9 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-type BlockUpdate = (
-    String,
-    String,
-    Option<String>,
-    Option<String>,
-    Option<String>,
-);
-
 #[derive(Default)]
 struct MockBridge {
     variables: Mutex<HashMap<String, String>>,
-    block_updates: Mutex<Vec<BlockUpdate>>,
 }
 
 impl ScriptBridge for MockBridge {
@@ -23,19 +14,6 @@ impl ScriptBridge for MockBridge {
     }
     fn update_variable(&self, key: String, value: String) {
         self.variables.lock().unwrap().insert(key, value);
-    }
-    fn update_block_property(
-        &self,
-        block_key: String,
-        property_key: String,
-        mobile: Option<String>,
-        tablet: Option<String>,
-        desktop: Option<String>,
-    ) {
-        self.block_updates
-            .lock()
-            .unwrap()
-            .push((block_key, property_key, mobile, tablet, desktop));
     }
 }
 
@@ -113,24 +91,6 @@ fn variable_round_trip() {
             .map(String::as_str),
         Some("6")
     );
-}
-
-#[test]
-fn block_property_update() {
-    let engine = ScriptEngine::new();
-    let bridge = Arc::new(MockBridge::default());
-    engine.evaluate(
-        r#"updateBlockProperties("blk", "text", { mobile: "M", desktop: "D" });"#.to_string(),
-        bridge.clone(),
-        2000,
-    );
-    let updates = bridge.block_updates.lock().unwrap();
-    assert_eq!(updates.len(), 1);
-    assert_eq!(updates[0].0, "blk");
-    assert_eq!(updates[0].1, "text");
-    assert_eq!(updates[0].2.as_deref(), Some("M"));
-    assert_eq!(updates[0].3, None);
-    assert_eq!(updates[0].4.as_deref(), Some("D"));
 }
 
 #[test]

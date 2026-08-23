@@ -9,8 +9,6 @@ import io.nativeblocks.runtime.api.provider.action.defaults.NativeScriptAction
 import io.nativeblocks.runtime.api.provider.action.defaults.internalFallbackAction
 import io.nativeblocks.runtime.api.provider.model.NativeActionModel
 import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerModel
-import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerThen
-import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
 import io.nativeblocks.runtime.api.provider.model.NativeVariableModel
 import io.nativeblocks.runtime.ffi.ActionLogEvent
 import kotlinx.coroutines.CoroutineScope
@@ -19,13 +17,11 @@ internal class ActionTree(
     private val instanceName: String,
     private val coroutineScope: CoroutineScope,
     private val onFindVariable: (String) -> NativeVariableModel?,
-    private val onFindBlock: (String) -> NativeBlockModel?,
-    private val onChangeBlock: (String, String, String, String, String) -> Unit,
     private val onVariableChange: (NativeVariableModel) -> Unit,
     private val onLog: (ActionLogEvent) -> Unit,
 ) {
 
-    private val nativeActionProvider get() = NativeActionProviderRegistry.getOrCreate(instanceName)
+    private val nativeActionProvider = NativeActionProviderRegistry.getOrCreate(instanceName)
 
     fun handle(index: Int, action: NativeActionModel?, performedEventType: String) {
         if (action == null || action.event != performedEventType) {
@@ -72,7 +68,7 @@ internal class ActionTree(
             return
         }
 
-        onLog(ActionLogEvent.TriggerExecuted(trigger.name, trigger.keyType, trigger.then.name))
+        onLog(ActionLogEvent.TriggerExecuted(trigger.name, trigger.keyType, trigger.event))
 
         val actionContext = ActionContext(
             instanceName = instanceName,
@@ -80,19 +76,11 @@ internal class ActionTree(
             coroutineScope = coroutineScope,
             trigger = trigger,
             onFindVariable = onFindVariable,
-            onFindBlock = onFindBlock,
-            onUpdateBlockProperties = onChangeBlock,
             onUpdateVariable = { variable ->
                 variable?.let { onVariableChange(it) }
             },
-            onHandleNextTrigger = {
-                advanceSubTriggers(action, index, trigger, NativeActionTriggerThen.NEXT, onFind, onTriggerFallBack)
-            },
-            onHandleSuccessNextTrigger = {
-                advanceSubTriggers(action, index, trigger, NativeActionTriggerThen.SUCCESS, onFind, onTriggerFallBack)
-            },
-            onHandleFailureNextTrigger = {
-                advanceSubTriggers(action, index, trigger, NativeActionTriggerThen.FAILURE, onFind, onTriggerFallBack)
+            onHandleEvent = { event ->
+                advanceSubTriggers(action, index, trigger, event, onFind, onTriggerFallBack)
             }
         )
         nativeAction.handle(actionContext)
@@ -102,12 +90,12 @@ internal class ActionTree(
         action: NativeActionModel,
         index: Int,
         trigger: NativeActionTriggerModel,
-        then: NativeActionTriggerThen,
+        event: String,
         onFind: (String) -> INativeAction?,
         onTriggerFallBack: (keyType: String, name: String) -> Unit,
     ) {
         action.triggers
-            .filter { it.parentId == trigger.id && it.then == then }
+            .filter { it.parentId == trigger.id && it.event == event }
             .forEach { handleTrigger(action, index, it, onFind, onTriggerFallBack) }
     }
 }

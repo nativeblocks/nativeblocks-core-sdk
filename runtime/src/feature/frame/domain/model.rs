@@ -76,32 +76,22 @@ pub struct NativeActionTriggerModel {
     pub parent_id: String,
     pub version: i32,
     pub key_type: String,
-    pub then: NativeActionTriggerThen,
-    #[deprecated(note = "Properties are being replaced by data; declare action arguments as data.")]
+    pub event: String,
+    pub scope: Option<String>,
+    #[deprecated(
+        note = "Properties are being replaced by data; declare action arguments as data."
+    )]
     pub properties: HashMap<String, NativeActionTriggerPropertyModel>,
     pub data: HashMap<String, NativeActionTriggerDataModel>,
+    pub events: HashMap<String, NativeActionTriggerEventModel>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Archive, Serialize, Deserialize, uniffi::Enum)]
-pub enum NativeActionTriggerThen {
-    Success,
-    Failure,
-    Next,
-    End,
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
+pub struct NativeActionTriggerEventModel {
+    pub event: String,
+    pub scope: Option<String>,
 }
 
-impl NativeActionTriggerThen {
-    pub fn from_string(value: &str) -> Self {
-        return match value {
-            "SUCCESS" => NativeActionTriggerThen::Success,
-            "FAILURE" => NativeActionTriggerThen::Failure,
-            "NEXT" => NativeActionTriggerThen::Next,
-            _ => NativeActionTriggerThen::End,
-        };
-    }
-}
-
-#[deprecated(note = "Properties are being replaced by data.")]
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
 pub struct NativeActionTriggerPropertyModel {
     pub key: String,

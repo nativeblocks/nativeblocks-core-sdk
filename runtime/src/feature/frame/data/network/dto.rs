@@ -82,8 +82,16 @@ pub(in crate::feature::frame::data) struct NativeActionTriggerDto {
     pub(in crate::feature::frame::data) name: Option<String>,
     pub(in crate::feature::frame::data) key_type: Option<String>,
     pub(in crate::feature::frame::data) then: Option<String>,
+    pub(in crate::feature::frame::data) scope: Option<String>,
     pub(in crate::feature::frame::data) properties: Option<Vec<NativeActionTriggerPropertyDto>>,
     pub(in crate::feature::frame::data) data: Option<Vec<NativeActionTriggerDataDto>>,
+    pub(in crate::feature::frame::data) events: Option<Vec<NativeActionTriggerEventDto>>,
+}
+
+#[derive(Deserialize)]
+pub(in crate::feature::frame::data) struct NativeActionTriggerEventDto {
+    pub(in crate::feature::frame::data) event: Option<String>,
+    pub(in crate::feature::frame::data) scope: Option<String>,
 }
 
 #[derive(Deserialize)]

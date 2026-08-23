@@ -64,12 +64,12 @@ internal data class ValuePickerOption(
 @Serializable
 internal data class Event(
     val event: String,
+    val scope: String?,
     val description: String,
     val deprecated: Boolean,
     val deprecatedReason: String,
     @Transient val functionName: String = "",
     @Transient val dataBinding: List<String> = listOf(),
-    @Transient val then: String = "END"
 )
 
 @Serializable

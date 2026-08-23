@@ -4,12 +4,12 @@ use std::collections::HashMap;
 
 use crate::feature::frame::data::network::dto::{
     NativeActionDto, NativeActionTriggerDataDto, NativeActionTriggerDto,
-    NativeActionTriggerPropertyDto, NativeBlockDataDto, NativeBlockDto, NativeBlockPropertyDto,
-    NativeBlockSlotDto, NativeFrameDto, NativeVariableDto,
+    NativeActionTriggerEventDto, NativeActionTriggerPropertyDto, NativeBlockDataDto,
+    NativeBlockDto, NativeBlockPropertyDto, NativeBlockSlotDto, NativeFrameDto, NativeVariableDto,
 };
 use crate::feature::frame::domain::model::{
-    NativeActionModel, NativeActionTriggerDataModel, NativeActionTriggerModel,
-    NativeActionTriggerPropertyModel, NativeActionTriggerThen, NativeBlockDataModel,
+    NativeActionModel, NativeActionTriggerDataModel, NativeActionTriggerEventModel,
+    NativeActionTriggerModel, NativeActionTriggerPropertyModel, NativeBlockDataModel,
     NativeBlockModel, NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameModel,
     NativeVariableModel,
 };
@@ -177,7 +177,8 @@ fn map_action(dto: NativeActionDto) -> NativeActionModel {
 
 fn map_trigger(dto: NativeActionTriggerDto) -> NativeActionTriggerModel {
     return NativeActionTriggerModel {
-        then: NativeActionTriggerThen::from_string(dto.then.as_deref().unwrap_or("")),
+        event: text(dto.then),
+        scope: dto.scope,
         name: text(dto.name),
         id: text(dto.id),
         parent_id: text(dto.parent_id),
@@ -185,6 +186,14 @@ fn map_trigger(dto: NativeActionTriggerDto) -> NativeActionTriggerModel {
         key_type: text(dto.key_type),
         properties: keyed(dto.properties, map_trigger_property, |model| &model.key),
         data: keyed(dto.data, map_trigger_data, |model| &model.key),
+        events: keyed(dto.events, map_trigger_event, |model| &model.event),
+    };
+}
+
+fn map_trigger_event(dto: NativeActionTriggerEventDto) -> NativeActionTriggerEventModel {
+    return NativeActionTriggerEventModel {
+        event: text(dto.event),
+        scope: dto.scope,
     };
 }
 

@@ -38,8 +38,11 @@ public struct NativeActionTriggerModel: Hashable, Codable {
     /// The name of the trigger.
     public let name: String
 
-    /// What happens after the trigger is executed.
-    public let then: NativeActionTriggerThen
+    /// Event of the parent this trigger is filed under.
+    public let event: String
+
+    /// Scope this trigger requires from the event it sits under, nil when it accepts any.
+    public let scope: String?
 
     /// A dictionary of properties associated with this trigger.
     @available(*, deprecated, message: "Properties are being replaced by data; declare action arguments with @NativeActionData.")
@@ -48,13 +51,30 @@ public struct NativeActionTriggerModel: Hashable, Codable {
     /// A dictionary of data models that belong to this trigger.
     public let data: [String: NativeActionTriggerDataModel]
 
+    /// Events within the trigger that nested triggers can be filed under.
+    public let events: [String: NativeActionTriggerEventModel]
+
     /// The sub-triggers nested within this trigger.
     public var subTriggers: [NativeActionTriggerModel]? = nil
 
     /// Equality operator to compare two `NativeActionTriggerModel` instances.
     public static func == (lhs: NativeActionTriggerModel, rhs: NativeActionTriggerModel) -> Bool {
         return lhs.id == rhs.id && lhs.parentId == rhs.parentId && lhs.keyType == rhs.keyType
-            && lhs.then == rhs.then && lhs.properties == rhs.properties && lhs.data == rhs.data
+            && lhs.event == rhs.event && lhs.properties == rhs.properties && lhs.data == rhs.data
+    }
+}
+
+/// Represents an event within an action trigger for holding nested triggers.
+public struct NativeActionTriggerEventModel: Hashable, Codable {
+    /// The event identifier.
+    public let event: String
+
+    /// Scope this event hands to the triggers under it, nil when it declares none.
+    public let scope: String?
+
+    /// Equality operator to compare two `NativeActionTriggerEventModel` instances.
+    public static func == (lhs: NativeActionTriggerEventModel, rhs: NativeActionTriggerEventModel) -> Bool {
+        return lhs.event == rhs.event && lhs.scope == rhs.scope
     }
 }
 
@@ -90,25 +110,5 @@ public struct NativeActionTriggerDataModel: Hashable, Codable {
     /// Equality operator to compare two `NativeActionTriggerDataModel` instances.
     public static func == (lhs: NativeActionTriggerDataModel, rhs: NativeActionTriggerDataModel) -> Bool {
         return lhs.key == rhs.key && lhs.value == rhs.value && lhs.type == rhs.type
-    }
-}
-
-/// Represents the possible outcomes for a trigger action.
-public enum NativeActionTriggerThen: String, Hashable, Codable {
-    /// The action will be marked as successful.
-    case success = "SUCCESS"
-
-    /// The action has failed.
-    case failure = "FAILURE"
-
-    /// Move to the next step in the action sequence.
-    case next = "NEXT"
-
-    /// End the action sequence.
-    case end = "END"
-
-    /// Converts a string to a `NativeActionTriggerThen` value, defaulting to `.end` if invalid.
-    static func fromThen(_ then: String) -> NativeActionTriggerThen {
-        return NativeActionTriggerThen(rawValue: then.uppercased()) ?? .end
     }
 }

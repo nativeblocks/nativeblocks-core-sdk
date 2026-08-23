@@ -19,7 +19,7 @@ public protocol INativeActionContractor {
 }
 
 /// Represents the properties associated with a native action.
-/// The `ActionContext` struct is used to pass all the necessary information required to perform an action, including variables, blocks, triggers, and callbacks.
+/// The `ActionContext` struct is used to pass all the necessary information required to perform an action, including variables, triggers, and callbacks.
 public struct ActionContext {
     /// Instance name of NativeblocksManager.
     public let instanceName: String
@@ -33,28 +33,9 @@ public struct ActionContext {
     /// Callback function to handle changes to a variable.
     public let onUpdateVariable: (NativeVariableModel?) -> Void
 
-    /// A function for retrieving a [NativeBlockModel] by its key
-    public let onFindBlock: (String) -> NativeBlockModel?
-
-    /// Callback function to update one property of a block.
-    /// - Parameters:
-    ///   - blockKey: The key of the block to update.
-    ///   - propertyKey: The key of the property to update.
-    ///   - valueMobile: The new value for mobile devices.
-    ///   - valueTablet: The new value for tablets.
-    ///   - valueDesktop: The new value for desktop devices.
-    @available(*, deprecated, message: "Properties are being replaced by data.")
-    public let onUpdateBlockProperties: (String, String, String, String, String) -> Void
-
     /// The trigger that is associated with this action.
     public let trigger: NativeActionTriggerModel?
 
-    /// Callback function to handle the next trigger in the sequence.
-    public let onHandleNextTrigger: (NativeActionTriggerModel) -> Void
-
-    /// Callback function to handle the success of the current trigger and move to the next trigger.
-    public let onHandleSuccessNextTrigger: (NativeActionTriggerModel) -> Void
-
-    /// Callback function to handle the failure of the current trigger and move to the next trigger.
-    public let onHandleFailureNextTrigger: (NativeActionTriggerModel) -> Void
+    /// Runs the triggers filed under one of this action's events.
+    public let onHandleEvent: (String) -> Void
 }

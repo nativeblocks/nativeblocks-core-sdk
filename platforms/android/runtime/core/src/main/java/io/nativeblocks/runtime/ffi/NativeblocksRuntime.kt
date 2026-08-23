@@ -647,9 +647,6 @@ internal interface UniffiCallbackInterfaceScriptBridgeMethod0 : com.sun.jna.Call
 internal interface UniffiCallbackInterfaceScriptBridgeMethod1 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
-internal interface UniffiCallbackInterfaceScriptBridgeMethod2 : com.sun.jna.Callback {
-    fun callback(`uniffiHandle`: Long,`blockKey`: RustBuffer.ByValue,`propertyKey`: RustBuffer.ByValue,`mobile`: RustBuffer.ByValue,`tablet`: RustBuffer.ByValue,`desktop`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
-}
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "log")
 internal open class UniffiVTableCallbackInterfaceLogger(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -735,28 +732,25 @@ internal open class UniffiVTableCallbackInterfaceHttpClient(
     }
 
 }
-@Structure.FieldOrder("uniffiFree", "uniffiClone", "getVariable", "updateVariable", "updateBlockProperty")
+@Structure.FieldOrder("uniffiFree", "uniffiClone", "getVariable", "updateVariable")
 internal open class UniffiVTableCallbackInterfaceScriptBridge(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
     @JvmField internal var `uniffiClone`: UniffiCallbackInterfaceClone? = null,
     @JvmField internal var `getVariable`: UniffiCallbackInterfaceScriptBridgeMethod0? = null,
     @JvmField internal var `updateVariable`: UniffiCallbackInterfaceScriptBridgeMethod1? = null,
-    @JvmField internal var `updateBlockProperty`: UniffiCallbackInterfaceScriptBridgeMethod2? = null,
 ) : Structure() {
     class UniffiByValue(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
         `getVariable`: UniffiCallbackInterfaceScriptBridgeMethod0? = null,
         `updateVariable`: UniffiCallbackInterfaceScriptBridgeMethod1? = null,
-        `updateBlockProperty`: UniffiCallbackInterfaceScriptBridgeMethod2? = null,
-    ): UniffiVTableCallbackInterfaceScriptBridge(`uniffiFree`,`uniffiClone`,`getVariable`,`updateVariable`,`updateBlockProperty`,), Structure.ByValue
+    ): UniffiVTableCallbackInterfaceScriptBridge(`uniffiFree`,`uniffiClone`,`getVariable`,`updateVariable`,), Structure.ByValue
 
    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceScriptBridge) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `getVariable` = other.`getVariable`
         `updateVariable` = other.`updateVariable`
-        `updateBlockProperty` = other.`updateBlockProperty`
     }
 
 }
@@ -823,8 +817,6 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame(
     ): Int
-    external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property(
-    ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change(
@@ -872,8 +864,6 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_nativeblocks_runtime_checksum_method_scriptbridge_get_variable(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable(
-    ): Int
-    external fun uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_block_property(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new(
     ): Int
@@ -954,8 +944,6 @@ external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(`pt
 ): Unit
 external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(`ptr`: Long,`route`: RustBuffer.ByValue,`args`: RustBuffer.ByValue,`stateKey`: RustBuffer.ByValue,`observer`: Long,
 ): Long
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_property(`ptr`: Long,`blockKey`: RustBuffer.ByValue,`propertyKey`: RustBuffer.ByValue,`valueMobile`: RustBuffer.ByValue,`valueTablet`: RustBuffer.ByValue,`valueDesktop`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
 external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_variable(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_nativeblocks_runtime_fn_clone_framestateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1049,8 +1037,6 @@ external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_scriptbridge(`v
 external fun uniffi_nativeblocks_runtime_fn_method_scriptbridge_get_variable(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_variable(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_block_property(`ptr`: Long,`blockKey`: RustBuffer.ByValue,`propertyKey`: RustBuffer.ByValue,`mobile`: RustBuffer.ByValue,`tablet`: RustBuffer.ByValue,`desktop`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_logger(`vtable`: UniffiVTableCallbackInterfaceLogger,
 ): Unit
@@ -1241,9 +1227,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 31603) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property() != 19031) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable() != 34459) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1314,9 +1297,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable() != 976) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_block_property() != 27798) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() != 50980) {
@@ -2481,8 +2461,6 @@ internal interface FrameStateManagerInterface {
     
     suspend fun `setupFrame`(`route`: kotlin.String, `args`: Map<kotlin.String, kotlin.String>, `stateKey`: kotlin.String?, `observer`: FrameStateObserver)
     
-    fun `updateBlockProperty`(`blockKey`: kotlin.String, `propertyKey`: kotlin.String, `valueMobile`: kotlin.String, `valueTablet`: kotlin.String, `valueDesktop`: kotlin.String)
-    
     fun `updateVariable`(`key`: kotlin.String, `value`: kotlin.String)
     
     companion object
@@ -2640,18 +2618,6 @@ internal open class FrameStateManager: Disposable, AutoCloseable, FrameStateMana
         UniffiNullRustCallStatusErrorHandler,
     )
     }
-
-    override fun `updateBlockProperty`(`blockKey`: kotlin.String, `propertyKey`: kotlin.String, `valueMobile`: kotlin.String, `valueTablet`: kotlin.String, `valueDesktop`: kotlin.String)
-        = 
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_property(
-        it,
-        FfiConverterString.lower(`blockKey`),FfiConverterString.lower(`propertyKey`),FfiConverterString.lower(`valueMobile`),FfiConverterString.lower(`valueTablet`),FfiConverterString.lower(`valueDesktop`),_status)
-}
-    }
-    
-    
 
     override fun `updateVariable`(`key`: kotlin.String, `value`: kotlin.String)
         = 
@@ -5362,8 +5328,6 @@ internal interface ScriptBridge {
     
     fun `updateVariable`(`key`: kotlin.String, `value`: kotlin.String)
     
-    fun `updateBlockProperty`(`blockKey`: kotlin.String, `propertyKey`: kotlin.String, `mobile`: kotlin.String?, `tablet`: kotlin.String?, `desktop`: kotlin.String?)
-    
     companion object
 }
 
@@ -5488,18 +5452,6 @@ internal open class ScriptBridgeImpl: Disposable, AutoCloseable, ScriptBridge
     
     
 
-    override fun `updateBlockProperty`(`blockKey`: kotlin.String, `propertyKey`: kotlin.String, `mobile`: kotlin.String?, `tablet`: kotlin.String?, `desktop`: kotlin.String?)
-        = 
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_block_property(
-        it,
-        FfiConverterString.lower(`blockKey`),FfiConverterString.lower(`propertyKey`),FfiConverterOptionalString.lower(`mobile`),FfiConverterOptionalString.lower(`tablet`),FfiConverterOptionalString.lower(`desktop`),_status)
-}
-    }
-    
-    
-
     
 
     
@@ -5543,22 +5495,6 @@ internal object uniffiCallbackInterfaceScriptBridge {
             uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
         }
     }
-    internal object `updateBlockProperty`: UniffiCallbackInterfaceScriptBridgeMethod2 {
-        override fun callback(`uniffiHandle`: Long,`blockKey`: RustBuffer.ByValue,`propertyKey`: RustBuffer.ByValue,`mobile`: RustBuffer.ByValue,`tablet`: RustBuffer.ByValue,`desktop`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
-            val uniffiObj = FfiConverterTypeScriptBridge.handleMap.get(uniffiHandle)
-            val makeCall = { ->
-                uniffiObj.`updateBlockProperty`(
-                    FfiConverterString.lift(`blockKey`),
-                    FfiConverterString.lift(`propertyKey`),
-                    FfiConverterOptionalString.lift(`mobile`),
-                    FfiConverterOptionalString.lift(`tablet`),
-                    FfiConverterOptionalString.lift(`desktop`),
-                )
-            }
-            val writeReturn = { _: Unit -> Unit }
-            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
-        }
-    }
 
     internal object uniffiFree: UniffiCallbackInterfaceFree {
         override fun callback(handle: Long) {
@@ -5577,7 +5513,6 @@ internal object uniffiCallbackInterfaceScriptBridge {
         uniffiClone,
         `getVariable`,
         `updateVariable`,
-        `updateBlockProperty`,
     )
 
     // Registers the foreign callback with the Rust side.
@@ -6125,6 +6060,44 @@ internal object FfiConverterTypeNativeActionTriggerDataModel: FfiConverterRustBu
 
 
 
+internal data class NativeActionTriggerEventModel (
+    val `event`: kotlin.String
+    , 
+    val `scope`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+internal object FfiConverterTypeNativeActionTriggerEventModel: FfiConverterRustBuffer<NativeActionTriggerEventModel> {
+    override fun read(buf: ByteBuffer): NativeActionTriggerEventModel {
+        return NativeActionTriggerEventModel(
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeActionTriggerEventModel) = (
+            FfiConverterString.allocationSize(value.`event`) +
+            FfiConverterOptionalString.allocationSize(value.`scope`)
+    )
+
+    override fun write(value: NativeActionTriggerEventModel, buf: ByteBuffer) {
+            FfiConverterString.write(value.`event`, buf)
+            FfiConverterOptionalString.write(value.`scope`, buf)
+    }
+}
+
+
+
 internal data class NativeActionTriggerModel (
     val `name`: kotlin.String
     , 
@@ -6136,11 +6109,15 @@ internal data class NativeActionTriggerModel (
     , 
     val `keyType`: kotlin.String
     , 
-    val `then`: NativeActionTriggerThen
+    val `event`: kotlin.String
+    , 
+    val `scope`: kotlin.String?
     , 
     val `properties`: Map<kotlin.String, NativeActionTriggerPropertyModel>
     , 
     val `data`: Map<kotlin.String, NativeActionTriggerDataModel>
+    , 
+    val `events`: Map<kotlin.String, NativeActionTriggerEventModel>
     
 ){
     
@@ -6162,9 +6139,11 @@ internal object FfiConverterTypeNativeActionTriggerModel: FfiConverterRustBuffer
             FfiConverterString.read(buf),
             FfiConverterInt.read(buf),
             FfiConverterString.read(buf),
-            FfiConverterTypeNativeActionTriggerThen.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterMapStringTypeNativeActionTriggerPropertyModel.read(buf),
             FfiConverterMapStringTypeNativeActionTriggerDataModel.read(buf),
+            FfiConverterMapStringTypeNativeActionTriggerEventModel.read(buf),
         )
     }
 
@@ -6174,9 +6153,11 @@ internal object FfiConverterTypeNativeActionTriggerModel: FfiConverterRustBuffer
             FfiConverterString.allocationSize(value.`parentId`) +
             FfiConverterInt.allocationSize(value.`version`) +
             FfiConverterString.allocationSize(value.`keyType`) +
-            FfiConverterTypeNativeActionTriggerThen.allocationSize(value.`then`) +
+            FfiConverterString.allocationSize(value.`event`) +
+            FfiConverterOptionalString.allocationSize(value.`scope`) +
             FfiConverterMapStringTypeNativeActionTriggerPropertyModel.allocationSize(value.`properties`) +
-            FfiConverterMapStringTypeNativeActionTriggerDataModel.allocationSize(value.`data`)
+            FfiConverterMapStringTypeNativeActionTriggerDataModel.allocationSize(value.`data`) +
+            FfiConverterMapStringTypeNativeActionTriggerEventModel.allocationSize(value.`events`)
     )
 
     override fun write(value: NativeActionTriggerModel, buf: ByteBuffer) {
@@ -6185,9 +6166,11 @@ internal object FfiConverterTypeNativeActionTriggerModel: FfiConverterRustBuffer
             FfiConverterString.write(value.`parentId`, buf)
             FfiConverterInt.write(value.`version`, buf)
             FfiConverterString.write(value.`keyType`, buf)
-            FfiConverterTypeNativeActionTriggerThen.write(value.`then`, buf)
+            FfiConverterString.write(value.`event`, buf)
+            FfiConverterOptionalString.write(value.`scope`, buf)
             FfiConverterMapStringTypeNativeActionTriggerPropertyModel.write(value.`properties`, buf)
             FfiConverterMapStringTypeNativeActionTriggerDataModel.write(value.`data`, buf)
+            FfiConverterMapStringTypeNativeActionTriggerEventModel.write(value.`events`, buf)
     }
 }
 
@@ -6801,7 +6784,7 @@ internal sealed class ActionLogEvent {
     data class TriggerExecuted(
         val `name`: kotlin.String, 
         val `keyType`: kotlin.String, 
-        val `then`: kotlin.String) : ActionLogEvent()
+        val `event`: kotlin.String) : ActionLogEvent()
         
     {
         
@@ -6812,6 +6795,19 @@ internal sealed class ActionLogEvent {
     data class TriggerFallback(
         val `keyType`: kotlin.String, 
         val `name`: kotlin.String) : ActionLogEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class ScopeMismatch(
+        val `triggerName`: kotlin.String, 
+        val `keyType`: kotlin.String, 
+        val `required`: kotlin.String, 
+        val `provided`: kotlin.String, 
+        val `dropped`: kotlin.Boolean) : ActionLogEvent()
         
     {
         
@@ -6851,6 +6847,13 @@ internal object FfiConverterTypeActionLogEvent : FfiConverterRustBuffer<ActionLo
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
+            5 -> ActionLogEvent.ScopeMismatch(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
     }
@@ -6877,7 +6880,7 @@ internal object FfiConverterTypeActionLogEvent : FfiConverterRustBuffer<ActionLo
                 4UL
                 + FfiConverterString.allocationSize(value.`name`)
                 + FfiConverterString.allocationSize(value.`keyType`)
-                + FfiConverterString.allocationSize(value.`then`)
+                + FfiConverterString.allocationSize(value.`event`)
             )
         }
         is ActionLogEvent.TriggerFallback -> {
@@ -6886,6 +6889,17 @@ internal object FfiConverterTypeActionLogEvent : FfiConverterRustBuffer<ActionLo
                 4UL
                 + FfiConverterString.allocationSize(value.`keyType`)
                 + FfiConverterString.allocationSize(value.`name`)
+            )
+        }
+        is ActionLogEvent.ScopeMismatch -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`triggerName`)
+                + FfiConverterString.allocationSize(value.`keyType`)
+                + FfiConverterString.allocationSize(value.`required`)
+                + FfiConverterString.allocationSize(value.`provided`)
+                + FfiConverterBoolean.allocationSize(value.`dropped`)
             )
         }
     }
@@ -6907,13 +6921,22 @@ internal object FfiConverterTypeActionLogEvent : FfiConverterRustBuffer<ActionLo
                 buf.putInt(3)
                 FfiConverterString.write(value.`name`, buf)
                 FfiConverterString.write(value.`keyType`, buf)
-                FfiConverterString.write(value.`then`, buf)
+                FfiConverterString.write(value.`event`, buf)
                 Unit
             }
             is ActionLogEvent.TriggerFallback -> {
                 buf.putInt(4)
                 FfiConverterString.write(value.`keyType`, buf)
                 FfiConverterString.write(value.`name`, buf)
+                Unit
+            }
+            is ActionLogEvent.ScopeMismatch -> {
+                buf.putInt(5)
+                FfiConverterString.write(value.`triggerName`, buf)
+                FfiConverterString.write(value.`keyType`, buf)
+                FfiConverterString.write(value.`required`, buf)
+                FfiConverterString.write(value.`provided`, buf)
+                FfiConverterBoolean.write(value.`dropped`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -7370,42 +7393,6 @@ internal object FfiConverterTypeNBError : FfiConverterRustBuffer<NbException> {
     }
 
 }
-
-
-
-
-internal enum class NativeActionTriggerThen {
-    
-    SUCCESS,
-    FAILURE,
-    NEXT,
-    END;
-
-    
-
-
-    companion object
-}
-
-
-/**
- * @suppress
- */
-internal object FfiConverterTypeNativeActionTriggerThen: FfiConverterRustBuffer<NativeActionTriggerThen> {
-    override fun read(buf: ByteBuffer) = try {
-        NativeActionTriggerThen.values()[buf.getInt() - 1]
-    } catch (e: IndexOutOfBoundsException) {
-        throw RuntimeException("invalid enum value, something is very wrong!!", e)
-    }
-
-    override fun allocationSize(value: NativeActionTriggerThen) = 4UL
-
-    override fun write(value: NativeActionTriggerThen, buf: ByteBuffer) {
-        buf.putInt(value.ordinal + 1)
-    }
-}
-
-
 
 
 
@@ -7899,6 +7886,45 @@ internal object FfiConverterMapStringTypeNativeActionTriggerDataModel: FfiConver
         value.forEach { (k, v) ->
             FfiConverterString.write(k, buf)
             FfiConverterTypeNativeActionTriggerDataModel.write(v, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+internal object FfiConverterMapStringTypeNativeActionTriggerEventModel: FfiConverterRustBuffer<Map<kotlin.String, NativeActionTriggerEventModel>> {
+    override fun read(buf: ByteBuffer): Map<kotlin.String, NativeActionTriggerEventModel> {
+        val len = buf.getInt()
+        return buildMap<kotlin.String, NativeActionTriggerEventModel>(len) {
+            repeat(len) {
+                val k = FfiConverterString.read(buf)
+                val v = FfiConverterTypeNativeActionTriggerEventModel.read(buf)
+                this[k] = v
+            }
+        }
+    }
+
+    override fun allocationSize(value: Map<kotlin.String, NativeActionTriggerEventModel>): ULong {
+        val spaceForMapSize = 4UL
+        val spaceForChildren = value.map { (k, v) ->
+            FfiConverterString.allocationSize(k) +
+            FfiConverterTypeNativeActionTriggerEventModel.allocationSize(v)
+        }.sum()
+        return spaceForMapSize + spaceForChildren
+    }
+
+    override fun write(value: Map<kotlin.String, NativeActionTriggerEventModel>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        // The parens on `(k, v)` here ensure we're calling the right method,
+        // which is important for compatibility with older android devices.
+        // Ref https://blog.danlew.net/2017/03/16/kotlin-puzzler-whose-line-is-it-anyways/
+        value.forEach { (k, v) ->
+            FfiConverterString.write(k, buf)
+            FfiConverterTypeNativeActionTriggerEventModel.write(v, buf)
         }
     }
 }

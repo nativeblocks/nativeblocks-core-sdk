@@ -19,6 +19,9 @@ internal fun KSAnnotated.getAnnotation(fullName: String) = getAnnotation {
 internal inline fun <reified T> KSAnnotation.getArgument(name: String) =
     arguments.first { it.name?.asString() == name }.value as T
 
+internal inline fun <reified T> KSAnnotation.getArgumentOrNull(name: String) =
+    arguments.firstOrNull { it.name?.asString() == name }?.value as? T
+
 internal fun String.capitalize() =
     replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
 

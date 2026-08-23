@@ -12,9 +12,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * NativeScriptAction provides scripting capabilities within the Nativeblocks system,
- * executing JavaScript through the engine's QuickJS runtime (Rust, via uniffi)
- * instead of the old Rhino interpreter. The script API is unchanged, so existing
- * scripts keep working.
+ * executing JavaScript through the engine's QuickJS runtime.
  *
  * ## Configuration
  *
@@ -32,9 +30,6 @@ import kotlinx.coroutines.withContext
  * - `updateVariable(variableKey, value)`: Updates a variable with the given key and
  *   value. The value is automatically cast to match the variable's type.
  *
- * - `updateBlockProperties(blockKey, propertyKey, { mobile, tablet, desktop })`:
- *   Updates a block's property per screen size. Only the provided (non-null)
- *   values are updated.
  *
  * Example (variables):
  * ```javascript
@@ -46,12 +41,6 @@ import kotlinx.coroutines.withContext
  * updateVariable("count", result);
  * ```
  *
- * Example (block properties):
- * ```javascript
- * updateBlockProperties("myBlock", "text", { mobile: "Mobile Text" });
- * updateBlockProperties("myBlock", "backgroundColor", { mobile: "#FF0000", tablet: "#00FF00", desktop: "#0000FF" });
- * ```
- *
  * ## Blocked Features (for security)
  * - `eval`, `Function` (removed from the QuickJS global scope); execution is
  *   interrupted after the timeout.
@@ -60,6 +49,8 @@ import kotlinx.coroutines.withContext
  * Values passed to `updateVariable` are automatically cast to match the target
  * variable's type (STRING, INT, DOUBLE, LONG, FLOAT, BOOLEAN).
  */
+internal const val SCRIPT_NEXT_EVENT: String = "NEXT"
+
 internal class NativeScriptAction : INativeAction {
 
     companion object {
@@ -77,7 +68,7 @@ internal class NativeScriptAction : INativeAction {
                     script.replace("{{index}}", actionContext.listItemIndex.toString())
                 evaluateScript(processedScript, actionContext)
             }
-            trigger?.let { actionContext.onHandleNextTrigger(it) }
+            actionContext.onHandleEvent(SCRIPT_NEXT_EVENT)
         }
     }
 
@@ -94,24 +85,6 @@ internal class NativeScriptAction : INativeAction {
                     actionContext.onUpdateVariable(variable.copy(value = castedValue))
                 }
 
-                override fun updateBlockProperty(
-                    blockKey: String,
-                    propertyKey: String,
-                    mobile: String?,
-                    tablet: String?,
-                    desktop: String?,
-                ) {
-                    val block = actionContext.onFindBlock(blockKey) ?: return
-                    val properties = block.properties.toMutableMap()
-                    val currentProperty = properties[propertyKey] ?: return
-                    actionContext.onUpdateBlockProperties(
-                        blockKey,
-                        propertyKey,
-                        mobile ?: currentProperty.valueMobile,
-                        tablet ?: currentProperty.valueTablet,
-                        desktop ?: currentProperty.valueDesktop,
-                    )
-                }
             }
 
             ScriptEngine().use { engine ->

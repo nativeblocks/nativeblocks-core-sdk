@@ -874,8 +874,6 @@ package protocol FrameStateManagerProtocol: AnyObject, Sendable {
     
     func setupFrame(route: String, args: [String: String], stateKey: String?, observer: FrameStateObserver) async 
     
-    func updateBlockProperty(blockKey: String, propertyKey: String, valueMobile: String, valueTablet: String, valueDesktop: String) 
-    
     func updateVariable(key: String, value: String) 
     
 }
@@ -971,18 +969,6 @@ package func setupFrame(route: String, args: [String: String], stateKey: String?
             errorHandler: nil
             
         )
-}
-    
-package func updateBlockProperty(blockKey: String, propertyKey: String, valueMobile: String, valueTablet: String, valueDesktop: String)  {try! rustCall() {
-    uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_block_property(
-            self.uniffiCloneHandle(),
-        FfiConverterString.lower(blockKey),
-        FfiConverterString.lower(propertyKey),
-        FfiConverterString.lower(valueMobile),
-        FfiConverterString.lower(valueTablet),
-        FfiConverterString.lower(valueDesktop),$0
-    )
-}
 }
     
 package func updateVariable(key: String, value: String)  {try! rustCall() {
@@ -2574,8 +2560,6 @@ package protocol ScriptBridge: AnyObject, Sendable {
     
     func updateVariable(key: String, value: String) 
     
-    func updateBlockProperty(blockKey: String, propertyKey: String, mobile: String?, tablet: String?, desktop: String?) 
-    
 }
 package class ScriptBridgeImpl: ScriptBridge, @unchecked Sendable {
     fileprivate let handle: UInt64
@@ -2648,18 +2632,6 @@ package func updateVariable(key: String, value: String)  {try! rustCall() {
 }
 }
     
-package func updateBlockProperty(blockKey: String, propertyKey: String, mobile: String?, tablet: String?, desktop: String?)  {try! rustCall() {
-    uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_block_property(
-            self.uniffiCloneHandle(),
-        FfiConverterString.lower(blockKey),
-        FfiConverterString.lower(propertyKey),
-        FfiConverterOptionString.lower(mobile),
-        FfiConverterOptionString.lower(tablet),
-        FfiConverterOptionString.lower(desktop),$0
-    )
-}
-}
-    
 
     
 }
@@ -2727,38 +2699,6 @@ fileprivate struct UniffiCallbackInterfaceScriptBridge {
                 return uniffiObj.updateVariable(
                      key: try FfiConverterString.lift(key),
                      value: try FfiConverterString.lift(value)
-                )
-            }
-
-            
-            let writeReturn = { () }
-            uniffiTraitInterfaceCall(
-                callStatus: uniffiCallStatus,
-                makeCall: makeCall,
-                writeReturn: writeReturn
-            )
-        },
-        updateBlockProperty: { (
-            uniffiHandle: UInt64,
-            blockKey: RustBuffer,
-            propertyKey: RustBuffer,
-            mobile: RustBuffer,
-            tablet: RustBuffer,
-            desktop: RustBuffer,
-            uniffiOutReturn: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
-        ) in
-            let makeCall = {
-                () throws -> () in
-                guard let uniffiObj = try? FfiConverterTypeScriptBridge.handleMap.get(handle: uniffiHandle) else {
-                    throw UniffiInternalError.unexpectedStaleHandle
-                }
-                return uniffiObj.updateBlockProperty(
-                     blockKey: try FfiConverterString.lift(blockKey),
-                     propertyKey: try FfiConverterString.lift(propertyKey),
-                     mobile: try FfiConverterOptionString.lift(mobile),
-                     tablet: try FfiConverterOptionString.lift(tablet),
-                     desktop: try FfiConverterOptionString.lift(desktop)
                 )
             }
 
@@ -3283,27 +3223,85 @@ package func FfiConverterTypeNativeActionTriggerDataModel_lower(_ value: NativeA
 }
 
 
+package struct NativeActionTriggerEventModel: Equatable, Hashable {
+    package let event: String
+    package let scope: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    package init(event: String, scope: String?) {
+        self.event = event
+        self.scope = scope
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension NativeActionTriggerEventModel: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package struct FfiConverterTypeNativeActionTriggerEventModel: FfiConverterRustBuffer {
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NativeActionTriggerEventModel {
+        return
+            try NativeActionTriggerEventModel(
+                event: FfiConverterString.read(from: &buf), 
+                scope: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    package static func write(_ value: NativeActionTriggerEventModel, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.event, into: &buf)
+        FfiConverterOptionString.write(value.scope, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeNativeActionTriggerEventModel_lift(_ buf: RustBuffer) throws -> NativeActionTriggerEventModel {
+    return try FfiConverterTypeNativeActionTriggerEventModel.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeNativeActionTriggerEventModel_lower(_ value: NativeActionTriggerEventModel) -> RustBuffer {
+    return FfiConverterTypeNativeActionTriggerEventModel.lower(value)
+}
+
+
 package struct NativeActionTriggerModel: Equatable, Hashable {
     package let name: String
     package let id: String
     package let parentId: String
     package let version: Int32
     package let keyType: String
-    package let then: NativeActionTriggerThen
+    package let event: String
+    package let scope: String?
     package let properties: [String: NativeActionTriggerPropertyModel]
     package let data: [String: NativeActionTriggerDataModel]
+    package let events: [String: NativeActionTriggerEventModel]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    package init(name: String, id: String, parentId: String, version: Int32, keyType: String, then: NativeActionTriggerThen, properties: [String: NativeActionTriggerPropertyModel], data: [String: NativeActionTriggerDataModel]) {
+    package init(name: String, id: String, parentId: String, version: Int32, keyType: String, event: String, scope: String?, properties: [String: NativeActionTriggerPropertyModel], data: [String: NativeActionTriggerDataModel], events: [String: NativeActionTriggerEventModel]) {
         self.name = name
         self.id = id
         self.parentId = parentId
         self.version = version
         self.keyType = keyType
-        self.then = then
+        self.event = event
+        self.scope = scope
         self.properties = properties
         self.data = data
+        self.events = events
     }
 
     
@@ -3327,9 +3325,11 @@ package struct FfiConverterTypeNativeActionTriggerModel: FfiConverterRustBuffer 
                 parentId: FfiConverterString.read(from: &buf), 
                 version: FfiConverterInt32.read(from: &buf), 
                 keyType: FfiConverterString.read(from: &buf), 
-                then: FfiConverterTypeNativeActionTriggerThen.read(from: &buf), 
+                event: FfiConverterString.read(from: &buf), 
+                scope: FfiConverterOptionString.read(from: &buf), 
                 properties: FfiConverterDictionaryStringTypeNativeActionTriggerPropertyModel.read(from: &buf), 
-                data: FfiConverterDictionaryStringTypeNativeActionTriggerDataModel.read(from: &buf)
+                data: FfiConverterDictionaryStringTypeNativeActionTriggerDataModel.read(from: &buf), 
+                events: FfiConverterDictionaryStringTypeNativeActionTriggerEventModel.read(from: &buf)
         )
     }
 
@@ -3339,9 +3339,11 @@ package struct FfiConverterTypeNativeActionTriggerModel: FfiConverterRustBuffer 
         FfiConverterString.write(value.parentId, into: &buf)
         FfiConverterInt32.write(value.version, into: &buf)
         FfiConverterString.write(value.keyType, into: &buf)
-        FfiConverterTypeNativeActionTriggerThen.write(value.then, into: &buf)
+        FfiConverterString.write(value.event, into: &buf)
+        FfiConverterOptionString.write(value.scope, into: &buf)
         FfiConverterDictionaryStringTypeNativeActionTriggerPropertyModel.write(value.properties, into: &buf)
         FfiConverterDictionaryStringTypeNativeActionTriggerDataModel.write(value.data, into: &buf)
+        FfiConverterDictionaryStringTypeNativeActionTriggerEventModel.write(value.events, into: &buf)
     }
 }
 
@@ -4143,9 +4145,11 @@ package enum ActionLogEvent: Equatable, Hashable {
     )
     case eventTriggered(event: String, actionKey: String
     )
-    case triggerExecuted(name: String, keyType: String, then: String
+    case triggerExecuted(name: String, keyType: String, event: String
     )
     case triggerFallback(keyType: String, name: String
+    )
+    case scopeMismatch(triggerName: String, keyType: String, required: String, provided: String, dropped: Bool
     )
 
 
@@ -4174,10 +4178,13 @@ package struct FfiConverterTypeActionLogEvent: FfiConverterRustBuffer {
         case 2: return .eventTriggered(event: try FfiConverterString.read(from: &buf), actionKey: try FfiConverterString.read(from: &buf)
         )
         
-        case 3: return .triggerExecuted(name: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), then: try FfiConverterString.read(from: &buf)
+        case 3: return .triggerExecuted(name: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), event: try FfiConverterString.read(from: &buf)
         )
         
         case 4: return .triggerFallback(keyType: try FfiConverterString.read(from: &buf), name: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 5: return .scopeMismatch(triggerName: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), required: try FfiConverterString.read(from: &buf), provided: try FfiConverterString.read(from: &buf), dropped: try FfiConverterBool.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -4199,17 +4206,26 @@ package struct FfiConverterTypeActionLogEvent: FfiConverterRustBuffer {
             FfiConverterString.write(actionKey, into: &buf)
             
         
-        case let .triggerExecuted(name,keyType,then):
+        case let .triggerExecuted(name,keyType,event):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(name, into: &buf)
             FfiConverterString.write(keyType, into: &buf)
-            FfiConverterString.write(then, into: &buf)
+            FfiConverterString.write(event, into: &buf)
             
         
         case let .triggerFallback(keyType,name):
             writeInt(&buf, Int32(4))
             FfiConverterString.write(keyType, into: &buf)
             FfiConverterString.write(name, into: &buf)
+            
+        
+        case let .scopeMismatch(triggerName,keyType,required,provided,dropped):
+            writeInt(&buf, Int32(5))
+            FfiConverterString.write(triggerName, into: &buf)
+            FfiConverterString.write(keyType, into: &buf)
+            FfiConverterString.write(required, into: &buf)
+            FfiConverterString.write(provided, into: &buf)
+            FfiConverterBool.write(dropped, into: &buf)
             
         }
     }
@@ -4755,87 +4771,6 @@ package func FfiConverterTypeNBError_lower(_ value: NbError) -> RustBuffer {
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
-package enum NativeActionTriggerThen: Equatable, Hashable {
-    
-    case success
-    case failure
-    case next
-    case end
-
-
-
-
-
-}
-
-#if compiler(>=6)
-extension NativeActionTriggerThen: Sendable {}
-#endif
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-package struct FfiConverterTypeNativeActionTriggerThen: FfiConverterRustBuffer {
-    typealias SwiftType = NativeActionTriggerThen
-
-    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NativeActionTriggerThen {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-        
-        case 1: return .success
-        
-        case 2: return .failure
-        
-        case 3: return .next
-        
-        case 4: return .end
-        
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    package static func write(_ value: NativeActionTriggerThen, into buf: inout [UInt8]) {
-        switch value {
-        
-        
-        case .success:
-            writeInt(&buf, Int32(1))
-        
-        
-        case .failure:
-            writeInt(&buf, Int32(2))
-        
-        
-        case .next:
-            writeInt(&buf, Int32(3))
-        
-        
-        case .end:
-            writeInt(&buf, Int32(4))
-        
-        }
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-package func FfiConverterTypeNativeActionTriggerThen_lift(_ buf: RustBuffer) throws -> NativeActionTriggerThen {
-    return try FfiConverterTypeNativeActionTriggerThen.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-package func FfiConverterTypeNativeActionTriggerThen_lower(_ value: NativeActionTriggerThen) -> RustBuffer {
-    return FfiConverterTypeNativeActionTriggerThen.lower(value)
-}
-
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
 package enum RenderingState: Equatable, Hashable {
     
     case loading
@@ -5327,6 +5262,32 @@ fileprivate struct FfiConverterDictionaryStringTypeNativeActionTriggerDataModel:
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterDictionaryStringTypeNativeActionTriggerEventModel: FfiConverterRustBuffer {
+    package static func write(_ value: [String: NativeActionTriggerEventModel], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterTypeNativeActionTriggerEventModel.write(value, into: &buf)
+        }
+    }
+
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: NativeActionTriggerEventModel] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: NativeActionTriggerEventModel]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0..<len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterTypeNativeActionTriggerEventModel.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterDictionaryStringTypeNativeActionTriggerPropertyModel: FfiConverterRustBuffer {
     package static func write(_ value: [String: NativeActionTriggerPropertyModel], into buf: inout [UInt8]) {
         let len = Int32(value.count)
@@ -5773,9 +5734,6 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 31603) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_block_property() != 19031) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable() != 34459) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -5846,9 +5804,6 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable() != 976) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_block_property() != 27798) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() != 50980) {

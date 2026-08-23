@@ -53,20 +53,6 @@ public enum TypeUtils {
         }
     }
 
-    static func thenMapToJson(_ then: String?) -> String {
-        switch then?.uppercased() {
-        case "SUCCESS":
-            return "SUCCESS"
-        case "FAILURE":
-            return "FAILURE"
-        case "NEXT":
-            return "NEXT"
-        case "END":
-            return "END"
-        default:
-            return "END"
-        }
-    }
 
     static func valuePickerMapJson(_ type: String) -> String? {
         switch type.uppercased() {

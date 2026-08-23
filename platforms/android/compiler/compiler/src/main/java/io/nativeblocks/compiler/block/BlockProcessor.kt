@@ -114,10 +114,7 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                         }
 
                         NativeBlockEvent::class.simpleName -> {
-                            val eventJson = param.getAnnotation(annotation).generateEventJson(
-                                param = param,
-                                kind = integrationJson.kind
-                            )
+                            val eventJson = param.getAnnotation(annotation).generateEventJson(param = param)
                             events.add(eventJson)
                         }
 

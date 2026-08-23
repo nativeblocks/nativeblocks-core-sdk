@@ -13,10 +13,10 @@ import io.nativeblocks.compiler.meta.Property
 import io.nativeblocks.compiler.meta.TypeClass
 import io.nativeblocks.compiler.meta.Slot
 import io.nativeblocks.compiler.meta.ValuePickerOption
-import io.nativeblocks.compiler.type.Then
 import io.nativeblocks.compiler.util.Diagnostic
 import io.nativeblocks.compiler.util.DiagnosticType
 import io.nativeblocks.compiler.util.getArgument
+import io.nativeblocks.compiler.util.getArgumentOrNull
 import io.nativeblocks.compiler.util.onlyLettersAndUnderscore
 import io.nativeblocks.compiler.util.plusAssign
 import kotlinx.serialization.encodeToString
@@ -136,32 +136,20 @@ internal fun KSAnnotation.generatePropertyJson(
     return propertyJson
 }
 
-internal fun KSAnnotation.generateEventJson(
-    param: KSValueParameter,
-    kind: String
-): Event {
+internal fun KSAnnotation.generateEventJson(param: KSValueParameter): Event {
     val description = getArgument<String>("description")
     val deprecated = getArgument<Boolean>("deprecated")
     val deprecatedReason = getArgument<String>("deprecatedReason")
     val dataBinding = getArgument<ArrayList<String>>("dataBinding")
-    val then = if (kind == "BLOCK") {
-        Then::class.qualifiedName.orEmpty()
-    } else {
-        getArgument<Any>("then").toString()
-    }
-    val name = if (kind == "BLOCK") {
-        param.name?.asString().orEmpty()
-    } else {
-        thenMapper(then)
-    }
+    val name = param.name?.asString().orEmpty()
     val eventJson = Event(
         event = name,
+        scope = getArgumentOrNull<String>("scope")?.ifEmpty { null },
         description = description,
         deprecated = deprecated,
         deprecatedReason = deprecatedReason,
         functionName = param.name?.asString().orEmpty(),
         dataBinding = dataBinding,
-        then = thenMapper(then)
     )
     return eventJson
 }
@@ -240,15 +228,6 @@ internal inline fun <reified T> writeJson(
 private fun String.enumEntryName(): String =
     substringAfterLast('.').substringAfterLast('$').trim()
 
-private fun thenMapper(then: String): String {
-    return when (then.enumEntryName()) {
-        "SUCCESS" -> "SUCCESS"
-        "FAILURE" -> "FAILURE"
-        "NEXT" -> "NEXT"
-        "END" -> "END"
-        else -> "END"
-    }
-}
 
 private fun isPrimitiveType(type: String): Boolean {
     return when (type) {

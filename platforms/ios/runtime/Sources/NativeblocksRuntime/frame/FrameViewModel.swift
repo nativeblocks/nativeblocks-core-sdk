@@ -34,18 +34,6 @@ internal final class FrameViewModel: ObservableObject {
         onFindVariable: { [weak self] key in
             self?.variables[key]
         },
-        onFindBlock: { [weak self] key in
-            self?.blocks[key]
-        },
-        onChangeBlock: { [weak self] blockKey, propertyKey, valueMobile, valueTablet, valueDesktop in
-            self?.frameStateBridge.updateBlockProperty(
-                blockKey: blockKey,
-                propertyKey: propertyKey,
-                valueMobile: valueMobile,
-                valueTablet: valueTablet,
-                valueDesktop: valueDesktop
-            )
-        },
         onVariableChange: { [weak self] variable in
             self?.updateVariable(key: variable.key, value: variable.value)
         },

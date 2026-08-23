@@ -1,10 +1,10 @@
 import Foundation
 import NativeblocksRuntimeFFI
 
+internal let SCRIPT_NEXT_EVENT = "NEXT"
+
 /// NativeScriptAction provides scripting capabilities within the Nativeblocks system,
-/// executing JavaScript through the engine's QuickJS runtime (Rust, via uniffi)
-/// instead of JavaScriptCore. The script API is unchanged, so existing scripts
-/// keep working.
+/// executing JavaScript through the engine's QuickJS runtime
 ///
 /// ## Configuration
 ///
@@ -22,33 +22,6 @@ import NativeblocksRuntimeFFI
 /// - `updateVariable(variableKey, value)`: Updates a variable with the given key and value.
 ///   The value is automatically cast to match the variable's type.
 ///
-/// - `updateBlockProperties(blockKey, propertyKey, { mobile, tablet, desktop })`:
-///   Updates a block's property per screen size. Only the provided (non-null)
-///   values are updated.
-///
-/// Example (variables):
-/// ```javascript
-/// const count = getVariable("count");
-/// let result = count;
-/// if (count >= 1) {
-///     result = count - 1;
-/// }
-/// updateVariable("count", result);
-/// ```
-///
-/// Example (block properties):
-/// ```javascript
-/// updateBlockProperties("myBlock", "text", { mobile: "Mobile Text" });
-/// updateBlockProperties("myBlock", "backgroundColor", { mobile: "#FF0000", tablet: "#00FF00", desktop: "#0000FF" });
-/// ```
-///
-/// ## Blocked Features (for security)
-/// - `eval`, `Function` (removed from the QuickJS global scope); execution is
-///   interrupted after the timeout.
-///
-/// ## Variable Type Casting
-/// Values passed to `updateVariable` are automatically cast to match the target
-/// variable's type (STRING, INT, DOUBLE, LONG, FLOAT, BOOLEAN).
 internal final class NativeScriptAction: INativeAction {
 
     static let KEY_TYPE = "SCRIPT"
@@ -67,7 +40,7 @@ internal final class NativeScriptAction: INativeAction {
                 Self.evaluateScript(processedScript, actionContext: actionContext)
             }
             if let trigger {
-                actionContext.onHandleNextTrigger(trigger)
+                actionContext.onHandleEvent(SCRIPT_NEXT_EVENT)
             }
         }
     }
@@ -117,23 +90,4 @@ private final class ScriptBridgeAdapter: ScriptBridge, @unchecked Sendable {
         actionContext.onUpdateVariable(variable.copy(value: castedValue))
     }
 
-    func updateBlockProperty(
-        blockKey: String,
-        propertyKey: String,
-        mobile: String?,
-        tablet: String?,
-        desktop: String?
-    ) {
-        guard let block = actionContext.onFindBlock(blockKey),
-            let currentProperty = block.properties[propertyKey]
-        else { return }
-
-        actionContext.onUpdateBlockProperties(
-            blockKey,
-            propertyKey,
-            mobile ?? currentProperty.valueMobile,
-            tablet ?? currentProperty.valueTablet,
-            desktop ?? currentProperty.valueDesktop
-        )
-    }
 }

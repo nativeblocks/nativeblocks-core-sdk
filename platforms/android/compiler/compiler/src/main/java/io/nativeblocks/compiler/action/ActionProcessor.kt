@@ -141,10 +141,7 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
                             }
 
                             NativeActionEvent::class.simpleName -> {
-                                val event = param.getAnnotation(annotation).generateEventJson(
-                                    param = param,
-                                    kind = integrationJson.kind
-                                )
+                                val event = param.getAnnotation(annotation).generateEventJson(param = param)
                                 events.add(event)
                             }
                         }
@@ -154,17 +151,6 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
                             extraParams.add(extraParam)
                     }
                 }
-            }
-
-            val eventSize = events.groupingBy { it.then }.eachCount().filter { it.value > 1 }
-            if (eventSize.isNotEmpty()) {
-                throw Diagnostic.exceptionDispatcher(DiagnosticType.ThenUniqueness)
-            }
-            val eventSet = events.map { it.then }.toSet()
-            if ((eventSet.contains("NEXT") || eventSet.contains("END")) &&
-                (eventSet.contains("SUCCESS") || eventSet.contains("FAILURE"))
-            ) {
-                throw Diagnostic.exceptionDispatcher(DiagnosticType.ThenConflict)
             }
 
             writeJson(

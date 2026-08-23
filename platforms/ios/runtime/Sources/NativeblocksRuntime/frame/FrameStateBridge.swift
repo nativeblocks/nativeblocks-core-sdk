@@ -12,13 +12,6 @@ internal protocol FrameStateBridge {
 
     func updateVariable(key: String, value: String)
 
-    func updateBlockProperty(
-        blockKey: String,
-        propertyKey: String,
-        valueMobile: String,
-        valueTablet: String,
-        valueDesktop: String
-    )
 
     func logAction(event: ActionLogEvent)
 
@@ -54,21 +47,6 @@ internal final class FrameStateBridgeImpl: FrameStateBridge {
         frameStateManager.updateVariable(key: key, value: value)
     }
 
-    func updateBlockProperty(
-        blockKey: String,
-        propertyKey: String,
-        valueMobile: String,
-        valueTablet: String,
-        valueDesktop: String
-    ) {
-        frameStateManager.updateBlockProperty(
-            blockKey: blockKey,
-            propertyKey: propertyKey,
-            valueMobile: valueMobile,
-            valueTablet: valueTablet,
-            valueDesktop: valueDesktop
-        )
-    }
 
     func logAction(event: ActionLogEvent) {
         frameStateManager.logAction(event: event)

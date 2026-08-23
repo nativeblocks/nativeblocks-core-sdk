@@ -123,12 +123,12 @@ public struct EventMeta: NativeMeta {
     public var kind: NativeKind
     public var position: Int
     public var event: String
+    public var scope: String?
     public var description: String
     public var deprecated: Bool
     public var deprecatedReason: String
     public var dataBinding: [String] = []
     public var isOptionalFunction: Bool
-    public var then: String?
     public var block: AttributeSyntax?
     public var variable: PatternBindingSyntax?
 
@@ -136,21 +136,21 @@ public struct EventMeta: NativeMeta {
         kind: NativeKind,
         position: Int,
         event: String,
+        scope: String?,
         description: String,
         deprecated: Bool,
         deprecatedReason: String,
         dataBinding: [String],
         isOptionalFunction: Bool,
-        then: String? = nil,
         block: AttributeSyntax? = nil,
         variable: PatternBindingSyntax? = nil
     ) {
         self.kind = kind
         self.position = position
         self.event = event
+        self.scope = scope
         self.description = description
         self.dataBinding = dataBinding
-        self.then = then
         self.isOptionalFunction = isOptionalFunction
         self.block = block
         self.variable = variable
@@ -159,16 +159,13 @@ public struct EventMeta: NativeMeta {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case event, description, deprecated, deprecatedReason
+        case event, scope, description, deprecated, deprecatedReason
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        if self.kind == .action {
-            try container.encode(TypeUtils.thenMapToJson(self.then), forKey: .event)
-        } else {
-            try container.encode(self.event, forKey: .event)
-        }
+        try container.encode(self.event, forKey: .event)
+        try container.encodeIfPresent(self.scope, forKey: .scope)
         try container.encode(self.description, forKey: .description)
         try container.encode(self.deprecated, forKey: .deprecated)
         try container.encode(self.deprecatedReason, forKey: .deprecatedReason)

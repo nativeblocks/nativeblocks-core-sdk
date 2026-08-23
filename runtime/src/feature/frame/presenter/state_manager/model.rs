@@ -41,11 +41,18 @@ pub enum ActionLogEvent {
     TriggerExecuted {
         name: String,
         key_type: String,
-        then: String,
+        event: String,
     },
     TriggerFallback {
         key_type: String,
         name: String,
+    },
+    ScopeMismatch {
+        trigger_name: String,
+        key_type: String,
+        required: String,
+        provided: String,
+        dropped: bool,
     },
 }
 

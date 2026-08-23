@@ -79,30 +79,21 @@ annotation class NativeActionData(
 /**
  * Annotation to define an event binding for a Native Action.
  *
- * @property then Specifies the behavior after the event is triggered.
+ * The parameter's own name is the event name, and triggers are filed under it.
  * @property description A brief description of the event binding.
+ * @property scope The scope this event hands to the triggers filed under it.
  * @property dataBinding Array of data bindings for the event.
  * @property deprecated Indicates if the event binding is deprecated.
  * @property deprecatedReason Reason for deprecation, if applicable.
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class NativeActionEvent(
-    val then: Then = Then.END,
     val description: String = "",
+    val scope: String = "",
     val dataBinding: Array<String> = [],
     val deprecated: Boolean = false,
     val deprecatedReason: String = ""
 )
-
-/**
- * Enum representing the next step after an event.
- */
-enum class Then {
-    SUCCESS,
-    FAILURE,
-    NEXT,
-    END;
-}
 
 /**
  * Annotation to define options for a value picker in Native Actions.

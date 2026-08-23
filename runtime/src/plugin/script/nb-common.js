@@ -3,7 +3,7 @@
 //
 // Contract:
 //   - Host natives assumed present: getVariable, updateVariable,
-//     updateBlockProperties, __hostNow, __hostDiagnostic
+//     __hostNow, __hostDiagnostic
 //   - Every function here is TOTAL: it never throws, for any input.
 //   - Every function accepts null/undefined/wrong-type and returns a neutral value.
 //   - Nothing ever returns undefined; __t is applied at every boundary.

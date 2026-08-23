@@ -58,9 +58,14 @@ data class NativeActionTriggerModel(
     val keyType: String,
 
     /**
-     * Defines what happens after the trigger is executed.
+     * Event of the parent this trigger is filed under.
      */
-    val then: NativeActionTriggerThen,
+    val event: String,
+
+    /**
+     * Scope this trigger requires from the event it sits under, null when it accepts any.
+     */
+    val scope: String?,
 
     /**
      * Properties associated with the trigger.
@@ -74,44 +79,30 @@ data class NativeActionTriggerModel(
     val data: Map<String, NativeActionTriggerDataModel>,
 
     /**
+     * Events within the trigger that nested triggers can be filed under.
+     */
+    val events: Map<String, NativeActionTriggerEventModel>,
+
+    /**
      * List of sub-triggers nested within this trigger.
      */
     val subTriggers: List<NativeActionTriggerModel>? = null,
 )
 
 /**
- * Defines the possible outcomes of executing a trigger.
+ * Represents an event within an action trigger for holding nested triggers.
  */
-enum class NativeActionTriggerThen(val then: String) {
-    /** Trigger executed successfully. */
-    SUCCESS("SUCCESS"),
+data class NativeActionTriggerEventModel(
+    /**
+     * Name of the event.
+     */
+    val event: String,
 
-    /** Trigger execution failed. */
-    FAILURE("FAILURE"),
-
-    /** Proceed to the next trigger. */
-    NEXT("NEXT"),
-
-    /** End the trigger sequence. */
-    END("END");
-
-    companion object {
-        /**
-         * Converts a string representation to a corresponding enum value.
-         * @param then The string representation of the trigger outcome.
-         * @return The matching enum value or END if no match is found.
-         */
-        fun fromThen(then: String): NativeActionTriggerThen {
-            return when (then) {
-                "SUCCESS" -> SUCCESS
-                "FAILURE" -> FAILURE
-                "NEXT" -> NEXT
-                "END" -> END
-                else -> END
-            }
-        }
-    }
-}
+    /**
+     * Scope this event hands to the triggers under it, null when it declares none.
+     */
+    val scope: String?
+)
 
 /**
  * Represents a property associated with an action trigger, including its key, value, and type.

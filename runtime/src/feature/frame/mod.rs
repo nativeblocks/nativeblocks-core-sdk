@@ -12,9 +12,8 @@ use crate::feature::frame::domain::repository::FrameRepository;
 
 pub use domain::model::{
     NativeActionModel, NativeActionTriggerDataModel, NativeActionTriggerModel,
-    NativeActionTriggerPropertyModel, NativeActionTriggerThen, NativeBlockDataModel,
-    NativeBlockModel, NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameModel,
-    NativeVariableModel,
+    NativeActionTriggerPropertyModel, NativeBlockDataModel, NativeBlockModel,
+    NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameModel, NativeVariableModel,
 };
 pub use presenter::FrameClient;
 

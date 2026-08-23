@@ -43,6 +43,7 @@ pub(in crate::feature::frame::data) const FRAME_QUERY: &str = r#"query frame($ro
                 name
                 keyType
                 then
+                scope
                 properties {
                     key
                     value
@@ -52,6 +53,10 @@ pub(in crate::feature::frame::data) const FRAME_QUERY: &str = r#"query frame($ro
                     key
                     value
                     type
+                }
+                events {
+                    event
+                    scope
                 }
             }
         }
@@ -113,6 +118,10 @@ pub(in crate::feature::frame::data) const FRAME_PRODUCTION_QUERY: &str = r#"quer
                     key
                     value
                     type
+                }
+                events {
+                    event
+                    scope
                 }
             }
         }

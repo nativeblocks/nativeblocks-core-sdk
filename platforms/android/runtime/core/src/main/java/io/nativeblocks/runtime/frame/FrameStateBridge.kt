@@ -20,13 +20,6 @@ internal interface FrameStateBridge {
     fun updateVariable(key: String, value: String)
 
 
-    fun updateBlockProperty(
-        blockKey: String,
-        propertyKey: String,
-        valueMobile: String,
-        valueTablet: String,
-        valueDesktop: String
-    )
 
     fun logAction(event: ActionLogEvent)
 
@@ -60,21 +53,6 @@ internal class FrameStateBridgeImpl(
         frameStateManager.updateVariable(key, value)
     }
 
-    override fun updateBlockProperty(
-        blockKey: String,
-        propertyKey: String,
-        valueMobile: String,
-        valueTablet: String,
-        valueDesktop: String
-    ) {
-        frameStateManager.updateBlockProperty(
-            blockKey,
-            propertyKey,
-            valueMobile,
-            valueTablet,
-            valueDesktop
-        )
-    }
 
     override fun logAction(event: ActionLogEvent) {
         frameStateManager.logAction(event)

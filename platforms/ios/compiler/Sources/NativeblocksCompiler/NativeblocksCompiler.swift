@@ -121,8 +121,8 @@ public macro NativeActionProp(
 @attached(peer)
 public macro NativeActionEvent(
     description: String = "",
+    scope: String = "",
     dataBinding: [String] = [],
-    then: Then = Then.END,
     deprecated: Bool = false,
     deprecatedReason: String = ""
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeActionEventMacro")
@@ -137,12 +137,6 @@ public enum NativeActionValuePicker {
     case SCRIPT_AREA_INPUT
 }
 
-public enum Then {
-    case SUCCESS
-    case FAILURE
-    case NEXT
-    case END
-}
 
 public struct NativeActionValuePickerOption {
     var id: String

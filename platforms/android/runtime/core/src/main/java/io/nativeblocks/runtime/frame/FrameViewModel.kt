@@ -66,12 +66,6 @@ internal class FrameViewModel(
         onFindVariable = { key ->
             variableOf(key)?.value
         },
-        onFindBlock = { key ->
-            blockOf(key)
-        },
-        onChangeBlock = { blockKey, propertyKey, valueMobile, valueTablet, valueDesktop ->
-            updateBlockProperty(blockKey, propertyKey, valueMobile, valueTablet, valueDesktop)
-        },
         onVariableChange = { variableModel ->
             updateVariable(variableModel.key, variableModel.value)
         },

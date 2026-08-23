@@ -3,7 +3,6 @@ import NativeblocksRuntimeFFI
 
 internal typealias RuntimeFFIActionModel = NativeblocksRuntimeFFI.NativeActionModel
 internal typealias RuntimeFFIActionTriggerModel = NativeblocksRuntimeFFI.NativeActionTriggerModel
-internal typealias RuntimeFFIActionTriggerThen = NativeblocksRuntimeFFI.NativeActionTriggerThen
 internal typealias RuntimeFFIBlockModel = NativeblocksRuntimeFFI.NativeBlockModel
 internal typealias RuntimeFFIVariableModel = NativeblocksRuntimeFFI.NativeVariableModel
 internal typealias RuntimeFFILoggerEventLevel = NativeblocksRuntimeFFI.LoggerEventLevel
@@ -79,7 +78,8 @@ extension RuntimeFFIActionTriggerModel {
             version: Int(version),
             keyType: keyType,
             name: name,
-            then: then.toDomain(),
+            event: event,
+            scope: scope,
             properties: properties.mapValues { property in
                 NativeActionTriggerPropertyModel(
                     key: property.key,
@@ -89,18 +89,11 @@ extension RuntimeFFIActionTriggerModel {
             },
             data: data.mapValues { data in
                 NativeActionTriggerDataModel(key: data.key, value: data.value, type: data.dataType)
+            },
+            events: events.mapValues { event in
+                NativeActionTriggerEventModel(event: event.event, scope: event.scope)
             }
         )
     }
 }
 
-extension RuntimeFFIActionTriggerThen {
-    fileprivate func toDomain() -> NativeActionTriggerThen {
-        switch self {
-        case .success: return .success
-        case .failure: return .failure
-        case .next: return .next
-        case .end: return .end
-        }
-    }
-}

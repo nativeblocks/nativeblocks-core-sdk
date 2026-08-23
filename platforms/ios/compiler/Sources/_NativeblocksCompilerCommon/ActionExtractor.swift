@@ -78,15 +78,6 @@ public struct ActionExtractor {
             }
         }
 
-        let eventGroupByThen = Dictionary(grouping: eventActions, by: { $0.then }).filter {
-            $0.value.count > 1
-        }
-
-        for eventGroup in eventGroupByThen {
-            for event in eventGroup.value {
-                errors.append(Diagnostic(node: event.variable!, message: DiagnosticType.eventDistinctThen))
-            }
-        }
         return (meta, errors)
     }
 
@@ -272,7 +263,6 @@ public struct ActionExtractor {
         var description = ""
         var dataBinding: [String] = []
         var isOptionalFunction = false
-        var then: String?
         var blockAttribute: AttributeSyntax?
         var diagnostic: [Diagnostic] = []
         var deprecated = false
@@ -290,7 +280,6 @@ public struct ActionExtractor {
 
         description = SyntaxUtils.extractDescription(from: blockAttribute!) ?? ""
         dataBinding = SyntaxUtils.extractDataBinding(from: blockAttribute!) ?? []
-        then = SyntaxUtils.extractThen(from: blockAttribute!)
         deprecated = SyntaxUtils.extractDeprecated(from: blockAttribute!) ?? false
         deprecatedReason = SyntaxUtils.extractDeprecatedReason(from: blockAttribute!) ?? ""
 
@@ -327,12 +316,12 @@ public struct ActionExtractor {
                         kind: .action,
                         position: position,
                         event: event,
+                        scope: blockAttribute.flatMap { SyntaxUtils.extractScope(from: $0) }.flatMap { $0.isEmpty ? nil : $0 },
                         description: description,
                         deprecated: deprecated,
                         deprecatedReason: deprecatedReason ?? "",
                         dataBinding: dataBinding,
                         isOptionalFunction: isOptionalFunction,
-                        then: then,
                         block: blockAttribute,
                         variable: binding
                     ) : nil
