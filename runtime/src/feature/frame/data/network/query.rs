@@ -31,6 +31,16 @@ pub(in crate::feature::frame::data) const FRAME_QUERY: &str = r#"query frame($ro
                 slot
                 scope
             }
+            modifiers {
+                keyType
+                position
+                scope
+                data {
+                    key
+                    value
+                    type
+                }
+            }
         }
         actions {
             id
@@ -96,6 +106,16 @@ pub(in crate::feature::frame::data) const FRAME_PRODUCTION_QUERY: &str = r#"quer
             slots {
                 slot
                 scope
+            }
+            modifiers {
+                keyType
+                position
+                scope
+                data {
+                    key
+                    value
+                    type
+                }
             }
         }
         actions {

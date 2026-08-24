@@ -3,16 +3,18 @@ use crate::feature::frame::presenter::state_manager::model::{
 };
 use crate::library::environment::model::SdkConfig;
 use crate::plugin::logger::keys::parameter::{
-    ACTION_NAME, BLOCK_KEY, ERROR_MESSAGE, EVENT_NAME, FRAME_ROUTE, KEY, KEY_TYPE, PROVIDED_SCOPE,
-    REQUIRED_SCOPE, STATE, TRIGGER_NAME,
+    ACTION_NAME, BLOCK_KEY, ERROR_MESSAGE, EVENT_NAME, FRAME_ROUTE, KEY, KEY_TYPE, MATCH_COUNT,
+    PROVIDED_SCOPE, REQUIRED_SCOPE, STATE, TRIGGER_NAME,
 };
 use crate::plugin::logger::keys::state::{
-    ACTION_EVENT_IGNORED, ACTION_EVENT_TRIGGERED, ACTION_SCOPE_MISMATCH, BLOCK_SCOPE_MISMATCH,
-    FALLBACK_BLOCK as FALLBACK_BLOCK_STATE, FALLBACK_TRIGGER, FRAME_LOAD_FAILED,
-    FRAME_LOAD_SUCCEED, FRAME_LOADING, TRIGGER_EXECUTED,
+    ACTION_EVENT_AMBIGUOUS, ACTION_EVENT_IGNORED, ACTION_EVENT_TRIGGERED, ACTION_SCOPE_MISMATCH,
+    BLOCK_SCOPE_MISMATCH, FALLBACK_BLOCK as FALLBACK_BLOCK_STATE,
+    FALLBACK_MODIFIER as FALLBACK_MODIFIER_STATE, FALLBACK_TRIGGER, FRAME_LOAD_FAILED,
+    FRAME_LOAD_SUCCEED, FRAME_LOADING, MODIFIER_SCOPE_MISMATCH, TRIGGER_EXECUTED,
 };
 use crate::plugin::logger::keys::tag::{
-    ACTION_SCOPE, BLOCK_SCOPE, FALLBACK_ACTION, FALLBACK_BLOCK, FRAME_STATE, HANDLE_ACTION,
+    ACTION_SCOPE, BLOCK_SCOPE, FALLBACK_ACTION, FALLBACK_BLOCK, FALLBACK_MODIFIER, FRAME_STATE,
+    HANDLE_ACTION, MODIFIER_SCOPE,
 };
 use crate::plugin::logger::{LoggerEventLevel, NativeLoggerProvider};
 use std::collections::HashMap;
@@ -105,6 +107,23 @@ impl FrameLogger {
                     (ACTION_NAME.to_string(), action_key),
                 ]),
             ),
+            ActionLogEvent::EventAmbiguous {
+                event,
+                block_key,
+                count,
+            } => self.dispatch(
+                LoggerEventLevel::Debug,
+                HANDLE_ACTION,
+                format!(
+                    "{count} actions are bound to '{event}' on block '{block_key}', only the first one runs"
+                ),
+                HashMap::from([
+                    (STATE.to_string(), ACTION_EVENT_AMBIGUOUS.to_string()),
+                    (EVENT_NAME.to_string(), event),
+                    (BLOCK_KEY.to_string(), block_key),
+                    (MATCH_COUNT.to_string(), count.to_string()),
+                ]),
+            ),
             ActionLogEvent::TriggerExecuted {
                 name,
                 key_type,
@@ -181,6 +200,19 @@ impl FrameLogger {
                     (KEY.to_string(), block_key),
                 ]),
             ),
+            BlockLogEvent::ModifierFallback {
+                key_type,
+                block_key,
+            } => self.dispatch(
+                LoggerEventLevel::Error,
+                FALLBACK_MODIFIER,
+                format!("No modifier registered for '{key_type}'"),
+                HashMap::from([
+                    (STATE.to_string(), FALLBACK_MODIFIER_STATE.to_string()),
+                    (KEY_TYPE.to_string(), key_type),
+                    (BLOCK_KEY.to_string(), block_key),
+                ]),
+            ),
             BlockLogEvent::ScopeMismatch {
                 block_key,
                 key_type,
@@ -205,6 +237,36 @@ impl FrameLogger {
                 },
                 HashMap::from([
                     (STATE.to_string(), BLOCK_SCOPE_MISMATCH.to_string()),
+                    (BLOCK_KEY.to_string(), block_key),
+                    (KEY_TYPE.to_string(), key_type),
+                    (REQUIRED_SCOPE.to_string(), required),
+                    (PROVIDED_SCOPE.to_string(), provided),
+                ]),
+            ),
+            BlockLogEvent::ModifierScopeMismatch {
+                block_key,
+                key_type,
+                required,
+                provided,
+                dropped,
+            } => self.dispatch(
+                if dropped {
+                    LoggerEventLevel::Error
+                } else {
+                    LoggerEventLevel::Debug
+                },
+                MODIFIER_SCOPE,
+                if dropped {
+                    format!(
+                        "Modifier '{key_type}' requires '{required}' scope but block '{block_key}' sits in a slot providing '{provided}', dropped"
+                    )
+                } else {
+                    format!(
+                        "Modifier '{key_type}' requires '{required}' scope but the slot of block '{block_key}' declares none, applying without it"
+                    )
+                },
+                HashMap::from([
+                    (STATE.to_string(), MODIFIER_SCOPE_MISMATCH.to_string()),
                     (BLOCK_KEY.to_string(), block_key),
                     (KEY_TYPE.to_string(), key_type),
                     (REQUIRED_SCOPE.to_string(), required),

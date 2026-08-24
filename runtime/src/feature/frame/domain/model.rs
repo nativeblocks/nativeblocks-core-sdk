@@ -35,7 +35,23 @@ pub struct NativeBlockModel {
     #[deprecated(note = "Properties are being replaced by data; declare block arguments as data.")]
     pub properties: HashMap<String, NativeBlockPropertyModel>,
     pub slots: HashMap<String, NativeBlockSlotModel>,
+    pub modifiers: Vec<NativeBlockModifierModel>,
     pub sub_keys: HashMap<String, Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
+pub struct NativeBlockModifierModel {
+    pub key_type: String,
+    pub position: i32,
+    pub scope: Option<String>,
+    pub data: HashMap<String, NativeBlockModifierDataModel>,
+}
+
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize, uniffi::Record)]
+pub struct NativeBlockModifierDataModel {
+    pub key: String,
+    pub value: String,
+    pub data_type: String,
 }
 
 #[deprecated(note = "Properties are being replaced by data.")]

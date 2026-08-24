@@ -5,13 +5,14 @@ use std::collections::HashMap;
 use crate::feature::frame::data::network::dto::{
     NativeActionDto, NativeActionTriggerDataDto, NativeActionTriggerDto,
     NativeActionTriggerEventDto, NativeActionTriggerPropertyDto, NativeBlockDataDto,
-    NativeBlockDto, NativeBlockPropertyDto, NativeBlockSlotDto, NativeFrameDto, NativeVariableDto,
+    NativeBlockDto, NativeBlockModifierDataDto, NativeBlockModifierDto, NativeBlockPropertyDto,
+    NativeBlockSlotDto, NativeFrameDto, NativeVariableDto,
 };
 use crate::feature::frame::domain::model::{
     NativeActionModel, NativeActionTriggerDataModel, NativeActionTriggerEventModel,
     NativeActionTriggerModel, NativeActionTriggerPropertyModel, NativeBlockDataModel,
-    NativeBlockModel, NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameModel,
-    NativeVariableModel,
+    NativeBlockModel, NativeBlockModifierDataModel, NativeBlockModifierModel,
+    NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameModel, NativeVariableModel,
 };
 
 const ROOT_KEY_TYPE: &str = "ROOT";
@@ -132,6 +133,12 @@ fn map_block(dto: NativeBlockDto, key_by_id: &HashMap<String, String>) -> Native
         data: keyed(dto.data, map_block_data, |model| &model.key),
         properties: keyed(dto.properties, map_block_property, |model| &model.key),
         slots: keyed(dto.slots, map_block_slot, |model| &model.slot),
+        modifiers: dto
+            .modifiers
+            .unwrap_or_default()
+            .into_iter()
+            .map(map_block_modifier)
+            .collect(),
         sub_keys: HashMap::new(),
     };
 }
@@ -151,6 +158,23 @@ fn map_block_property(dto: NativeBlockPropertyDto) -> NativeBlockPropertyModel {
         value_tablet: text(dto.value_tablet),
         value_desktop: text(dto.value_desktop),
         property_type: text(dto.property_type),
+    };
+}
+
+fn map_block_modifier(dto: NativeBlockModifierDto) -> NativeBlockModifierModel {
+    return NativeBlockModifierModel {
+        key_type: text(dto.key_type),
+        position: dto.position.unwrap_or(0),
+        scope: dto.scope,
+        data: keyed(dto.data, map_block_modifier_data, |model| &model.key),
+    };
+}
+
+fn map_block_modifier_data(dto: NativeBlockModifierDataDto) -> NativeBlockModifierDataModel {
+    return NativeBlockModifierDataModel {
+        key: text(dto.key),
+        value: text(dto.value),
+        data_type: text(dto.data_type),
     };
 }
 

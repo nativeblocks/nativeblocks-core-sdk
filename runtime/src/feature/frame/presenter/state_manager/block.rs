@@ -1,4 +1,4 @@
-use crate::feature::frame::domain::model::NativeBlockModel;
+use crate::feature::frame::domain::model::{NativeBlockModel, NativeBlockModifierModel};
 use crate::feature::frame::presenter::logging::FrameLogger;
 use crate::feature::frame::presenter::state_manager::model::BlockLogEvent;
 use crate::feature::frame::presenter::state_manager::state::InternalState;
@@ -38,7 +38,12 @@ pub(super) fn render(
         .base
         .blocks
         .values()
-        .map(|block| (block.key.clone(), with_children(block, &index)))
+        .map(|block| {
+            (
+                block.key.clone(),
+                with_children(state, block, &index, logger),
+            )
+        })
         .collect();
 }
 
@@ -55,10 +60,53 @@ fn sub_key_index(placed: &[&NativeBlockModel]) -> SubKeyIndex {
     return index;
 }
 
-fn with_children(block: &NativeBlockModel, index: &SubKeyIndex) -> NativeBlockModel {
+fn with_children(
+    state: &InternalState,
+    block: &NativeBlockModel,
+    index: &SubKeyIndex,
+    logger: &FrameLogger,
+) -> NativeBlockModel {
     let mut filled = block.clone();
     filled.sub_keys = index.get(block.key.as_str()).cloned().unwrap_or_default();
+    filled.modifiers = scoped_modifiers(state, block, logger);
     return filled;
+}
+
+fn scoped_modifiers(
+    state: &InternalState,
+    block: &NativeBlockModel,
+    logger: &FrameLogger,
+) -> Vec<NativeBlockModifierModel> {
+    let provided = slot_scope(state, block);
+    let mut applied: Vec<NativeBlockModifierModel> = block
+        .modifiers
+        .iter()
+        .filter(|modifier| modifier_fits(modifier, block, &provided, logger))
+        .cloned()
+        .collect();
+    applied.sort_by_key(|modifier| modifier.position);
+    return applied;
+}
+
+fn modifier_fits(
+    modifier: &NativeBlockModifierModel,
+    block: &NativeBlockModel,
+    provided: &str,
+    logger: &FrameLogger,
+) -> bool {
+    let required = modifier.scope.clone().unwrap_or_default();
+    if required.is_empty() || required == provided {
+        return true;
+    }
+    let dropped = !provided.is_empty();
+    logger.block(BlockLogEvent::ModifierScopeMismatch {
+        block_key: block.key.clone(),
+        key_type: modifier.key_type.clone(),
+        required,
+        provided: provided.to_string(),
+        dropped,
+    });
+    return !dropped;
 }
 
 fn slot_scope(state: &InternalState, block: &NativeBlockModel) -> String {

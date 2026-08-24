@@ -38,6 +38,24 @@ pub(in crate::feature::frame::data) struct NativeBlockDto {
     pub(in crate::feature::frame::data) data: Option<Vec<NativeBlockDataDto>>,
     pub(in crate::feature::frame::data) properties: Option<Vec<NativeBlockPropertyDto>>,
     pub(in crate::feature::frame::data) slots: Option<Vec<NativeBlockSlotDto>>,
+    pub(in crate::feature::frame::data) modifiers: Option<Vec<NativeBlockModifierDto>>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(in crate::feature::frame::data) struct NativeBlockModifierDto {
+    pub(in crate::feature::frame::data) key_type: Option<String>,
+    pub(in crate::feature::frame::data) position: Option<i32>,
+    pub(in crate::feature::frame::data) scope: Option<String>,
+    pub(in crate::feature::frame::data) data: Option<Vec<NativeBlockModifierDataDto>>,
+}
+
+#[derive(Deserialize)]
+pub(in crate::feature::frame::data) struct NativeBlockModifierDataDto {
+    pub(in crate::feature::frame::data) key: Option<String>,
+    pub(in crate::feature::frame::data) value: Option<String>,
+    #[serde(rename = "type")]
+    pub(in crate::feature::frame::data) data_type: Option<String>,
 }
 
 #[derive(Deserialize)]

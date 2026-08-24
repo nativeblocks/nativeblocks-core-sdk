@@ -38,6 +38,11 @@ pub enum ActionLogEvent {
         event: String,
         action_key: String,
     },
+    EventAmbiguous {
+        event: String,
+        block_key: String,
+        count: i32,
+    },
     TriggerExecuted {
         name: String,
         key_type: String,
@@ -62,7 +67,18 @@ pub enum BlockLogEvent {
         key_type: String,
         block_key: String,
     },
+    ModifierFallback {
+        key_type: String,
+        block_key: String,
+    },
     ScopeMismatch {
+        block_key: String,
+        key_type: String,
+        required: String,
+        provided: String,
+        dropped: bool,
+    },
+    ModifierScopeMismatch {
         block_key: String,
         key_type: String,
         required: String,

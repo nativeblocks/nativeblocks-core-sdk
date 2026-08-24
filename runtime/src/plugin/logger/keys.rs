@@ -11,9 +11,11 @@ pub mod tag {
     pub const SCAFFOLD_FETCH: &str = "SCAFFOLD_FETCH";
     pub const FALLBACK_ACTION: &str = "FALLBACK_ACTION";
     pub const FALLBACK_BLOCK: &str = "FALLBACK_BLOCK";
+    pub const FALLBACK_MODIFIER: &str = "FALLBACK_MODIFIER";
     pub const FRAME_CLEAR: &str = "FRAME_CLEAR";
     pub const BLOCK_SCOPE: &str = "BLOCK_SCOPE";
     pub const ACTION_SCOPE: &str = "ACTION_SCOPE";
+    pub const MODIFIER_SCOPE: &str = "MODIFIER_SCOPE";
 }
 
 pub mod state {
@@ -29,8 +31,10 @@ pub mod state {
     pub const LOCALIZATION_SET: &str = "LOCALIZATION_SET";
     pub const FALLBACK_TRIGGER: &str = "FALLBACK_TRIGGER";
     pub const FALLBACK_BLOCK: &str = "FALLBACK_BLOCK";
+    pub const FALLBACK_MODIFIER: &str = "FALLBACK_MODIFIER";
     pub const BLOCK_SCOPE_MISMATCH: &str = "BLOCK_SCOPE_MISMATCH";
     pub const ACTION_SCOPE_MISMATCH: &str = "ACTION_SCOPE_MISMATCH";
+    pub const MODIFIER_SCOPE_MISMATCH: &str = "MODIFIER_SCOPE_MISMATCH";
     pub const SCAFFOLD_FETCH_FAILED: &str = "SCAFFOLD_FETCH_FAILED";
     pub const SCAFFOLD_FETCH_SUCCEED: &str = "SCAFFOLD_FETCH_SUCCEED";
     pub const EXPERIMENT_FETCH_FAILED: &str = "EXPERIMENT_FETCH_FAILED";
@@ -38,6 +42,7 @@ pub mod state {
     pub const VARIABLE_UPDATED: &str = "VARIABLE_UPDATED";
     pub const ACTION_EVENT_TRIGGERED: &str = "ACTION_EVENT_TRIGGERED";
     pub const ACTION_EVENT_IGNORED: &str = "ACTION_EVENT_IGNORED";
+    pub const ACTION_EVENT_AMBIGUOUS: &str = "ACTION_EVENT_AMBIGUOUS";
     pub const TRIGGER_EXECUTED: &str = "TRIGGER_EXECUTED";
 }
 
@@ -53,6 +58,7 @@ pub mod parameter {
     pub const KEY_TYPE: &str = "key_type";
     pub const TRIGGER_NAME: &str = "trigger_name";
     pub const KEY: &str = "key";
+    pub const MATCH_COUNT: &str = "match_count";
     pub const FRAMES_COUNT: &str = "frames_count";
     pub const EXPERIMENT_KEY: &str = "experiment_key";
     pub const EXPERIMENT_VALUE: &str = "experiment_value";
