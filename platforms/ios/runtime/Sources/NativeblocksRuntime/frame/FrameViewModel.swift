@@ -28,6 +28,7 @@ internal final class FrameViewModel: ObservableObject {
     private var isStateful = false
 
     let blockProvider: NativeBlockProvider
+    let modifierProvider: NativeModifierProvider
 
     private lazy var actionTree = ActionTree(
         instanceName: instanceName,
@@ -46,6 +47,7 @@ internal final class FrameViewModel: ObservableObject {
         self.frameStateBridge = frameStateBridge
         self.instanceName = instanceName
         self.blockProvider = NativeBlockProviderRegistry.getOrCreate(instanceName)
+        self.modifierProvider = NativeModifierProviderRegistry.getOrCreate(instanceName)
     }
 
     func setupFrame(route: String, args: [String: String], stateKey: String?) {
@@ -75,11 +77,21 @@ internal final class FrameViewModel: ObservableObject {
     }
 
     func actionOf(blockKey: String, eventType: String) -> NativeActionModel? {
-        return actions[blockKey]?.first { $0.event == eventType }
+        let matches = actions[blockKey]?.filter { $0.event == eventType } ?? []
+        if matches.count > 1 {
+            frameStateBridge.logAction(
+                event: .eventAmbiguous(event: eventType, blockKey: blockKey, count: Int32(matches.count))
+            )
+        }
+        return matches.first
     }
 
     func logBlockFallback(keyType: String, blockKey: String) {
         frameStateBridge.logBlock(event: .blockFallback(keyType: keyType, blockKey: blockKey))
+    }
+
+    func logModifierFallback(keyType: String, blockKey: String) {
+        frameStateBridge.logBlock(event: .modifierFallback(keyType: keyType, blockKey: blockKey))
     }
 
     func handleAction(_ index: Int, _ action: NativeActionModel?, _ performedEventType: String) {

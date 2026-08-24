@@ -6289,6 +6289,8 @@ internal data class NativeBlockModel (
     , 
     val `slots`: Map<kotlin.String, NativeBlockSlotModel>
     , 
+    val `modifiers`: List<NativeBlockModifierModel>
+    , 
     val `subKeys`: Map<kotlin.String, List<kotlin.String>>
     
 ){
@@ -6319,6 +6321,7 @@ internal object FfiConverterTypeNativeBlockModel: FfiConverterRustBuffer<NativeB
             FfiConverterMapStringTypeNativeBlockDataModel.read(buf),
             FfiConverterMapStringTypeNativeBlockPropertyModel.read(buf),
             FfiConverterMapStringTypeNativeBlockSlotModel.read(buf),
+            FfiConverterSequenceTypeNativeBlockModifierModel.read(buf),
             FfiConverterMapStringSequenceString.read(buf),
         )
     }
@@ -6337,6 +6340,7 @@ internal object FfiConverterTypeNativeBlockModel: FfiConverterRustBuffer<NativeB
             FfiConverterMapStringTypeNativeBlockDataModel.allocationSize(value.`data`) +
             FfiConverterMapStringTypeNativeBlockPropertyModel.allocationSize(value.`properties`) +
             FfiConverterMapStringTypeNativeBlockSlotModel.allocationSize(value.`slots`) +
+            FfiConverterSequenceTypeNativeBlockModifierModel.allocationSize(value.`modifiers`) +
             FfiConverterMapStringSequenceString.allocationSize(value.`subKeys`)
     )
 
@@ -6354,7 +6358,99 @@ internal object FfiConverterTypeNativeBlockModel: FfiConverterRustBuffer<NativeB
             FfiConverterMapStringTypeNativeBlockDataModel.write(value.`data`, buf)
             FfiConverterMapStringTypeNativeBlockPropertyModel.write(value.`properties`, buf)
             FfiConverterMapStringTypeNativeBlockSlotModel.write(value.`slots`, buf)
+            FfiConverterSequenceTypeNativeBlockModifierModel.write(value.`modifiers`, buf)
             FfiConverterMapStringSequenceString.write(value.`subKeys`, buf)
+    }
+}
+
+
+
+internal data class NativeBlockModifierDataModel (
+    val `key`: kotlin.String
+    , 
+    val `value`: kotlin.String
+    , 
+    val `dataType`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+internal object FfiConverterTypeNativeBlockModifierDataModel: FfiConverterRustBuffer<NativeBlockModifierDataModel> {
+    override fun read(buf: ByteBuffer): NativeBlockModifierDataModel {
+        return NativeBlockModifierDataModel(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeBlockModifierDataModel) = (
+            FfiConverterString.allocationSize(value.`key`) +
+            FfiConverterString.allocationSize(value.`value`) +
+            FfiConverterString.allocationSize(value.`dataType`)
+    )
+
+    override fun write(value: NativeBlockModifierDataModel, buf: ByteBuffer) {
+            FfiConverterString.write(value.`key`, buf)
+            FfiConverterString.write(value.`value`, buf)
+            FfiConverterString.write(value.`dataType`, buf)
+    }
+}
+
+
+
+internal data class NativeBlockModifierModel (
+    val `keyType`: kotlin.String
+    , 
+    val `position`: kotlin.Int
+    , 
+    val `scope`: kotlin.String?
+    , 
+    val `data`: Map<kotlin.String, NativeBlockModifierDataModel>
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+internal object FfiConverterTypeNativeBlockModifierModel: FfiConverterRustBuffer<NativeBlockModifierModel> {
+    override fun read(buf: ByteBuffer): NativeBlockModifierModel {
+        return NativeBlockModifierModel(
+            FfiConverterString.read(buf),
+            FfiConverterInt.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterMapStringTypeNativeBlockModifierDataModel.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeBlockModifierModel) = (
+            FfiConverterString.allocationSize(value.`keyType`) +
+            FfiConverterInt.allocationSize(value.`position`) +
+            FfiConverterOptionalString.allocationSize(value.`scope`) +
+            FfiConverterMapStringTypeNativeBlockModifierDataModel.allocationSize(value.`data`)
+    )
+
+    override fun write(value: NativeBlockModifierModel, buf: ByteBuffer) {
+            FfiConverterString.write(value.`keyType`, buf)
+            FfiConverterInt.write(value.`position`, buf)
+            FfiConverterOptionalString.write(value.`scope`, buf)
+            FfiConverterMapStringTypeNativeBlockModifierDataModel.write(value.`data`, buf)
     }
 }
 
@@ -6781,6 +6877,17 @@ internal sealed class ActionLogEvent {
         companion object
     }
     
+    data class EventAmbiguous(
+        val `event`: kotlin.String, 
+        val `blockKey`: kotlin.String, 
+        val `count`: kotlin.Int) : ActionLogEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
     data class TriggerExecuted(
         val `name`: kotlin.String, 
         val `keyType`: kotlin.String, 
@@ -6838,16 +6945,21 @@ internal object FfiConverterTypeActionLogEvent : FfiConverterRustBuffer<ActionLo
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            3 -> ActionLogEvent.TriggerExecuted(
+            3 -> ActionLogEvent.EventAmbiguous(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterInt.read(buf),
+                )
+            4 -> ActionLogEvent.TriggerExecuted(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            4 -> ActionLogEvent.TriggerFallback(
+            5 -> ActionLogEvent.TriggerFallback(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            5 -> ActionLogEvent.ScopeMismatch(
+            6 -> ActionLogEvent.ScopeMismatch(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
@@ -6872,6 +6984,15 @@ internal object FfiConverterTypeActionLogEvent : FfiConverterRustBuffer<ActionLo
                 4UL
                 + FfiConverterString.allocationSize(value.`event`)
                 + FfiConverterString.allocationSize(value.`actionKey`)
+            )
+        }
+        is ActionLogEvent.EventAmbiguous -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`event`)
+                + FfiConverterString.allocationSize(value.`blockKey`)
+                + FfiConverterInt.allocationSize(value.`count`)
             )
         }
         is ActionLogEvent.TriggerExecuted -> {
@@ -6917,21 +7038,28 @@ internal object FfiConverterTypeActionLogEvent : FfiConverterRustBuffer<ActionLo
                 FfiConverterString.write(value.`actionKey`, buf)
                 Unit
             }
-            is ActionLogEvent.TriggerExecuted -> {
+            is ActionLogEvent.EventAmbiguous -> {
                 buf.putInt(3)
+                FfiConverterString.write(value.`event`, buf)
+                FfiConverterString.write(value.`blockKey`, buf)
+                FfiConverterInt.write(value.`count`, buf)
+                Unit
+            }
+            is ActionLogEvent.TriggerExecuted -> {
+                buf.putInt(4)
                 FfiConverterString.write(value.`name`, buf)
                 FfiConverterString.write(value.`keyType`, buf)
                 FfiConverterString.write(value.`event`, buf)
                 Unit
             }
             is ActionLogEvent.TriggerFallback -> {
-                buf.putInt(4)
+                buf.putInt(5)
                 FfiConverterString.write(value.`keyType`, buf)
                 FfiConverterString.write(value.`name`, buf)
                 Unit
             }
             is ActionLogEvent.ScopeMismatch -> {
-                buf.putInt(5)
+                buf.putInt(6)
                 FfiConverterString.write(value.`triggerName`, buf)
                 FfiConverterString.write(value.`keyType`, buf)
                 FfiConverterString.write(value.`required`, buf)
@@ -6959,7 +7087,30 @@ internal sealed class BlockLogEvent {
         companion object
     }
     
+    data class ModifierFallback(
+        val `keyType`: kotlin.String, 
+        val `blockKey`: kotlin.String) : BlockLogEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
     data class ScopeMismatch(
+        val `blockKey`: kotlin.String, 
+        val `keyType`: kotlin.String, 
+        val `required`: kotlin.String, 
+        val `provided`: kotlin.String, 
+        val `dropped`: kotlin.Boolean) : BlockLogEvent()
+        
+    {
+        
+
+        companion object
+    }
+    
+    data class ModifierScopeMismatch(
         val `blockKey`: kotlin.String, 
         val `keyType`: kotlin.String, 
         val `required`: kotlin.String, 
@@ -6992,7 +7143,18 @@ internal object FfiConverterTypeBlockLogEvent : FfiConverterRustBuffer<BlockLogE
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 )
-            2 -> BlockLogEvent.ScopeMismatch(
+            2 -> BlockLogEvent.ModifierFallback(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            3 -> BlockLogEvent.ScopeMismatch(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            4 -> BlockLogEvent.ModifierScopeMismatch(
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterString.read(buf),
@@ -7012,7 +7174,26 @@ internal object FfiConverterTypeBlockLogEvent : FfiConverterRustBuffer<BlockLogE
                 + FfiConverterString.allocationSize(value.`blockKey`)
             )
         }
+        is BlockLogEvent.ModifierFallback -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`keyType`)
+                + FfiConverterString.allocationSize(value.`blockKey`)
+            )
+        }
         is BlockLogEvent.ScopeMismatch -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`blockKey`)
+                + FfiConverterString.allocationSize(value.`keyType`)
+                + FfiConverterString.allocationSize(value.`required`)
+                + FfiConverterString.allocationSize(value.`provided`)
+                + FfiConverterBoolean.allocationSize(value.`dropped`)
+            )
+        }
+        is BlockLogEvent.ModifierScopeMismatch -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
@@ -7033,8 +7214,23 @@ internal object FfiConverterTypeBlockLogEvent : FfiConverterRustBuffer<BlockLogE
                 FfiConverterString.write(value.`blockKey`, buf)
                 Unit
             }
-            is BlockLogEvent.ScopeMismatch -> {
+            is BlockLogEvent.ModifierFallback -> {
                 buf.putInt(2)
+                FfiConverterString.write(value.`keyType`, buf)
+                FfiConverterString.write(value.`blockKey`, buf)
+                Unit
+            }
+            is BlockLogEvent.ScopeMismatch -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`blockKey`, buf)
+                FfiConverterString.write(value.`keyType`, buf)
+                FfiConverterString.write(value.`required`, buf)
+                FfiConverterString.write(value.`provided`, buf)
+                FfiConverterBoolean.write(value.`dropped`, buf)
+                Unit
+            }
+            is BlockLogEvent.ModifierScopeMismatch -> {
+                buf.putInt(4)
                 FfiConverterString.write(value.`blockKey`, buf)
                 FfiConverterString.write(value.`keyType`, buf)
                 FfiConverterString.write(value.`required`, buf)
@@ -7790,6 +7986,34 @@ internal object FfiConverterSequenceTypeNativeActionTriggerModel: FfiConverterRu
 /**
  * @suppress
  */
+internal object FfiConverterSequenceTypeNativeBlockModifierModel: FfiConverterRustBuffer<List<NativeBlockModifierModel>> {
+    override fun read(buf: ByteBuffer): List<NativeBlockModifierModel> {
+        val len = buf.getInt()
+        return List<NativeBlockModifierModel>(len) {
+            FfiConverterTypeNativeBlockModifierModel.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<NativeBlockModifierModel>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeNativeBlockModifierModel.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<NativeBlockModifierModel>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeNativeBlockModifierModel.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 internal object FfiConverterSequenceTypeRouteArgumentsModel: FfiConverterRustBuffer<List<RouteArgumentsModel>> {
     override fun read(buf: ByteBuffer): List<RouteArgumentsModel> {
         val len = buf.getInt()
@@ -8042,6 +8266,45 @@ internal object FfiConverterMapStringTypeNativeBlockModel: FfiConverterRustBuffe
         value.forEach { (k, v) ->
             FfiConverterString.write(k, buf)
             FfiConverterTypeNativeBlockModel.write(v, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+internal object FfiConverterMapStringTypeNativeBlockModifierDataModel: FfiConverterRustBuffer<Map<kotlin.String, NativeBlockModifierDataModel>> {
+    override fun read(buf: ByteBuffer): Map<kotlin.String, NativeBlockModifierDataModel> {
+        val len = buf.getInt()
+        return buildMap<kotlin.String, NativeBlockModifierDataModel>(len) {
+            repeat(len) {
+                val k = FfiConverterString.read(buf)
+                val v = FfiConverterTypeNativeBlockModifierDataModel.read(buf)
+                this[k] = v
+            }
+        }
+    }
+
+    override fun allocationSize(value: Map<kotlin.String, NativeBlockModifierDataModel>): ULong {
+        val spaceForMapSize = 4UL
+        val spaceForChildren = value.map { (k, v) ->
+            FfiConverterString.allocationSize(k) +
+            FfiConverterTypeNativeBlockModifierDataModel.allocationSize(v)
+        }.sum()
+        return spaceForMapSize + spaceForChildren
+    }
+
+    override fun write(value: Map<kotlin.String, NativeBlockModifierDataModel>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        // The parens on `(k, v)` here ensure we're calling the right method,
+        // which is important for compatibility with older android devices.
+        // Ref https://blog.danlew.net/2017/03/16/kotlin-puzzler-whose-line-is-it-anyways/
+        value.forEach { (k, v) ->
+            FfiConverterString.write(k, buf)
+            FfiConverterTypeNativeBlockModifierDataModel.write(v, buf)
         }
     }
 }

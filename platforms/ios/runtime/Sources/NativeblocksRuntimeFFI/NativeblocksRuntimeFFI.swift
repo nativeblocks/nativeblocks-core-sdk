@@ -3493,11 +3493,12 @@ package struct NativeBlockModel: Equatable, Hashable {
     package let data: [String: NativeBlockDataModel]
     package let properties: [String: NativeBlockPropertyModel]
     package let slots: [String: NativeBlockSlotModel]
+    package let modifiers: [NativeBlockModifierModel]
     package let subKeys: [String: [String]]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    package init(id: String, parentId: String, parentKey: String, version: Int32, slot: String, keyType: String, key: String, scope: String?, visibility: String, position: Int32, data: [String: NativeBlockDataModel], properties: [String: NativeBlockPropertyModel], slots: [String: NativeBlockSlotModel], subKeys: [String: [String]]) {
+    package init(id: String, parentId: String, parentKey: String, version: Int32, slot: String, keyType: String, key: String, scope: String?, visibility: String, position: Int32, data: [String: NativeBlockDataModel], properties: [String: NativeBlockPropertyModel], slots: [String: NativeBlockSlotModel], modifiers: [NativeBlockModifierModel], subKeys: [String: [String]]) {
         self.id = id
         self.parentId = parentId
         self.parentKey = parentKey
@@ -3511,6 +3512,7 @@ package struct NativeBlockModel: Equatable, Hashable {
         self.data = data
         self.properties = properties
         self.slots = slots
+        self.modifiers = modifiers
         self.subKeys = subKeys
     }
 
@@ -3543,6 +3545,7 @@ package struct FfiConverterTypeNativeBlockModel: FfiConverterRustBuffer {
                 data: FfiConverterDictionaryStringTypeNativeBlockDataModel.read(from: &buf), 
                 properties: FfiConverterDictionaryStringTypeNativeBlockPropertyModel.read(from: &buf), 
                 slots: FfiConverterDictionaryStringTypeNativeBlockSlotModel.read(from: &buf), 
+                modifiers: FfiConverterSequenceTypeNativeBlockModifierModel.read(from: &buf), 
                 subKeys: FfiConverterDictionaryStringSequenceString.read(from: &buf)
         )
     }
@@ -3561,6 +3564,7 @@ package struct FfiConverterTypeNativeBlockModel: FfiConverterRustBuffer {
         FfiConverterDictionaryStringTypeNativeBlockDataModel.write(value.data, into: &buf)
         FfiConverterDictionaryStringTypeNativeBlockPropertyModel.write(value.properties, into: &buf)
         FfiConverterDictionaryStringTypeNativeBlockSlotModel.write(value.slots, into: &buf)
+        FfiConverterSequenceTypeNativeBlockModifierModel.write(value.modifiers, into: &buf)
         FfiConverterDictionaryStringSequenceString.write(value.subKeys, into: &buf)
     }
 }
@@ -3578,6 +3582,126 @@ package func FfiConverterTypeNativeBlockModel_lift(_ buf: RustBuffer) throws -> 
 #endif
 package func FfiConverterTypeNativeBlockModel_lower(_ value: NativeBlockModel) -> RustBuffer {
     return FfiConverterTypeNativeBlockModel.lower(value)
+}
+
+
+package struct NativeBlockModifierDataModel: Equatable, Hashable {
+    package let key: String
+    package let value: String
+    package let dataType: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    package init(key: String, value: String, dataType: String) {
+        self.key = key
+        self.value = value
+        self.dataType = dataType
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension NativeBlockModifierDataModel: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package struct FfiConverterTypeNativeBlockModifierDataModel: FfiConverterRustBuffer {
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NativeBlockModifierDataModel {
+        return
+            try NativeBlockModifierDataModel(
+                key: FfiConverterString.read(from: &buf), 
+                value: FfiConverterString.read(from: &buf), 
+                dataType: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    package static func write(_ value: NativeBlockModifierDataModel, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.key, into: &buf)
+        FfiConverterString.write(value.value, into: &buf)
+        FfiConverterString.write(value.dataType, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeNativeBlockModifierDataModel_lift(_ buf: RustBuffer) throws -> NativeBlockModifierDataModel {
+    return try FfiConverterTypeNativeBlockModifierDataModel.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeNativeBlockModifierDataModel_lower(_ value: NativeBlockModifierDataModel) -> RustBuffer {
+    return FfiConverterTypeNativeBlockModifierDataModel.lower(value)
+}
+
+
+package struct NativeBlockModifierModel: Equatable, Hashable {
+    package let keyType: String
+    package let position: Int32
+    package let scope: String?
+    package let data: [String: NativeBlockModifierDataModel]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    package init(keyType: String, position: Int32, scope: String?, data: [String: NativeBlockModifierDataModel]) {
+        self.keyType = keyType
+        self.position = position
+        self.scope = scope
+        self.data = data
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension NativeBlockModifierModel: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package struct FfiConverterTypeNativeBlockModifierModel: FfiConverterRustBuffer {
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NativeBlockModifierModel {
+        return
+            try NativeBlockModifierModel(
+                keyType: FfiConverterString.read(from: &buf), 
+                position: FfiConverterInt32.read(from: &buf), 
+                scope: FfiConverterOptionString.read(from: &buf), 
+                data: FfiConverterDictionaryStringTypeNativeBlockModifierDataModel.read(from: &buf)
+        )
+    }
+
+    package static func write(_ value: NativeBlockModifierModel, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.keyType, into: &buf)
+        FfiConverterInt32.write(value.position, into: &buf)
+        FfiConverterOptionString.write(value.scope, into: &buf)
+        FfiConverterDictionaryStringTypeNativeBlockModifierDataModel.write(value.data, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeNativeBlockModifierModel_lift(_ buf: RustBuffer) throws -> NativeBlockModifierModel {
+    return try FfiConverterTypeNativeBlockModifierModel.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeNativeBlockModifierModel_lower(_ value: NativeBlockModifierModel) -> RustBuffer {
+    return FfiConverterTypeNativeBlockModifierModel.lower(value)
 }
 
 
@@ -4145,6 +4269,8 @@ package enum ActionLogEvent: Equatable, Hashable {
     )
     case eventTriggered(event: String, actionKey: String
     )
+    case eventAmbiguous(event: String, blockKey: String, count: Int32
+    )
     case triggerExecuted(name: String, keyType: String, event: String
     )
     case triggerFallback(keyType: String, name: String
@@ -4178,13 +4304,16 @@ package struct FfiConverterTypeActionLogEvent: FfiConverterRustBuffer {
         case 2: return .eventTriggered(event: try FfiConverterString.read(from: &buf), actionKey: try FfiConverterString.read(from: &buf)
         )
         
-        case 3: return .triggerExecuted(name: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), event: try FfiConverterString.read(from: &buf)
+        case 3: return .eventAmbiguous(event: try FfiConverterString.read(from: &buf), blockKey: try FfiConverterString.read(from: &buf), count: try FfiConverterInt32.read(from: &buf)
         )
         
-        case 4: return .triggerFallback(keyType: try FfiConverterString.read(from: &buf), name: try FfiConverterString.read(from: &buf)
+        case 4: return .triggerExecuted(name: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), event: try FfiConverterString.read(from: &buf)
         )
         
-        case 5: return .scopeMismatch(triggerName: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), required: try FfiConverterString.read(from: &buf), provided: try FfiConverterString.read(from: &buf), dropped: try FfiConverterBool.read(from: &buf)
+        case 5: return .triggerFallback(keyType: try FfiConverterString.read(from: &buf), name: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 6: return .scopeMismatch(triggerName: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), required: try FfiConverterString.read(from: &buf), provided: try FfiConverterString.read(from: &buf), dropped: try FfiConverterBool.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -4206,21 +4335,28 @@ package struct FfiConverterTypeActionLogEvent: FfiConverterRustBuffer {
             FfiConverterString.write(actionKey, into: &buf)
             
         
-        case let .triggerExecuted(name,keyType,event):
+        case let .eventAmbiguous(event,blockKey,count):
             writeInt(&buf, Int32(3))
+            FfiConverterString.write(event, into: &buf)
+            FfiConverterString.write(blockKey, into: &buf)
+            FfiConverterInt32.write(count, into: &buf)
+            
+        
+        case let .triggerExecuted(name,keyType,event):
+            writeInt(&buf, Int32(4))
             FfiConverterString.write(name, into: &buf)
             FfiConverterString.write(keyType, into: &buf)
             FfiConverterString.write(event, into: &buf)
             
         
         case let .triggerFallback(keyType,name):
-            writeInt(&buf, Int32(4))
+            writeInt(&buf, Int32(5))
             FfiConverterString.write(keyType, into: &buf)
             FfiConverterString.write(name, into: &buf)
             
         
         case let .scopeMismatch(triggerName,keyType,required,provided,dropped):
-            writeInt(&buf, Int32(5))
+            writeInt(&buf, Int32(6))
             FfiConverterString.write(triggerName, into: &buf)
             FfiConverterString.write(keyType, into: &buf)
             FfiConverterString.write(required, into: &buf)
@@ -4254,7 +4390,11 @@ package enum BlockLogEvent: Equatable, Hashable {
     
     case blockFallback(keyType: String, blockKey: String
     )
+    case modifierFallback(keyType: String, blockKey: String
+    )
     case scopeMismatch(blockKey: String, keyType: String, required: String, provided: String, dropped: Bool
+    )
+    case modifierScopeMismatch(blockKey: String, keyType: String, required: String, provided: String, dropped: Bool
     )
 
 
@@ -4280,7 +4420,13 @@ package struct FfiConverterTypeBlockLogEvent: FfiConverterRustBuffer {
         case 1: return .blockFallback(keyType: try FfiConverterString.read(from: &buf), blockKey: try FfiConverterString.read(from: &buf)
         )
         
-        case 2: return .scopeMismatch(blockKey: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), required: try FfiConverterString.read(from: &buf), provided: try FfiConverterString.read(from: &buf), dropped: try FfiConverterBool.read(from: &buf)
+        case 2: return .modifierFallback(keyType: try FfiConverterString.read(from: &buf), blockKey: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .scopeMismatch(blockKey: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), required: try FfiConverterString.read(from: &buf), provided: try FfiConverterString.read(from: &buf), dropped: try FfiConverterBool.read(from: &buf)
+        )
+        
+        case 4: return .modifierScopeMismatch(blockKey: try FfiConverterString.read(from: &buf), keyType: try FfiConverterString.read(from: &buf), required: try FfiConverterString.read(from: &buf), provided: try FfiConverterString.read(from: &buf), dropped: try FfiConverterBool.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -4297,8 +4443,23 @@ package struct FfiConverterTypeBlockLogEvent: FfiConverterRustBuffer {
             FfiConverterString.write(blockKey, into: &buf)
             
         
-        case let .scopeMismatch(blockKey,keyType,required,provided,dropped):
+        case let .modifierFallback(keyType,blockKey):
             writeInt(&buf, Int32(2))
+            FfiConverterString.write(keyType, into: &buf)
+            FfiConverterString.write(blockKey, into: &buf)
+            
+        
+        case let .scopeMismatch(blockKey,keyType,required,provided,dropped):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(blockKey, into: &buf)
+            FfiConverterString.write(keyType, into: &buf)
+            FfiConverterString.write(required, into: &buf)
+            FfiConverterString.write(provided, into: &buf)
+            FfiConverterBool.write(dropped, into: &buf)
+            
+        
+        case let .modifierScopeMismatch(blockKey,keyType,required,provided,dropped):
+            writeInt(&buf, Int32(4))
             FfiConverterString.write(blockKey, into: &buf)
             FfiConverterString.write(keyType, into: &buf)
             FfiConverterString.write(required, into: &buf)
@@ -5185,6 +5346,31 @@ fileprivate struct FfiConverterSequenceTypeNativeActionTriggerModel: FfiConverte
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeNativeBlockModifierModel: FfiConverterRustBuffer {
+    typealias SwiftType = [NativeBlockModifierModel]
+
+    package static func write(_ value: [NativeBlockModifierModel], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeNativeBlockModifierModel.write(item, into: &buf)
+        }
+    }
+
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [NativeBlockModifierModel] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [NativeBlockModifierModel]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeNativeBlockModifierModel.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeRouteArgumentsModel: FfiConverterRustBuffer {
     typealias SwiftType = [RouteArgumentsModel]
 
@@ -5357,6 +5543,32 @@ fileprivate struct FfiConverterDictionaryStringTypeNativeBlockModel: FfiConverte
         for _ in 0..<len {
             let key = try FfiConverterString.read(from: &buf)
             let value = try FfiConverterTypeNativeBlockModel.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterDictionaryStringTypeNativeBlockModifierDataModel: FfiConverterRustBuffer {
+    package static func write(_ value: [String: NativeBlockModifierDataModel], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterTypeNativeBlockModifierDataModel.write(value, into: &buf)
+        }
+    }
+
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: NativeBlockModifierDataModel] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: NativeBlockModifierDataModel]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0..<len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterTypeNativeBlockModifierDataModel.read(from: &buf)
             dict[key] = value
         }
         return dict

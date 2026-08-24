@@ -10,6 +10,8 @@ import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerModel
 import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerPropertyModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockDataModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
+import io.nativeblocks.runtime.api.provider.model.NativeBlockModifierDataModel
+import io.nativeblocks.runtime.api.provider.model.NativeBlockModifierModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockPropertyModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockSlotModel
 import io.nativeblocks.runtime.api.provider.model.NativeVariableModel
@@ -60,6 +62,16 @@ internal fun RuntimeFFIBlockModel.toDomain(): NativeBlockModel {
         },
         slots = slots.mapValues { (_, slot) ->
             NativeBlockSlotModel(slot = slot.slot, scope = slot.scope)
+        },
+        modifiers = modifiers.map { modifier ->
+            NativeBlockModifierModel(
+                keyType = modifier.keyType,
+                position = modifier.position,
+                scope = modifier.scope,
+                data = modifier.data.mapValues { (_, data) ->
+                    NativeBlockModifierDataModel(key = data.key, value = data.value, type = data.dataType)
+                },
+            )
         },
         subBlocks = subKeys,
     )

@@ -10,9 +10,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.nativeblocks.runtime.api.provider.block.NONE_INDEX
 import io.nativeblocks.runtime.api.provider.block.NativeBlockProviderRegistry
+import io.nativeblocks.runtime.api.provider.modifier.NativeModifierProviderRegistry
 import io.nativeblocks.runtime.api.provider.model.NativeActionModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
 import io.nativeblocks.runtime.api.provider.model.NativeVariableModel
+import io.nativeblocks.runtime.ffi.ActionLogEvent
 import io.nativeblocks.runtime.ffi.BlockLogEvent
 import io.nativeblocks.runtime.ffi.FrameDiff
 import io.nativeblocks.runtime.ffi.FrameFull
@@ -59,6 +61,7 @@ internal class FrameViewModel(
     private val actions = ConcurrentHashMap<String, List<NativeActionModel>>()
 
     val blockProvider = NativeBlockProviderRegistry.getOrCreate(instanceName)
+    val modifierProvider = NativeModifierProviderRegistry.getOrCreate(instanceName)
 
     private val actionTree = ActionTree(
         instanceName = instanceName,
@@ -98,11 +101,19 @@ internal class FrameViewModel(
     }
 
     fun actionOf(blockKey: String, eventType: String): NativeActionModel? {
-        return actions[blockKey]?.firstOrNull { it.event == eventType }
+        val matches = actions[blockKey]?.filter { it.event == eventType }.orEmpty()
+        if (matches.size > 1) {
+            logAction(ActionLogEvent.EventAmbiguous(eventType, blockKey, matches.size))
+        }
+        return matches.firstOrNull()
     }
 
     fun logBlockFallback(keyType: String, blockKey: String) {
         logBlock(BlockLogEvent.BlockFallback(keyType = keyType, blockKey = blockKey))
+    }
+
+    fun logModifierFallback(keyType: String, blockKey: String) {
+        logBlock(BlockLogEvent.ModifierFallback(keyType = keyType, blockKey = blockKey))
     }
 
     fun handleAction(index: Int, action: NativeActionModel?, performedEventType: String) {

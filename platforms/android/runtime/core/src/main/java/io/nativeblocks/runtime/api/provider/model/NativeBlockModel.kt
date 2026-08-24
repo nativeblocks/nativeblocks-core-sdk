@@ -77,6 +77,11 @@ data class NativeBlockModel(
     val slots: Map<String, NativeBlockSlotModel>,
 
     /**
+     * Modifiers applied to the block, in the order they are applied.
+     */
+    val modifiers: List<NativeBlockModifierModel>,
+
+    /**
      * Sub-blocks nested within this block, mapped by their identifiers.
      */
     val subBlocks: Map<String, List<String>>? = null,
@@ -149,4 +154,50 @@ data class NativeBlockSlotModel(
      * Scope this slot hands to the blocks inside it, null when it declares none.
      */
     val scope: String?
+)
+/**
+ * Represents a modifier attached to a block, decorating it without rendering content of its own.
+ */
+@Immutable
+data class NativeBlockModifierModel(
+    /**
+     * Type of the key used to identify the modifier.
+     */
+    val keyType: String,
+
+    /**
+     * Order the modifier is applied in; lower runs first.
+     */
+    val position: Int,
+
+    /**
+     * Scope this modifier requires from the slot its host block sits in, null when it accepts any.
+     */
+    val scope: String?,
+
+    /**
+     * Data associated with the modifier.
+     */
+    val data: Map<String, NativeBlockModifierDataModel>,
+)
+
+/**
+ * Represents a piece of data associated with a block modifier, including its key, value, and type.
+ */
+@Immutable
+data class NativeBlockModifierDataModel(
+    /**
+     * Key identifying the data entry.
+     */
+    val key: String,
+
+    /**
+     * Value of the data entry.
+     */
+    val value: String,
+
+    /**
+     * Type of the data entry (e.g., string, integer).
+     */
+    val type: String
 )

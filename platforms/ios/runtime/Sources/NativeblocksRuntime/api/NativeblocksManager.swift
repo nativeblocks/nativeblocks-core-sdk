@@ -41,6 +41,10 @@ public class NativeblocksManager {
         return NativeActionProviderRegistry.getOrCreate(name)
     }
 
+    private var modifierProvider: NativeModifierProvider {
+        return NativeModifierProviderRegistry.getOrCreate(name)
+    }
+
     /// Initializes the `NativeblocksManager` with the specified edition.
     /// - Parameters:
     ///   - name: The instance name. Valid characters: A–Z, a–z, 0–9, _ or -.
@@ -87,6 +91,20 @@ public class NativeblocksManager {
     @discardableResult
     public func provideBlock(blockType: String, block: @escaping ((BlockContext) -> any View)) -> NativeblocksManager {
         blockProvider.provideBlock(blockType: blockType, block: block)
+        return self
+    }
+
+    /// Provides a modifier implementation.
+    /// - Parameters:
+    ///   - modifierType: The type of the modifier.
+    ///   - modifier: A closure applying the modifier to the content it decorates.
+    /// - Returns: The current NativeblocksManager instance.
+    @discardableResult
+    public func provideModifier(
+        modifierType: String,
+        modifier: @escaping (AnyView, ModifierContext) -> AnyView
+    ) -> NativeblocksManager {
+        modifierProvider.provideModifier(modifierType: modifierType, modifier: modifier)
         return self
     }
 

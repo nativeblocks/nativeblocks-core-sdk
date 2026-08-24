@@ -9,11 +9,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.nativeblocks.runtime.api.provider.block.BlockContext
 import io.nativeblocks.runtime.api.provider.block.NONE_INDEX
 import io.nativeblocks.runtime.api.provider.block.defaults.InternalFallbackBlock
 import io.nativeblocks.runtime.api.provider.block.defaults.RootBlock
+import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
+import io.nativeblocks.runtime.api.provider.modifier.ModifierContext
 import io.nativeblocks.runtime.api.util.LocalNativeWindowWidthClass
 import io.nativeblocks.runtime.api.util.currentWindowWidthClass
 import io.nativeblocks.runtime.ffi.RenderingState
@@ -50,7 +53,7 @@ private fun RootLifecycle(instanceName: String, vm: FrameViewModel) {
         vm.rootEntered(rootKey)
     }
 
-    Block(instanceName, vm, rootKey, NONE_INDEX, appearGen)
+    Block(instanceName, vm, rootKey, NONE_INDEX, appearGen, parentScope = null)
 }
 
 @Composable
@@ -60,6 +63,7 @@ private fun Block(
     blockKey: String,
     listItemIndex: Int,
     frameGeneration: Int,
+    parentScope: Any?,
 ) {
     val block = vm.blockOf(blockKey) ?: return
 
@@ -73,7 +77,9 @@ private fun Block(
         return
     }
 
-    val blockContext = remember(block, listItemIndex) {
+    val modifier = blockModifier(instanceName, vm, block, blockKey, listItemIndex, parentScope)
+
+    val blockContext = remember(block, listItemIndex, modifier) {
         BlockContext(
             instanceName = instanceName,
             listItemIndex = listItemIndex,
@@ -83,7 +89,8 @@ private fun Block(
             onFindAction = { vm.actionOf(blockKey, it) },
             onHandleAction = { index, action, event -> vm.handleAction(index, action, event) },
             block = block,
-            onSubBlock = { blockKeys, subSlot, itemIndex, _ ->
+            modifier = modifier,
+            onSubBlock = { blockKeys, subSlot, itemIndex, scope ->
                 blockKeys[subSlot.slot]?.forEach { childKey ->
                     key(childKey) {
                         Block(
@@ -92,6 +99,7 @@ private fun Block(
                             blockKey = childKey,
                             listItemIndex = if (itemIndex == NONE_INDEX) listItemIndex else itemIndex,
                             frameGeneration = frameGeneration,
+                            parentScope = scope,
                         )
                     }
                 }
@@ -100,4 +108,39 @@ private fun Block(
     }
 
     nativeBlock.invoke(blockContext)
+}
+
+@Composable
+private fun blockModifier(
+    instanceName: String,
+    vm: FrameViewModel,
+    block: NativeBlockModel,
+    blockKey: String,
+    listItemIndex: Int,
+    parentScope: Any?,
+): Modifier {
+    if (block.modifiers.isEmpty()) {
+        return Modifier
+    }
+    val provided = vm.modifierProvider.getProvidedModifiers()
+    var chain: Modifier = Modifier
+    block.modifiers.forEach { item ->
+        val nativeModifier = provided[item.keyType]
+        if (nativeModifier != null) {
+            val modifierContext = ModifierContext(
+                instanceName = instanceName,
+                listItemIndex = listItemIndex,
+                onFindVariable = { data -> vm.variableOf(data?.value.orEmpty())?.value?.value },
+                onUpdateVariable = { data, value -> vm.updateVariable(data?.value.orEmpty(), value) },
+                onFindAction = { vm.actionOf(blockKey, it) },
+                onHandleAction = { index, action, event -> vm.handleAction(index, action, event) },
+                modifier = item,
+                scope = parentScope,
+            )
+            chain = chain.then(key(item.keyType, item.position) { nativeModifier.invoke(modifierContext) })
+        } else {
+            vm.logModifierFallback(item.keyType, blockKey)
+        }
+    }
+    return chain
 }

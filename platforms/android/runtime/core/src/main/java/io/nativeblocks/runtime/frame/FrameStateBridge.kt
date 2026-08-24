@@ -19,8 +19,6 @@ internal interface FrameStateBridge {
 
     fun updateVariable(key: String, value: String)
 
-
-
     fun logAction(event: ActionLogEvent)
 
     fun logBlock(event: BlockLogEvent)

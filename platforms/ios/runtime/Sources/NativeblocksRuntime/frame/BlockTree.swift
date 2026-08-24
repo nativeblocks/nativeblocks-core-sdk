@@ -72,7 +72,8 @@ private struct RootLifecycle: View {
                     instanceName: instanceName,
                     vm: vm,
                     blockKey: rootKey,
-                    listItemIndex: NONE_INDEX
+                    listItemIndex: NONE_INDEX,
+                    parentScope: nil
                 )
                     .task(id: vm.frameUpdateGeneration) {
                         vm.rootEntered(rootKey)
@@ -93,6 +94,7 @@ private struct Block: View {
     @ObservedObject var vm: FrameViewModel
     let blockKey: String
     let listItemIndex: Int
+    let parentScope: Any?
 
     var body: some View {
         if let block = vm.blockOf(blockKey) {
@@ -110,6 +112,48 @@ private struct Block: View {
             }
         } else {
             EmptyView()
+        }
+    }
+
+    private func blockModifier(for block: NativeBlockModel) -> NativeblocksModifier {
+        let items = block.modifiers
+        if items.isEmpty {
+            return .none
+        }
+        let provided = vm.modifierProvider.getProvidedModifiers()
+        let instanceName = instanceName
+        let listItemIndex = listItemIndex
+        let parentScope = parentScope
+        let vm = vm
+        return NativeblocksModifier { content in
+            var view = content
+            for item in items {
+                if let nativeModifier = provided[item.keyType] {
+                    let modifierContext = ModifierContext(
+                        instanceName: instanceName,
+                        listItemIndex: listItemIndex,
+                        onFindVariable: { data in
+                            vm.variableOf(data?.value ?? "")?.value
+                        },
+                        onUpdateVariable: { data, value in
+                            guard let data = data else { return }
+                            vm.updateVariable(key: data.value, value: value)
+                        },
+                        onFindAction: { eventType in
+                            vm.actionOf(blockKey: blockKey, eventType: eventType)
+                        },
+                        onHandleAction: { index, action, event in
+                            vm.handleAction(index, action, event)
+                        },
+                        modifier: item,
+                        scope: parentScope
+                    )
+                    view = nativeModifier(view, modifierContext)
+                } else {
+                    vm.logModifierFallback(keyType: item.keyType, blockKey: blockKey)
+                }
+            }
+            return view
         }
     }
 
@@ -134,14 +178,16 @@ private struct Block: View {
                 vm.handleAction(index, action, event)
             },
             block: block,
-            onSubBlock: { blockKeys, subSlot, itemIndex, _ in
+            modifier: blockModifier(for: block),
+            onSubBlock: { blockKeys, subSlot, itemIndex, scope in
                 return AnyView(
                     ForEach(blockKeys[subSlot.slot] ?? [], id: \.self) { childKey in
                         Block(
                             instanceName: instanceName,
                             vm: vm,
                             blockKey: childKey,
-                            listItemIndex: itemIndex == NONE_INDEX ? listItemIndex : itemIndex
+                            listItemIndex: itemIndex == NONE_INDEX ? listItemIndex : itemIndex,
+                            parentScope: scope
                         )
                     }
                 )

@@ -1,6 +1,7 @@
 package io.nativeblocks.runtime.api.provider.block
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Immutable
 import io.nativeblocks.runtime.api.provider.model.NativeActionModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockDataModel
@@ -22,6 +23,7 @@ internal typealias BlockComposable = @Composable (blockContext: BlockContext) ->
  * @param onFindAction Finds the action bound to the given event type.
  * @param onHandleAction Runs an action for the given list item index and event type.
  * @param block The block being rendered.
+ * @param modifier Modifiers attached to the block, already ordered and scope checked.
  * @param onSubBlock Renders the child blocks of a slot, handing them the index and the slot's scope.
  */
 @Immutable
@@ -34,5 +36,6 @@ data class BlockContext(
     val onFindAction: (String) -> NativeActionModel?,
     val onHandleAction: (Int, NativeActionModel?, String) -> Unit,
     val block: NativeBlockModel,
+    val modifier: Modifier,
     val onSubBlock: @Composable (blockKeys: Map<String, List<String>>, slot: NativeBlockSlotModel, index: Int, scope: Any?) -> Unit
 )

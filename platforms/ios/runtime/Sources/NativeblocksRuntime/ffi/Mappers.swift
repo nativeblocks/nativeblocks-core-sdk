@@ -54,6 +54,16 @@ extension RuntimeFFIBlockModel {
             slots: slots.mapValues { slot in
                 NativeBlockSlotModel(slot: slot.slot, scope: slot.scope)
             },
+            modifiers: modifiers.map { modifier in
+                NativeBlockModifierModel(
+                    keyType: modifier.keyType,
+                    position: Int(modifier.position),
+                    scope: modifier.scope,
+                    data: modifier.data.mapValues { data in
+                        NativeBlockModifierDataModel(key: data.key, value: data.value, type: data.dataType)
+                    }
+                )
+            },
             subBlocks: subKeys
         )
     }

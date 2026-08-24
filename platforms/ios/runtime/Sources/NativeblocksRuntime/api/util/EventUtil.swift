@@ -23,3 +23,23 @@ public func blockProvideEvent(blockContext: BlockContext, eventType: String) -> 
 private func blockHandleEvent(blockContext: BlockContext, action: NativeActionModel, eventType: String) {
     blockContext.onHandleAction(blockContext.listItemIndex, action, eventType)
 }
+
+private func modifierHandleEvent(
+    modifierContext: ModifierContext,
+    action: NativeActionModel,
+    eventType: String
+) {
+    modifierContext.onHandleAction(modifierContext.listItemIndex, action, eventType)
+}
+
+public func modifierProvideEvent(
+    modifierContext: ModifierContext,
+    eventType: String
+) -> (() -> Void)? {
+    let action = modifierContext.onFindAction(eventType)
+    if let action = action {
+        return { modifierHandleEvent(modifierContext: modifierContext, action: action, eventType: eventType) }
+    } else {
+        return nil
+    }
+}

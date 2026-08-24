@@ -15,6 +15,7 @@ public let NONE_INDEX = -1
 ///   - onFindAction: Finds the action bound to the given event type.
 ///   - onHandleAction: Runs an action for the given list item index and event type.
 ///   - block: The block being rendered.
+///   - modifier: Modifiers attached to the block, already ordered and scope checked.
 ///   - onSubBlock: Renders the child blocks of a slot, handing them the index and the slot's scope.
 public struct BlockContext {
     public let instanceName: String
@@ -25,5 +26,6 @@ public struct BlockContext {
     public let onFindAction: (String) -> NativeActionModel?
     public let onHandleAction: (Int, NativeActionModel?, String) -> Void
     public let block: NativeBlockModel
+    public let modifier: NativeblocksModifier
     public let onSubBlock: ([String: [String]], NativeBlockSlotModel, Int, Any?) -> AnyView
 }

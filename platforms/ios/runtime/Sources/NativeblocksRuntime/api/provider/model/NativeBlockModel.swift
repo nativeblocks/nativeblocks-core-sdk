@@ -43,6 +43,9 @@ public struct NativeBlockModel: Hashable, Codable {
     /// A dictionary of slots that represent different areas where sub-blocks can be placed.
     public let slots: [String: NativeBlockSlotModel]
 
+    /// Modifiers applied to the block, in the order they are applied.
+    public let modifiers: [NativeBlockModifierModel]
+
     /// Keys of the sub-blocks nested within this block, grouped by slot name.
     public let subBlocks: [String: [String]]?
 
@@ -109,5 +112,43 @@ public struct NativeBlockSlotModel: Hashable, Codable {
     /// Equality operator to compare two `NativeBlockSlotModel` instances.
     public static func == (lhs: NativeBlockSlotModel, rhs: NativeBlockSlotModel) -> Bool {
         return lhs.slot == rhs.slot && lhs.scope == rhs.scope
+    }
+}
+
+/// Represents a modifier attached to a block, decorating it without rendering content of its own.
+public struct NativeBlockModifierModel: Hashable, Codable {
+    /// The type of the key used to identify the modifier.
+    public let keyType: String
+
+    /// Order the modifier is applied in; lower runs first.
+    public let position: Int
+
+    /// Scope this modifier requires from the slot its host block sits in, nil when it accepts any.
+    public let scope: String?
+
+    /// Data associated with the modifier.
+    public let data: [String: NativeBlockModifierDataModel]
+
+    /// Equality operator to compare two `NativeBlockModifierModel` instances.
+    public static func == (lhs: NativeBlockModifierModel, rhs: NativeBlockModifierModel) -> Bool {
+        return lhs.keyType == rhs.keyType && lhs.position == rhs.position
+            && lhs.scope == rhs.scope && lhs.data == rhs.data
+    }
+}
+
+/// Represents a piece of data associated with a block modifier, including its key, value, and type.
+public struct NativeBlockModifierDataModel: Hashable, Codable {
+    /// The key associated with the data.
+    public let key: String
+
+    /// The value of the data.
+    public let value: String
+
+    /// The type of the data.
+    public let type: String
+
+    /// Equality operator to compare two `NativeBlockModifierDataModel` instances.
+    public static func == (lhs: NativeBlockModifierDataModel, rhs: NativeBlockModifierDataModel) -> Bool {
+        return lhs.key == rhs.key && lhs.value == rhs.value && lhs.type == rhs.type
     }
 }

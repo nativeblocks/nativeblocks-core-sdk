@@ -2,6 +2,7 @@ package io.nativeblocks.runtime.api
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import io.nativeblocks.runtime.api.provider.action.INativeAction
 import io.nativeblocks.runtime.api.provider.action.INativeActionContractor
 import io.nativeblocks.runtime.api.provider.action.NativeActionProviderRegistry
@@ -10,6 +11,8 @@ import io.nativeblocks.runtime.api.provider.block.NativeBlockProviderRegistry
 import io.nativeblocks.runtime.api.provider.kit.Kit
 import io.nativeblocks.runtime.api.provider.logger.INativeLogger
 import io.nativeblocks.runtime.api.provider.model.NativeScaffoldModel
+import io.nativeblocks.runtime.api.provider.modifier.ModifierContext
+import io.nativeblocks.runtime.api.provider.modifier.NativeModifierProviderRegistry
 import io.nativeblocks.runtime.api.provider.type.INativeType
 import io.nativeblocks.runtime.api.provider.type.NativeTypeProvider
 import io.nativeblocks.runtime.api.provider.type.NativeTypeProviderRegistry
@@ -90,8 +93,9 @@ class NativeblocksManager internal constructor(
     private fun getKoin() = NativeCoreSDKInjector.get(this.name).koin
     private val typeProvider: NativeTypeProvider = NativeTypeProviderRegistry.getOrCreate(this.name)
 
-    private val blockProvider get() = NativeBlockProviderRegistry.getOrCreate(this.name)
-    private val actionProvider get() = NativeActionProviderRegistry.getOrCreate(this.name)
+    private val blockProvider = NativeBlockProviderRegistry.getOrCreate(this.name)
+    private val actionProvider = NativeActionProviderRegistry.getOrCreate(this.name)
+    private val modifierProvider = NativeModifierProviderRegistry.getOrCreate(this.name)
     private val actionContractors = mutableListOf<INativeActionContractor>()
     private val loggerTypes = mutableSetOf<String>()
     private val kits = mutableListOf<Kit>()
@@ -109,6 +113,20 @@ class NativeblocksManager internal constructor(
         block: @Composable (blockContext: BlockContext) -> Unit
     ): NativeblocksManager {
         blockProvider.provideBlock(blockType, block)
+        return this
+    }
+
+    /**
+     * Provides a modifier to be used within the framework.
+     * @param modifierType The type of the modifier.
+     * @param modifier A composable lambda that builds the modifier from its context.
+     * @return The current NativeblocksManager instance.
+     */
+    fun provideModifier(
+        modifierType: String,
+        modifier: @Composable (modifierContext: ModifierContext) -> Modifier
+    ): NativeblocksManager {
+        modifierProvider.provideModifier(modifierType, modifier)
         return this
     }
 
