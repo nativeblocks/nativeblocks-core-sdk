@@ -36,6 +36,8 @@ type ActionTriggerEventResult {
   deprecated: Boolean
 
   deprecatedReason: String
+
+  scope: String
 }
 
 input ActionTriggerPropertiesInput {
@@ -88,6 +90,8 @@ type ActionTriggerResult {
   integrationDeprecated: Boolean
 
   integrationDeprecatedReason: String
+
+  scope: String
 }
 
 input AddActionInput {
@@ -132,6 +136,16 @@ input AddBlockInput {
   frameId: String!
 
   integrationId: String!
+}
+
+input AddBlockModifierInput {
+  frameId: String!
+
+  blockId: String!
+
+  integrationId: String!
+
+  position: Int!
 }
 
 input AddFrameInput {
@@ -252,6 +266,60 @@ input BlockInput {
   integrationVersion: Int
 }
 
+input BlockModifierDataInput {
+  key: String!
+
+  value: String
+}
+
+type BlockModifierDataResult {
+  key: String
+
+  value: String
+
+  type: String
+
+  description: String
+
+  deprecated: Boolean
+
+  deprecatedReason: String
+}
+
+type BlockModifierEventResult {
+  event: String
+
+  scope: String
+
+  description: String
+
+  deprecated: Boolean
+
+  deprecatedReason: String
+}
+
+type BlockModifierResult {
+  id: String
+
+  blockId: String
+
+  keyType: String
+
+  position: Int
+
+  scope: String
+
+  data: [BlockModifierDataResult]
+
+  events: [BlockModifierEventResult]
+
+  integrationVersion: Int
+
+  integrationDeprecated: Boolean
+
+  integrationDeprecatedReason: String
+}
+
 input BlockPropertyInput {
   key: String!
 
@@ -309,6 +377,8 @@ type BlockResult {
 
   slots: [BlockSlotResult]
 
+  modifiers: [BlockModifierResult]
+
   integrationVersion: Int
 
   integrationVersionName: String
@@ -316,6 +386,8 @@ type BlockResult {
   integrationDeprecated: Boolean
 
   integrationDeprecatedReason: String
+
+  scope: String
 }
 
 type BlockSlotResult {
@@ -326,6 +398,8 @@ type BlockSlotResult {
   deprecated: Boolean
 
   deprecatedReason: String
+
+  scope: String
 }
 
 """
@@ -433,6 +507,14 @@ input DeleteBlockInput {
   frameId: String!
 
   blockId: String!
+}
+
+input DeleteBlockModifierInput {
+  frameId: String!
+
+  blockId: String!
+
+  blockModifierId: String!
 }
 
 input DeleteExperimentInput {
@@ -724,6 +806,8 @@ input IntegrationEventInput {
   deprecated: Boolean
 
   deprecatedReason: String
+
+  scope: String
 }
 
 type IntegrationEventResult {
@@ -734,6 +818,8 @@ type IntegrationEventResult {
   deprecated: Boolean
 
   deprecatedReason: String
+
+  scope: String
 }
 
 type IntegrationProjectResult {
@@ -857,6 +943,8 @@ type IntegrationResult {
 
   manageable: Boolean
 
+  scope: String
+
   properties: [IntegrationPropertyResult]
 
   events: [IntegrationEventResult]
@@ -874,6 +962,8 @@ input IntegrationSlotInput {
   deprecated: Boolean
 
   deprecatedReason: String
+
+  scope: String
 }
 
 type IntegrationSlotResult {
@@ -884,6 +974,8 @@ type IntegrationSlotResult {
   deprecated: Boolean
 
   deprecatedReason: String
+
+  scope: String
 }
 
 type LanguageResult {
@@ -1014,6 +1106,16 @@ type Mutation {
   updateBlockData(input: UpdateBlockDataInput!): BlockResult
 
   updateBlocksPosition(input: UpdateBlocksPositionInput!): [BlockResult]
+
+  addBlockModifier(input: AddBlockModifierInput!): BlockModifierResult
+
+  upgradeBlockModifier(input: UpgradeBlockModifierInput!): BlockModifierResult
+
+  deleteBlockModifier(input: DeleteBlockModifierInput!): BlockModifierResult
+
+  updateBlockModifierData(input: UpdateBlockModifierDataInput!): BlockModifierResult
+
+  updateBlockModifiersPosition(input: UpdateBlockModifiersPositionInput!): [BlockModifierResult]
 
   addVariable(input: AddVariableInput!): VariableResult
 
@@ -1415,6 +1517,8 @@ input SyncIntegrationInput {
   deprecated: Boolean
 
   deprecatedReason: String
+
+  scope: String
 }
 
 input SyncIntegrationPropertiesInput {
@@ -1505,6 +1609,30 @@ input UpdateBlockKeyInput {
   visibilityKey: String!
 
   frameId: String!
+}
+
+input UpdateBlockModifierDataInput {
+  frameId: String!
+
+  blockId: String!
+
+  blockModifierId: String!
+
+  data: [BlockModifierDataInput]!
+}
+
+input UpdateBlockModifierPositionInput {
+  blockModifierId: String!
+
+  position: Int!
+}
+
+input UpdateBlockModifiersPositionInput {
+  frameId: String!
+
+  blockId: String!
+
+  modifiersPosition: [UpdateBlockModifierPositionInput]!
 }
 
 input UpdateBlockPositionInput {
@@ -1649,6 +1777,16 @@ input UpgradeBlockInput {
   integrationId: String!
 
   blockId: String!
+}
+
+input UpgradeBlockModifierInput {
+  frameId: String!
+
+  blockId: String!
+
+  blockModifierId: String!
+
+  integrationId: String!
 }
 
 scalar Upload

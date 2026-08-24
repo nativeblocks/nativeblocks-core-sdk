@@ -29,6 +29,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -153,6 +154,7 @@ class IntegrationRepository {
                             input = SyncIntegrationInput(
                                 name = integrationJson.jsonObject["name"]?.jsonPrimitive?.content.orEmpty(),
                                 keyType = integrationJson.jsonObject["keyType"]?.jsonPrimitive?.content.orEmpty(),
+                                scope = Optional.presentIfNotNull(integrationJson.jsonObject["scope"]?.jsonPrimitive?.contentOrNull),
                                 imageIcon = Optional.presentIfNotNull(integrationJson.jsonObject["imageIcon"]?.jsonPrimitive?.content.orEmpty()),
                                 price = integrationJson.jsonObject["price"]?.jsonPrimitive?.intOrNull ?: 0,
                                 description = Optional.presentIfNotNull(integrationJson.jsonObject["description"]?.jsonPrimitive?.content.orEmpty()),
@@ -235,6 +237,7 @@ class IntegrationRepository {
                     events = eventsJson.jsonArray.map { event ->
                         IntegrationEventInput(
                             event = event.jsonObject["event"]?.jsonPrimitive?.content.orEmpty(),
+                            scope = Optional.presentIfNotNull(event.jsonObject["scope"]?.jsonPrimitive?.contentOrNull),
                             description = event.jsonObject["description"]?.jsonPrimitive?.content.orEmpty(),
                             deprecated = Optional.presentIfNotNull(
                                 event.jsonObject["deprecated"]?.jsonPrimitive?.booleanOrNull
@@ -300,6 +303,7 @@ class IntegrationRepository {
                     slots = slotsJson.jsonArray.map { slot ->
                         IntegrationSlotInput(
                             slot = slot.jsonObject["slot"]?.jsonPrimitive?.content.orEmpty(),
+                            scope = Optional.presentIfNotNull(slot.jsonObject["scope"]?.jsonPrimitive?.contentOrNull),
                             description = slot.jsonObject["description"]?.jsonPrimitive?.content.orEmpty(),
                             deprecated = Optional.presentIfNotNull(
                                 slot.jsonObject["deprecated"]?.jsonPrimitive?.booleanOrNull ?: false
