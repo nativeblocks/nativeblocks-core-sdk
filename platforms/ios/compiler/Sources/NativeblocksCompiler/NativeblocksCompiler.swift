@@ -153,3 +153,32 @@ public struct NativeActionValuePickerPosition {
         self.text = text
     }
 }
+
+@attached(peer, names: suffixed(Modifier))
+public macro NativeModifier(
+    name: String,
+    keyType: String,
+    description: String,
+    scope: String = "",
+    version: Int = 1,
+    versionName: String = "",
+    deprecated: Bool = false,
+    deprecatedReason: String = ""
+) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeModifierMacro")
+
+@attached(peer)
+public macro NativeModifierData(
+    description: String = "",
+    deprecated: Bool = false,
+    deprecatedReason: String = "",
+    defaultValue: String = ""
+) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeModifierDataMacro")
+
+@attached(peer)
+public macro NativeModifierEvent(
+    description: String = "",
+    dataBinding: [String] = [],
+    deprecated: Bool = false,
+    deprecatedReason: String = ""
+) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeModifierEventMacro")
+

@@ -54,7 +54,7 @@ public class NativeblocksToolExecutor {
                 authToken: authToken,
                 organizationId: organizationId
             )
-            try uploader.upload(blocks: generator.blocks, actions: generator.actions)
+            try uploader.upload(blocks: generator.blocks, actions: generator.actions, modifiers: generator.modifiers)
         }
     }
 

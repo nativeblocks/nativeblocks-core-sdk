@@ -17,7 +17,7 @@ public class JsonUploader {
         NetworkExecutor.initialize(endpoint: endpoint, apiKey: authToken)
     }
 
-    public func upload(blocks: [Integration], actions: [Integration]) throws {
+    public func upload(blocks: [Integration], actions: [Integration], modifiers: [Integration]) throws {
         for block in blocks {
             print("Sync Block:\(block.keyType) start...")
             var input = block
@@ -99,6 +99,34 @@ public class JsonUploader {
             print("Sync Events done")
 
             print("Sync Action:\(action.keyType) done")
+        }
+
+        for modifier in modifiers {
+            print("Sync Modifier:\(modifier.keyType) start...")
+            var input = modifier
+            input.organizationId = organizationId
+            let integrationId = try JsonUploader.syncIntegration(input: input)
+
+            let datas = modifier.meta.compactMap { $0 as? DataMeta }
+            let events = modifier.meta.compactMap { $0 as? EventMeta }
+
+            print("Sync Data start")
+            try JsonUploader.syncIntegrationData(
+                integrationId: integrationId,
+                organizationId: organizationId,
+                meta: datas
+            )
+            print("Sync Data done")
+
+            print("Sync Events start")
+            try JsonUploader.syncIntegrationEvents(
+                integrationId: integrationId,
+                organizationId: organizationId,
+                meta: events
+            )
+            print("Sync Events done")
+
+            print("Sync Modifier:\(modifier.keyType) done")
         }
 
         print("Sync done")

@@ -10,8 +10,8 @@ import io.nativeblocks.compiler.meta.Event
 import io.nativeblocks.compiler.meta.ExtraParam
 import io.nativeblocks.compiler.meta.Integration
 import io.nativeblocks.compiler.meta.Property
-import io.nativeblocks.compiler.meta.TypeClass
 import io.nativeblocks.compiler.meta.Slot
+import io.nativeblocks.compiler.meta.TypeClass
 import io.nativeblocks.compiler.meta.ValuePickerOption
 import io.nativeblocks.compiler.util.Diagnostic
 import io.nativeblocks.compiler.util.DiagnosticType
@@ -19,7 +19,6 @@ import io.nativeblocks.compiler.util.getArgument
 import io.nativeblocks.compiler.util.getArgumentOrNull
 import io.nativeblocks.compiler.util.onlyLettersAndUnderscore
 import io.nativeblocks.compiler.util.plusAssign
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 internal fun KSAnnotation.generateIntegrationJson(

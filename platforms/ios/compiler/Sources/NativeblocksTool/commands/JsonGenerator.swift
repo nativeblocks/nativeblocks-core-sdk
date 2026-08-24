@@ -6,23 +6,33 @@ import _NativeblocksCompilerCommon
 public class JsonGenerator {
     public var blocksJson: [String: [JsonMetaType: Data]] = [:]
     public var actionsJson: [String: [JsonMetaType: Data]] = [:]
+    public var modifiersJson: [String: [JsonMetaType: Data]] = [:]
     public var blocks: [Integration] = []
     public var actions: [Integration] = []
+    public var modifiers: [Integration] = []
 
     public init() {}
 
     public func generate(from files: [String], organizationId: String = "") throws {
         print("Generate jsons...")
-        (blocks, actions) = NativeItemVisitor.extractNatives(from: files)
+        (blocks, actions, modifiers) = NativeItemVisitor.extractNatives(from: files)
 
-        if blocks.isEmpty, actions.isEmpty {
-            print("There is no actions or blocks to generate")
+        if blocks.isEmpty, actions.isEmpty, modifiers.isEmpty {
+            print("There is no actions, blocks or modifiers to generate")
             return
         }
 
         blocks = blocks.map { block in
             let (meta, _) = BlockExtractor.extractVariable(from: block.syntaxStruct!)
             var copy = block
+            copy.meta = meta
+            copy.organizationId = organizationId
+            return copy
+        }
+
+        modifiers = modifiers.map { modifier in
+            let (meta, _) = ModifierExtractor.extractVariable(from: modifier.syntaxStruct!)
+            var copy = modifier
             copy.meta = meta
             copy.organizationId = organizationId
             return copy
@@ -51,6 +61,14 @@ public class JsonGenerator {
                 return (action.keyType, jsonList)
             }
         )
+
+        modifiersJson = try Dictionary(
+            uniqueKeysWithValues: modifiers.map { modifier in
+                print("generate Json \(modifier.keyType) Modifier")
+                let jsonList = try generateModifier(from: modifier)
+                return (modifier.keyType, jsonList)
+            }
+        )
     }
 
     public func save(
@@ -60,8 +78,8 @@ public class JsonGenerator {
     ) throws {
         print("Save jsons...")
 
-        if blocksJson.isEmpty, actionsJson.isEmpty {
-            print("There is no actions or blocks to save")
+        if blocksJson.isEmpty, actionsJson.isEmpty, modifiersJson.isEmpty {
+            print("There is no actions, blocks or modifiers to save")
             return
         }
 
@@ -81,6 +99,13 @@ public class JsonGenerator {
             print("save Json \(action.key) Action at:\(directory)")
             try fileManager.createDirectory(atPath: directory)
             try saveJsons(jsons: action.value, in: directory)
+        }
+
+        for modifier in modifiersJson {
+            let directory = "\(baseDirectory)/modifier/\(modifier.key)"
+            print("save Json \(modifier.key) Modifier at:\(directory)")
+            try fileManager.createDirectory(atPath: directory)
+            try saveJsons(jsons: modifier.value, in: directory)
         }
     }
 
@@ -107,6 +132,16 @@ public class JsonGenerator {
         export[JsonMetaType.data] = try JSONEncoder().encode(datas)
         export[JsonMetaType.event] = try JSONEncoder().encode(events)
         export[JsonMetaType.properties] = try JSONEncoder().encode(properties)
+        return export
+    }
+
+    public func generateModifier(from modifier: Integration) throws -> [JsonMetaType: Data] {
+        var export: [JsonMetaType: Data] = [:]
+        export[JsonMetaType.integration] = try JSONEncoder().encode(modifier)
+        let datas = modifier.meta.compactMap { $0 as? DataMeta }
+        let events = modifier.meta.compactMap { $0 as? EventMeta }
+        export[JsonMetaType.data] = try JSONEncoder().encode(datas)
+        export[JsonMetaType.event] = try JSONEncoder().encode(events)
         return export
     }
 

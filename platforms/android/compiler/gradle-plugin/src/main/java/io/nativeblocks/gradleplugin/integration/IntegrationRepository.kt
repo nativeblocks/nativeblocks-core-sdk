@@ -81,7 +81,7 @@ class IntegrationRepository {
         val baseDir = File(path)
         val result = mutableListOf<File>()
         if (baseDir.exists() && baseDir.isDirectory) {
-            listOf("action", "block").forEach { dirName ->
+            listOf("action", "block", "modifier").forEach { dirName ->
                 val subDir = File(baseDir, dirName)
                 if (subDir.exists() && subDir.isDirectory) {
                     subDir.walk()

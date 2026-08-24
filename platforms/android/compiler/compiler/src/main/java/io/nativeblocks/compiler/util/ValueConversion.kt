@@ -16,9 +16,9 @@ internal fun valueConversion(canonicalName: String, source: String, default: Str
     return when (canonicalName) {
         "kotlin.String" -> """$source ?: "${default.stringify()}""""
         "kotlin.Int" -> """$source?.toIntOrNull() ?: ${default.ifEmpty { 0 }}"""
-        "kotlin.Long" -> """$source?.toLongOrNull() ?: ${default.ifEmpty { 0L }}"""
-        "kotlin.Float" -> """$source?.toFloatOrNull() ?: ${default.ifEmpty { 0.0F }}"""
-        "kotlin.Double" -> """$source?.toDoubleOrNull() ?: ${default.ifEmpty { 0.0 }}"""
+        "kotlin.Long" -> """$source?.toLongOrNull() ?: (${default.ifEmpty { "0" }}).toLong()"""
+        "kotlin.Float" -> """$source?.toFloatOrNull() ?: (${default.ifEmpty { "0.0" }}).toFloat()"""
+        "kotlin.Double" -> """$source?.toDoubleOrNull() ?: (${default.ifEmpty { "0.0" }}).toDouble()"""
         "kotlin.Boolean" -> """$source?.lowercase()?.toBooleanStrictOrNull() ?: ${default.ifEmpty { false }}"""
         else -> """${converterVar(canonicalName)}.fromString($source ?: "${default.stringify()}")"""
     }

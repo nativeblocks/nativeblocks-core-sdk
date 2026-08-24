@@ -5,7 +5,7 @@ import SwiftSyntax
 public class NativeItemVisitor: SyntaxVisitor {
     private var nativeItems: [Integration] = []
 
-    public static func extractNatives(from sources: [String]) -> ([Integration], [Integration]) {
+    public static func extractNatives(from sources: [String]) -> ([Integration], [Integration], [Integration]) {
         let visitor = NativeItemVisitor(viewMode: SyntaxTreeViewMode.sourceAccurate)
         for source in sources {
             let sourceFile = Parser.parse(source: source)
@@ -14,7 +14,8 @@ public class NativeItemVisitor: SyntaxVisitor {
         let natives = visitor.nativeItems
         let blocks = natives.filter { $0.kind == "BLOCK" && $0.syntaxStruct != nil }
         let actions = natives.filter { $0.kind == "ACTION" && $0.syntaxClass != nil }
-        return (blocks, actions)
+        let modifiers = natives.filter { $0.kind == "MODIFIER" && $0.syntaxStruct != nil }
+        return (blocks, actions, modifiers)
     }
 
     public override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
@@ -43,6 +44,33 @@ public class NativeItemVisitor: SyntaxVisitor {
                     syntaxStruct: node,
                     meta: [],
                     kind: "BLOCK"
+                )
+            )
+        }
+        if let attribute = findAttribute(name: "NativeModifier", from: attributes) {
+            let structName = node.name.text
+            let keyType = getStringValue(name: "keyType", from: attribute)
+            let name = getStringValue(name: "name", from: attribute)
+            let scope = getStringValue(name: "scope", from: attribute)
+            let description = getStringValue(name: "description", from: attribute)
+            let version = getIntValue(name: "version", from: attribute)
+            let versionName = getStringValue(name: "versionName", from: attribute)
+            let deprecated = getBoolValue(name: "deprecated", from: attribute)
+            let deprecatedReason = getStringValue(name: "deprecatedReason", from: attribute)
+            nativeItems.append(
+                Integration(
+                    declName: structName,
+                    name: name!,
+                    scope: (scope?.isEmpty ?? true) ? nil : scope,
+                    keyType: keyType!,
+                    description: description!,
+                    version: version ?? 1,
+                    versionName: versionName ?? "",
+                    deprecated: deprecated,
+                    deprecatedReason: deprecatedReason ?? "",
+                    syntaxStruct: node,
+                    meta: [],
+                    kind: "MODIFIER"
                 )
             )
         }

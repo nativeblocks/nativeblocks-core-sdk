@@ -42,7 +42,7 @@ struct BlockCreator {
                 for data in metaData where SyntaxUtils.isPrimitiveTypeSupported(data.type) {
                     try VariableDeclSyntax(
                         """
-                        @State private var \(raw: data.key)DataValue = \(raw: dataDefaultMapper(dataItem: data))
+                        @State private var \(raw: data.key)DataValue: \(raw: data.type) = \(raw: dataDefaultMapper(dataItem: data))
                         """
                     )
                 }

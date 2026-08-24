@@ -78,7 +78,7 @@ internal class BlockVisitor(
                 func.addStatement("val ${it.key} = blockContext.onFindVariable.invoke(data[\"${it.key}\"])")
                 func.beginControlFlow("val ${it.key}Value = remember(${it.key})")
                 func.addStatement("val result = ${it.key}")
-                func.addStatement("${dataTypeMapper(it)}")
+                func.addStatement(dataTypeMapper(it))
                 func.endControlFlow()
             }
         }

@@ -15,5 +15,8 @@ struct NativeBlocksPlugin: CompilerPlugin {
         NativeActionDataMacro.self,
         NativeActionPropMacro.self,
         NativeActionEventMacro.self,
+        NativeModifierMacro.self,
+        NativeModifierDataMacro.self,
+        NativeModifierEventMacro.self,
     ]
 }

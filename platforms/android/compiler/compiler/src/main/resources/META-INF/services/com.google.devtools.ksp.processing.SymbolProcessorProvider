@@ -1,2 +1,3 @@
 io.nativeblocks.compiler.block.BlockProcessorProvider
 io.nativeblocks.compiler.action.ActionProcessorProvider
+io.nativeblocks.compiler.modifier.ModifierProcessorProvider
