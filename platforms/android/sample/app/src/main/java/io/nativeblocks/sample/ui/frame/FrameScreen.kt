@@ -39,7 +39,7 @@ fun FrameScreen(
             NativeblocksFrame(
                 instanceName = instance,
                 route = route,
-                routeArguments = emptyMap(),
+                arguments = emptyMap(),
                 state = NativeblocksFrameState.Stateful(route),
                 loading = { NativeblocksLoading() },
                 error = { message -> NativeblocksError(message) },

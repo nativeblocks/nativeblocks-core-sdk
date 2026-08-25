@@ -1,5 +1,7 @@
 package io.nativeblocks.sample.ui.instance
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -24,6 +26,7 @@ fun InstanceListScreen(
     onInstanceOpened: (InstanceInfo) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val activity = LocalActivity.current as ComponentActivity
     Scaffold(
         modifier = modifier,
         topBar = { TopAppBar(title = { Text("Instances") }) },
@@ -36,7 +39,7 @@ fun InstanceListScreen(
                         Text(if (instance.developmentMode) "development" else "production")
                     },
                     modifier = Modifier.clickable {
-                        instanceManager.start(instance)
+                        instanceManager.start(instance, activity)
                         onInstanceOpened(instance)
                     },
                 )

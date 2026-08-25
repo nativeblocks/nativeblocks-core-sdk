@@ -10,11 +10,11 @@ import io.nativeblocks.sample.navigation.SampleNavDisplay
 import io.nativeblocks.sample.ui.theme.SampleTheme
 
 class MainActivity : ComponentActivity() {
+    private val instanceManager by lazy { (application as SampleApplication).instanceManager }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val instanceManager = (application as SampleApplication).instanceManager
         setContent {
             SampleTheme {
                 SampleNavDisplay(
@@ -23,5 +23,10 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onDestroy() {
+        instanceManager.stopAll()
+        super.onDestroy()
     }
 }

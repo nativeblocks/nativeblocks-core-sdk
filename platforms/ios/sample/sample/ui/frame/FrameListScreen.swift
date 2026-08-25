@@ -10,6 +10,7 @@ private enum ScaffoldState {
 struct FrameListScreen: View {
     let instance: String
     let onFrameOpened: (FrameRoute) -> Void
+    var onPreviewKitLaunched: (() -> Void)? = nil
 
     @State private var state: ScaffoldState = .loading
 
@@ -50,6 +51,13 @@ struct FrameListScreen: View {
         }
         .navigationTitle(instance)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let onPreviewKitLaunched {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Preview", systemImage: "slider.horizontal.3", action: onPreviewKitLaunched)
+                }
+            }
+        }
         .task(id: instance) {
             state = .loading
             switch await NativeblocksManager.getInstance(name: instance).getScaffold() {
