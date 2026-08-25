@@ -99,6 +99,7 @@ public class ProviderGenerator {
         return try SourceFileSyntax {
             """
             import NativeblocksRuntime
+            import SwiftUI
             """
             try ClassDeclSyntax("public class \(raw: prefix)ModifierProvider") {
                 try FunctionDeclSyntax("public static func provideModifiers(name: String = \"default\")") {

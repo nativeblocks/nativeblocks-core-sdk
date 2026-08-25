@@ -1,8 +1,6 @@
 import Foundation
 
 public enum TypeUtils {
-    /// Builds the expression converting a raw string value into the declared Swift type.
-    /// Shared by data and properties, for both blocks and actions.
     public static func valueConversion(
         type: String,
         source: String,
@@ -34,10 +32,11 @@ public enum TypeUtils {
         }
     }
 
-    static func typeMapToJson(_ type: String) -> String? {
-        switch type.uppercased() {
-        case "STRING":
+    static func typeMapToJson(_ type: String) -> String {
+        guard SyntaxUtils.isPrimitiveTypeSupported(type) else {
             return "STRING"
+        }
+        switch type.uppercased() {
         case "INT", "INT32", "INT16", "INT8", "UINT", "UINT32", "UINT16", "UINT8":
             return "INT"
         case "INT64", "UINT64":
@@ -49,7 +48,7 @@ public enum TypeUtils {
         case "BOOL":
             return "BOOLEAN"
         default:
-            return nil
+            return "STRING"
         }
     }
 

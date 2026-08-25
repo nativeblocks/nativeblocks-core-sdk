@@ -43,7 +43,7 @@ public struct DataMeta: NativeMeta {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(self.key, forKey: .key)
-        try container.encode(TypeUtils.typeMapToJson(self.type)!, forKey: .type)
+        try container.encode(TypeUtils.typeMapToJson(self.type), forKey: .type)
         try container.encode(self.description, forKey: .description)
         try container.encode(self.deprecated, forKey: .deprecated)
         try container.encode(self.deprecatedReason, forKey: .deprecatedReason)
@@ -108,7 +108,7 @@ public struct PropertyMeta: NativeMeta {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(self.key, forKey: .key)
-        try container.encode(TypeUtils.typeMapToJson(self.type) ?? "STRING", forKey: .type)
+        try container.encode(TypeUtils.typeMapToJson(self.type), forKey: .type)
         try container.encode(self.description, forKey: .description)
         try container.encode(self.value, forKey: .value)
         try container.encode(TypeUtils.valuePickerMapJson(self.valuePicker), forKey: .valuePicker)
