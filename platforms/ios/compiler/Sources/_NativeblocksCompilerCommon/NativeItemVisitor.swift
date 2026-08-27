@@ -20,7 +20,7 @@ public class NativeItemVisitor: SyntaxVisitor {
 
     public override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
         let attributes = node.attributes
-        if let attribute = findAttribute(name: "NativeBlock", from: attributes) {
+        if let attribute = findAttribute(name: "Block", from: attributes) {
             let structName = node.name.text
             let keyType = getStringValue(name: "keyType", from: attribute)
             let name = getStringValue(name: "name", from: attribute)
@@ -47,7 +47,7 @@ public class NativeItemVisitor: SyntaxVisitor {
                 )
             )
         }
-        if let attribute = findAttribute(name: "NativeModifier", from: attributes) {
+        if let attribute = findAttribute(name: "Modifier", from: attributes) {
             let structName = node.name.text
             let keyType = getStringValue(name: "keyType", from: attribute)
             let name = getStringValue(name: "name", from: attribute)
@@ -79,7 +79,7 @@ public class NativeItemVisitor: SyntaxVisitor {
 
     public override func visit(_ node: ClassDeclSyntax) -> SyntaxVisitorContinueKind {
         let attributes = node.attributes
-        if let attribute = findAttribute(name: "NativeAction", from: attributes) {
+        if let attribute = findAttribute(name: "Action", from: attributes) {
             let structName = node.name.text
             let keyType = getStringValue(name: "keyType", from: attribute)
             let name = getStringValue(name: "name", from: attribute)

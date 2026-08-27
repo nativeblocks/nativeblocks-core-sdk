@@ -16,9 +16,9 @@ import io.nativeblocks.compiler.getExtraParam
 import io.nativeblocks.compiler.meta.Data
 import io.nativeblocks.compiler.meta.Event
 import io.nativeblocks.compiler.meta.ExtraParam
-import io.nativeblocks.compiler.type.NativeModifier
-import io.nativeblocks.compiler.type.NativeModifierData
-import io.nativeblocks.compiler.type.NativeModifierEvent
+import io.nativeblocks.compiler.type.Modifier
+import io.nativeblocks.compiler.type.ModifierData
+import io.nativeblocks.compiler.type.ModifierEvent
 import io.nativeblocks.compiler.util.Diagnostic
 import io.nativeblocks.compiler.util.DiagnosticType
 import io.nativeblocks.compiler.util.capitalize
@@ -35,7 +35,7 @@ internal class ModifierProcessor(private val environment: SymbolProcessorEnviron
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         val symbols = resolver
-            .getSymbolsWithAnnotation(annotationName = NativeModifier::class.qualifiedName.orEmpty())
+            .getSymbolsWithAnnotation(annotationName = Modifier::class.qualifiedName.orEmpty())
             .filterIsInstance<KSFunctionDeclaration>()
             .toList()
 
@@ -55,7 +55,7 @@ internal class ModifierProcessor(private val environment: SymbolProcessorEnviron
         validSymbols.forEach { function ->
             val containingFile = listOfNotNull(function.containingFile).toTypedArray()
             val integrationJson =
-                function.getAnnotation(NativeModifier::class.simpleName.orEmpty()).generateIntegrationJson(
+                function.getAnnotation(Modifier::class.simpleName.orEmpty()).generateIntegrationJson(
                     kind = "MODIFIER",
                     integrationKeyTypes = integrationKeyTypes
                 )
@@ -85,14 +85,14 @@ internal class ModifierProcessor(private val environment: SymbolProcessorEnviron
                         throw Diagnostic.exceptionDispatcher(DiagnosticType.ConflictAnnotation)
                     }
                     when (val annotation = annotations.first().shortName.asString()) {
-                        NativeModifierData::class.simpleName -> {
+                        ModifierData::class.simpleName -> {
                             val dataJson = param.getAnnotation(annotation).generateDataJson(
                                 param = param,
                             )
                             data.add(dataJson)
                         }
 
-                        NativeModifierEvent::class.simpleName -> {
+                        ModifierEvent::class.simpleName -> {
                             val eventJson = param.getAnnotation(annotation).generateEventJson(param = param)
                             events.add(eventJson)
                         }
@@ -155,8 +155,8 @@ internal class ModifierProcessor(private val environment: SymbolProcessorEnviron
 
     private fun getNativeblocksAnnotations(param: KSValueParameter): List<KSAnnotation> {
         val nativeblocksAnnotations = param.annotations.filter {
-            it.shortName.asString() == NativeModifierData::class.simpleName ||
-                    it.shortName.asString() == NativeModifierEvent::class.simpleName
+            it.shortName.asString() == ModifierData::class.simpleName ||
+                    it.shortName.asString() == ModifierEvent::class.simpleName
         }
         return nativeblocksAnnotations.toList()
     }

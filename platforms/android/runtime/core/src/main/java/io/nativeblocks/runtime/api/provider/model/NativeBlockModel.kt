@@ -68,7 +68,7 @@ data class NativeBlockModel(
     /**
      * Properties associated with the block, including values for different device types.
      */
-    @Deprecated("Properties are being replaced by data; declare block arguments with @NativeBlockData.")
+    @Deprecated("Properties are being replaced by data; declare block arguments with @BlockData.")
     val properties: Map<String, NativeBlockPropertyModel>,
 
     /**
@@ -90,7 +90,7 @@ data class NativeBlockModel(
 /**
  * Represents a property of a native block, including device-specific values and its type.
  */
-@Deprecated("Properties are being replaced by data; declare block arguments with @NativeBlockData.")
+@Deprecated("Properties are being replaced by data; declare block arguments with @BlockData.")
 @Immutable
 data class NativeBlockPropertyModel(
     /**

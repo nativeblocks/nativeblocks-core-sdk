@@ -1,7 +1,7 @@
 public typealias BlockIndex = Int
 
 @attached(peer, names: suffixed(Block))
-public macro NativeBlock(
+public macro Block(
     name: String,
     keyType: String,
     description: String,
@@ -13,7 +13,7 @@ public macro NativeBlock(
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeBlockMacro")
 
 @attached(peer)
-public macro NativeBlockData(
+public macro BlockData(
     description: String = "",
     deprecated: Bool = false,
     deprecatedReason: String = "",
@@ -21,19 +21,19 @@ public macro NativeBlockData(
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeBlockDataMacro")
 
 @attached(peer)
-@available(*, deprecated, message: "Properties are being replaced by data; declare block arguments with @NativeBlockData.")
-public macro NativeBlockProp(
+@available(*, deprecated, message: "Properties are being replaced by data; declare block arguments with @BlockData.")
+public macro BlockProp(
     description: String = "",
-    valuePicker: NativeBlockValuePicker = NativeBlockValuePicker.TEXT_INPUT,
-    valuePickerOptions: [NativeBlockValuePickerOption] = [],
-    valuePickerGroup: NativeBlockValuePickerPosition = NativeBlockValuePickerPosition("General"),
+    valuePicker: BlockValuePicker = BlockValuePicker.TEXT_INPUT,
+    valuePickerOptions: [BlockValuePickerOption] = [],
+    valuePickerGroup: BlockValuePickerPosition = BlockValuePickerPosition("General"),
     deprecated: Bool = false,
     deprecatedReason: String = "",
     defaultValue: String = ""
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeBlockPropMacro")
 
 @attached(peer)
-public macro NativeBlockEvent(
+public macro BlockEvent(
     description: String = "",
     dataBinding: [String] = [],
     deprecated: Bool = false,
@@ -41,14 +41,14 @@ public macro NativeBlockEvent(
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeBlockEventMacro")
 
 @attached(peer)
-public macro NativeBlockSlot(
+public macro BlockSlot(
     description: String = "",
     scope: String = "",
     deprecated: Bool = false,
     deprecatedReason: String = ""
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeBlockSlotMacro")
 
-public enum NativeBlockValuePicker {
+public enum BlockValuePicker {
     case TEXT_INPUT
     case TEXT_AREA_INPUT
     case NUMBER_INPUT
@@ -57,7 +57,7 @@ public enum NativeBlockValuePicker {
     case COLOR_PICKER
 }
 
-public struct NativeBlockValuePickerOption {
+public struct BlockValuePickerOption {
     var id: String
     var text: String
     public init(_ id: String, _ text: String) {
@@ -66,7 +66,7 @@ public struct NativeBlockValuePickerOption {
     }
 }
 
-public struct NativeBlockValuePickerPosition {
+public struct BlockValuePickerPosition {
     var text: String
     public init(_ text: String) {
         self.text = text
@@ -74,7 +74,7 @@ public struct NativeBlockValuePickerPosition {
 }
 
 @attached(peer, names: suffixed(Action))
-public macro NativeAction(
+public macro Action(
     name: String,
     keyType: String,
     description: String,
@@ -87,17 +87,17 @@ public macro NativeAction(
 
 
 @attached(peer)
-public macro NativeActionParameter(description: String = "") =
+public macro ActionParameter(description: String = "") =
     #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeActionParameterMacro")
 
 
 @attached(peer)
-public macro NativeActionFunction(description: String = "") =
+public macro ActionFunction(description: String = "") =
     #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeActionFunctionMacro")
 
 
 @attached(peer)
-public macro NativeActionData(
+public macro ActionData(
     description: String = "",
     deprecated: Bool = false,
     deprecatedReason: String = "",
@@ -106,12 +106,12 @@ public macro NativeActionData(
 
 
 @attached(peer)
-@available(*, deprecated, message: "Properties are being replaced by data; declare action arguments with @NativeActionData.")
-public macro NativeActionProp(
+@available(*, deprecated, message: "Properties are being replaced by data; declare action arguments with @ActionData.")
+public macro ActionProp(
     description: String = "",
-    valuePicker: NativeActionValuePicker = NativeActionValuePicker.TEXT_INPUT,
-    valuePickerOptions: [NativeActionValuePickerOption] = [],
-    valuePickerGroup: NativeActionValuePickerPosition = NativeActionValuePickerPosition("General"),
+    valuePicker: ActionValuePicker = ActionValuePicker.TEXT_INPUT,
+    valuePickerOptions: [ActionValuePickerOption] = [],
+    valuePickerGroup: ActionValuePickerPosition = ActionValuePickerPosition("General"),
     deprecated: Bool = false,
     deprecatedReason: String = "",
     defaultValue: String = ""
@@ -119,7 +119,7 @@ public macro NativeActionProp(
 
 
 @attached(peer)
-public macro NativeActionEvent(
+public macro ActionEvent(
     description: String = "",
     scope: String = "",
     dataBinding: [String] = [],
@@ -127,7 +127,7 @@ public macro NativeActionEvent(
     deprecatedReason: String = ""
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeActionEventMacro")
 
-public enum NativeActionValuePicker {
+public enum ActionValuePicker {
     case TEXT_INPUT
     case TEXT_AREA_INPUT
     case NUMBER_INPUT
@@ -138,7 +138,7 @@ public enum NativeActionValuePicker {
 }
 
 
-public struct NativeActionValuePickerOption {
+public struct ActionValuePickerOption {
     var id: String
     var text: String
     public init(_ id: String, _ text: String) {
@@ -147,7 +147,7 @@ public struct NativeActionValuePickerOption {
     }
 }
 
-public struct NativeActionValuePickerPosition {
+public struct ActionValuePickerPosition {
     var text: String
     public init(_ text: String) {
         self.text = text
@@ -155,7 +155,7 @@ public struct NativeActionValuePickerPosition {
 }
 
 @attached(peer, names: suffixed(Modifier))
-public macro NativeModifier(
+public macro Modifier(
     name: String,
     keyType: String,
     description: String,
@@ -167,7 +167,7 @@ public macro NativeModifier(
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeModifierMacro")
 
 @attached(peer)
-public macro NativeModifierData(
+public macro ModifierData(
     description: String = "",
     deprecated: Bool = false,
     deprecatedReason: String = "",
@@ -175,7 +175,7 @@ public macro NativeModifierData(
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeModifierDataMacro")
 
 @attached(peer)
-public macro NativeModifierEvent(
+public macro ModifierEvent(
     description: String = "",
     dataBinding: [String] = [],
     deprecated: Bool = false,

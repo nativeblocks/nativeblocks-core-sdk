@@ -1,12 +1,12 @@
 package io.nativeblocks.sample.modifier
 
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.ui.Modifier
-import io.nativeblocks.compiler.type.NativeModifier
-import io.nativeblocks.compiler.type.NativeModifierData
+import androidx.compose.ui.Modifier as ComposeModifier
+import io.nativeblocks.compiler.type.Modifier
+import io.nativeblocks.compiler.type.ModifierData
 import io.nativeblocks.runtime.api.provider.modifier.ModifierContext
 
-@NativeModifier(
+@Modifier(
     keyType = "nativeblocks/weight",
     name = "Weight",
     description = "Distributes the remaining space of a row between its children.",
@@ -14,11 +14,11 @@ import io.nativeblocks.runtime.api.provider.modifier.ModifierContext
 )
 fun NativeWeight(
     modifierContext: ModifierContext? = null,
-    @NativeModifierData(
+    @ModifierData(
         description = "Share of the remaining space this block takes.",
         defaultValue = "1.0"
     ) weight: Float = 1f,
-): Modifier {
-    val scope = modifierContext?.scope as? RowScope ?: return Modifier
-    return with(scope) { Modifier.weight(weight) }
+): ComposeModifier {
+    val scope = modifierContext?.scope as? RowScope ?: return ComposeModifier
+    return with(scope) { ComposeModifier.weight(weight) }
 }

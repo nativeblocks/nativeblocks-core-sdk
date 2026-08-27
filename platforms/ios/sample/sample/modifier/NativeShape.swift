@@ -2,7 +2,7 @@ import NativeblocksCompiler
 import NativeblocksRuntime
 import SwiftUI
 
-@NativeModifier(
+@Modifier(
     name: "Shape",
     keyType: "nativeblocks/shape",
     description: "Clips the block to a shape and paints its background, border and shadow."
@@ -11,37 +11,37 @@ struct NativeShape: ViewModifier {
 
     var modifierContext: ModifierContext? = nil
 
-    @NativeModifierData(
+    @ModifierData(
         description: "Outline of the shape: rectangle, roundedRectangle, circle or capsule.",
         defaultValue: "rectangle"
     )
     var style: ShapeStyleType = .rectangle
 
-    @NativeModifierData(description: "Top-leading corner radius.", defaultValue: "0")
+    @ModifierData(description: "Top-leading corner radius.", defaultValue: "0")
     var radiusTopLeading: CGFloat = 0
 
-    @NativeModifierData(description: "Top-trailing corner radius.", defaultValue: "0")
+    @ModifierData(description: "Top-trailing corner radius.", defaultValue: "0")
     var radiusTopTrailing: CGFloat = 0
 
-    @NativeModifierData(description: "Bottom-leading corner radius.", defaultValue: "0")
+    @ModifierData(description: "Bottom-leading corner radius.", defaultValue: "0")
     var radiusBottomLeading: CGFloat = 0
 
-    @NativeModifierData(description: "Bottom-trailing corner radius.", defaultValue: "0")
+    @ModifierData(description: "Bottom-trailing corner radius.", defaultValue: "0")
     var radiusBottomTrailing: CGFloat = 0
 
-    @NativeModifierData(description: "Background color in hex.", defaultValue: "#00000000")
+    @ModifierData(description: "Background color in hex.", defaultValue: "#00000000")
     var backgroundColor: Color = Color.black.opacity(0)
 
-    @NativeModifierData(description: "Border color in hex.", defaultValue: "#00000000")
+    @ModifierData(description: "Border color in hex.", defaultValue: "#00000000")
     var borderColor: Color = Color.black.opacity(0)
 
-    @NativeModifierData(description: "Border width.", defaultValue: "0")
+    @ModifierData(description: "Border width.", defaultValue: "0")
     var borderWidth: CGFloat = 0
 
-    @NativeModifierData(description: "Shadow radius.", defaultValue: "0")
+    @ModifierData(description: "Shadow radius.", defaultValue: "0")
     var shadowRadius: CGFloat = 0
 
-    @NativeModifierData(description: "Clip the block's own content to the shape.", defaultValue: "true")
+    @ModifierData(description: "Clip the block's own content to the shape.", defaultValue: "true")
     var clipContent: Bool = true
 
     func body(content: Content) -> some View {

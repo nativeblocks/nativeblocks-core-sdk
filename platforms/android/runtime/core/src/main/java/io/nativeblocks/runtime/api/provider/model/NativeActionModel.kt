@@ -70,7 +70,7 @@ data class NativeActionTriggerModel(
     /**
      * Properties associated with the trigger.
      */
-    @Deprecated("Properties are being replaced by data; declare action arguments with @NativeActionData.")
+    @Deprecated("Properties are being replaced by data; declare action arguments with @ActionData.")
     val properties: Map<String, NativeActionTriggerPropertyModel>,
 
     /**
@@ -107,7 +107,7 @@ data class NativeActionTriggerEventModel(
 /**
  * Represents a property associated with an action trigger, including its key, value, and type.
  */
-@Deprecated("Properties are being replaced by data; declare action arguments with @NativeActionData.")
+@Deprecated("Properties are being replaced by data; declare action arguments with @ActionData.")
 data class NativeActionTriggerPropertyModel(
     /**
      * Key identifying the property.

@@ -2,7 +2,7 @@ import SwiftUI
 import NativeblocksCompiler
 import NativeblocksRuntime
 
-@NativeBlock(
+@Block(
     name: "Sample text",
     keyType: "SAMPLE_TEXT",
     description: "Renders a line of text supplied by the frame"
@@ -11,13 +11,13 @@ struct SampleText: View {
     
     var blockContext: BlockContext? = nil
     
-    @NativeBlockData(description: "Text to render")
+    @BlockData(description: "Text to render")
     var text: String
 
-    @NativeBlockData(description: "Font size in points", defaultValue: "16")
+    @BlockData(description: "Font size in points", defaultValue: "16")
     var fontSize: CGFloat = 16
 
-    @NativeBlockData(description: "Render the text in bold", defaultValue: "false")
+    @BlockData(description: "Render the text in bold", defaultValue: "false")
     var bold: Bool = false
 
     var body: some View {

@@ -33,16 +33,16 @@ public enum DiagnosticType: String, DiagnosticMessage {
         case .primitiveTypeSupported:
             return "Only primitive types are supported."
         case .eventDataMissing:
-            return "Add '@NativeBlockData' with matching type and name."
+            return "Add '@BlockData' with matching type and name."
         case .requiredNativeActionFunction:
-            return "Add one '@NativeActionFunction'."
+            return "Add one '@ActionFunction'."
         case .requiredNativeActionFunctionParameter:
-            return "'@NativeActionFunction' needs a struct with '@NativeActionParameter'."
+            return "'@ActionFunction' needs a struct with '@ActionParameter'."
         case .multiAttributes:
             return "Multi attribute are not supported."
         case .actionNotSupportedThrows:
             return
-                "'@NativeActionFunction' doesn't support throws. Report the failure through a '@NativeActionEvent' instead."
+                "'@ActionFunction' doesn't support throws. Report the failure through a '@ActionEvent' instead."
         }
     }
 

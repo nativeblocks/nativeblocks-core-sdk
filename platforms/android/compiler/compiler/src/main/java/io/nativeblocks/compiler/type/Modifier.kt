@@ -16,7 +16,7 @@ package io.nativeblocks.compiler.type
  * @property deprecatedReason Reason for deprecation, if applicable.
  */
 @Target(AnnotationTarget.FUNCTION)
-annotation class NativeModifier(
+annotation class Modifier(
     val keyType: String,
     val name: String,
     val description: String,
@@ -38,7 +38,7 @@ annotation class NativeModifier(
  * @property defaultValue The default value for the data argument, if applicable.
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class NativeModifierData(
+annotation class ModifierData(
     val description: String = "",
     val deprecated: Boolean = false,
     val deprecatedReason: String = "",
@@ -56,7 +56,7 @@ annotation class NativeModifierData(
  * @property deprecatedReason Reason for deprecation, if applicable.
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class NativeModifierEvent(
+annotation class ModifierEvent(
     val description: String = "",
     val dataBinding: Array<String> = [],
     val deprecated: Boolean = false,

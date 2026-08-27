@@ -29,11 +29,11 @@ object Diagnostic {
             }
 
             is DiagnosticType.RequireFunctionAnnotation -> {
-                return IllegalArgumentException("Requires only one '@NativeActionFunction' annotated function")
+                return IllegalArgumentException("Requires only one '@ActionFunction' annotated function")
             }
 
             is DiagnosticType.RequireFunctionParameterAnnotation -> {
-                return IllegalArgumentException("'@NativeActionFunction' Requires one parameter data class annotated with '@NativeActionParameter'")
+                return IllegalArgumentException("'@ActionFunction' Requires one parameter data class annotated with '@ActionParameter'")
             }
 
             is DiagnosticType.SlotMustBeComposable -> {

@@ -1,27 +1,27 @@
 package io.nativeblocks.sample.modifier
 
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.Modifier
-import io.nativeblocks.compiler.type.NativeModifier
-import io.nativeblocks.compiler.type.NativeModifierData
-import io.nativeblocks.compiler.type.NativeModifierEvent
+import androidx.compose.ui.Modifier as ComposeModifier
+import io.nativeblocks.compiler.type.Modifier
+import io.nativeblocks.compiler.type.ModifierData
+import io.nativeblocks.compiler.type.ModifierEvent
 import io.nativeblocks.runtime.api.provider.modifier.ModifierContext
 
-@NativeModifier(
+@Modifier(
     keyType = "SAMPLE_TAP",
     name = "Sample tap",
     description = "Makes the block it is attached to tappable",
 )
 fun SampleTap(
     modifierContext: ModifierContext? = null,
-    @NativeModifierData(description = "Whether the tap is enabled", defaultValue = "true")
+    @ModifierData(description = "Whether the tap is enabled", defaultValue = "true")
     enabled: Boolean = true,
-    @NativeModifierEvent(description = "Triggered when the block is tapped")
+    @ModifierEvent(description = "Triggered when the block is tapped")
     onTap: (() -> Unit)? = null,
-): Modifier {
+): ComposeModifier {
     return if (onTap != null) {
-        Modifier.clickable(enabled = enabled) { onTap() }
+        ComposeModifier.clickable(enabled = enabled) { onTap() }
     } else {
-        Modifier
+        ComposeModifier
     }
 }

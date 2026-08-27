@@ -3,10 +3,10 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 
 public enum BlockExtractor {
-    static let NativeBlockDataType = "NativeBlockData"
-    static let NativeBlockPropType = "NativeBlockProp"
-    static let NativeBlockEventType = "NativeBlockEvent"
-    static let NativeBlockSlotType = "NativeBlockSlot"
+    static let NativeBlockDataType = "BlockData"
+    static let NativeBlockPropType = "BlockProp"
+    static let NativeBlockEventType = "BlockEvent"
+    static let NativeBlockSlotType = "BlockSlot"
 
     public static func extractVariable(from structDecl: StructDeclSyntax) -> ([NativeMeta], [Diagnostic]) {
         var meta: [NativeMeta] = []

@@ -3,8 +3,8 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 
 public enum ModifierExtractor {
-    static let NativeModifierDataType = "NativeModifierData"
-    static let NativeModifierEventType = "NativeModifierEvent"
+    static let NativeModifierDataType = "ModifierData"
+    static let NativeModifierEventType = "ModifierEvent"
 
     public static func extractVariable(from structDecl: StructDeclSyntax) -> ([NativeMeta], [Diagnostic]) {
         var meta: [NativeMeta] = []

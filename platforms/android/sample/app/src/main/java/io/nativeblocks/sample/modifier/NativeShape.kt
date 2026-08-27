@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.Modifier as ComposeModifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -12,41 +12,41 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.nativeblocks.compiler.type.NativeModifier
-import io.nativeblocks.compiler.type.NativeModifierData
+import io.nativeblocks.compiler.type.Modifier
+import io.nativeblocks.compiler.type.ModifierData
 import io.nativeblocks.sample.modifier.ShapeStyle
 import io.nativeblocks.runtime.api.provider.modifier.ModifierContext
 
-@NativeModifier(
+@Modifier(
     keyType = "nativeblocks/shape",
     name = "Shape",
     description = "Clips the block to a shape and paints its background, border and shadow.",
 )
 fun NativeShape(
     modifierContext: ModifierContext? = null,
-    @NativeModifierData(
+    @ModifierData(
         description = "Outline of the shape: rectangle, roundedRectangle, circle or capsule.",
         defaultValue = "rectangle"
     ) style: ShapeStyle = ShapeStyle.Rectangle,
-    @NativeModifierData(description = "Top-start corner radius in DP.", defaultValue = "0")
+    @ModifierData(description = "Top-start corner radius in DP.", defaultValue = "0")
     radiusTopStart: Dp = 0.dp,
-    @NativeModifierData(description = "Top-end corner radius in DP.", defaultValue = "0")
+    @ModifierData(description = "Top-end corner radius in DP.", defaultValue = "0")
     radiusTopEnd: Dp = 0.dp,
-    @NativeModifierData(description = "Bottom-start corner radius in DP.", defaultValue = "0")
+    @ModifierData(description = "Bottom-start corner radius in DP.", defaultValue = "0")
     radiusBottomStart: Dp = 0.dp,
-    @NativeModifierData(description = "Bottom-end corner radius in DP.", defaultValue = "0")
+    @ModifierData(description = "Bottom-end corner radius in DP.", defaultValue = "0")
     radiusBottomEnd: Dp = 0.dp,
-    @NativeModifierData(description = "Background color in hex.", defaultValue = "#00000000")
+    @ModifierData(description = "Background color in hex.", defaultValue = "#00000000")
     backgroundColor: Color = Color.Transparent,
-    @NativeModifierData(description = "Border color in hex.", defaultValue = "#00000000")
+    @ModifierData(description = "Border color in hex.", defaultValue = "#00000000")
     borderColor: Color = Color.Transparent,
-    @NativeModifierData(description = "Border width in DP.", defaultValue = "0")
+    @ModifierData(description = "Border width in DP.", defaultValue = "0")
     borderWidth: Dp = 0.dp,
-    @NativeModifierData(description = "Shadow elevation in DP.", defaultValue = "0")
+    @ModifierData(description = "Shadow elevation in DP.", defaultValue = "0")
     elevation: Dp = 0.dp,
-    @NativeModifierData(description = "Clip the block's own content to the shape.", defaultValue = "true")
+    @ModifierData(description = "Clip the block's own content to the shape.", defaultValue = "true")
     clipContent: Boolean = true,
-): Modifier {
+): ComposeModifier {
     val shape = shapeOf(
         style = style,
         radiusTopStart = radiusTopStart,
@@ -54,7 +54,7 @@ fun NativeShape(
         radiusBottomStart = radiusBottomStart,
         radiusBottomEnd = radiusBottomEnd,
     )
-    var modifier = Modifier
+    var modifier = ComposeModifier
         .shadow(elevation = elevation, shape = shape)
         .background(color = backgroundColor, shape = shape)
         .border(width = borderWidth, color = borderColor, shape = shape)

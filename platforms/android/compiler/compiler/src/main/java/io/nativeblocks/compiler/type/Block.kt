@@ -1,18 +1,23 @@
 package io.nativeblocks.compiler.type
 
 /**
- * Annotation to define a Native Action within the Nativeblocks system.
+ * Alias for the index of a block.
+ */
+typealias BlockIndex = Int
+
+/**
+ * Annotation to define a Native Block within the Nativeblocks system.
  *
- * @property keyType The type of key associated with the action.
- * @property name The name of the action.
- * @property description A description of the action.
- * @property version The version of the action. Defaults to 1.
- * @property versionName The version name of the action. Defaults to an empty string.
- * @property deprecated Indicates if the action is deprecated.
+ * @property keyType The type of key associated with the block.
+ * @property name The name of the block.
+ * @property description A description of the block.
+ * @property version The version of the block. Defaults to 1.
+ * @property versionName The version Name of the block. Defaults an empty string.
+ * @property deprecated Indicates if the block is deprecated.
  * @property deprecatedReason Reason for deprecation, if applicable.
  */
-@Target(AnnotationTarget.CLASS)
-annotation class NativeAction(
+@Target(AnnotationTarget.FUNCTION)
+annotation class Block(
     val keyType: String,
     val name: String,
     val description: String,
@@ -24,19 +29,7 @@ annotation class NativeAction(
 )
 
 /**
- * Annotation to mark a class as a parameter holder for Native Actions.
- */
-@Target(AnnotationTarget.CLASS)
-annotation class NativeActionParameter
-
-/**
- * Annotation to mark a function as a Native Action handler.
- */
-@Target(AnnotationTarget.FUNCTION)
-annotation class NativeActionFunction
-
-/**
- * Annotation to define a property for a Native Action.
+ * Annotation to define a property for a Native Block.
  *
  * @property description A brief description of the property.
  * @property valuePicker Specifies the type of value picker to use for this property.
@@ -46,22 +39,22 @@ annotation class NativeActionFunction
  * @property deprecatedReason Reason for deprecation, if applicable.
  * @property defaultValue The default value for the property, if applicable.
  */
-@Deprecated("Properties are being replaced by data; declare action arguments with @NativeActionData.")
+@Deprecated("Properties are being replaced by data; declare block arguments with @BlockData.")
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class NativeActionProp(
+annotation class BlockProp(
     val description: String = "",
-    val valuePicker: NativeActionValuePicker = NativeActionValuePicker.TEXT_INPUT,
-    val valuePickerGroup: NativeActionValuePickerPosition = NativeActionValuePickerPosition(
+    val valuePicker: BlockValuePicker = BlockValuePicker.TEXT_INPUT,
+    val valuePickerGroup: BlockValuePickerPosition = BlockValuePickerPosition(
         text = "General"
     ),
-    val valuePickerOptions: Array<NativeActionValuePickerOption> = [],
+    val valuePickerOptions: Array<BlockValuePickerOption> = [],
     val deprecated: Boolean = false,
     val deprecatedReason: String = "",
     val defaultValue :String = ""
 )
 
 /**
- * Annotation to define data binding for a Native Action.
+ * Annotation to define data binding for a Native Block.
  *
  * @property description A brief description of the data binding.
  * @property deprecated Indicates if the data binding is deprecated.
@@ -69,7 +62,7 @@ annotation class NativeActionProp(
  * @property defaultValue The default value for the data binding, if applicable.
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class NativeActionData(
+annotation class BlockData(
     val description: String = "",
     val deprecated: Boolean = false,
     val deprecatedReason: String = "",
@@ -77,31 +70,43 @@ annotation class NativeActionData(
 )
 
 /**
- * Annotation to define an event binding for a Native Action.
+ * Annotation to define an event binding for a Native Block.
  *
- * The parameter's own name is the event name, and triggers are filed under it.
  * @property description A brief description of the event binding.
- * @property scope The scope this event hands to the triggers filed under it.
  * @property dataBinding Array of data bindings for the event.
  * @property deprecated Indicates if the event binding is deprecated.
  * @property deprecatedReason Reason for deprecation, if applicable.
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class NativeActionEvent(
+annotation class BlockEvent(
     val description: String = "",
-    val scope: String = "",
     val dataBinding: Array<String> = [],
     val deprecated: Boolean = false,
     val deprecatedReason: String = ""
 )
 
 /**
- * Annotation to define options for a value picker in Native Actions.
+ * Annotation to define a slot for a Native Block.
+ *
+ * @property description A brief description of the slot.
+ * @property deprecated Indicates if the slot is deprecated.
+ * @property deprecatedReason Reason for deprecation, if applicable.
+ */
+@Target(AnnotationTarget.VALUE_PARAMETER)
+annotation class BlockSlot(
+    val description: String = "",
+    val scope: String = "",
+    val deprecated: Boolean = false,
+    val deprecatedReason: String = ""
+)
+
+/**
+ * Annotation to define options for a value picker in Native Blocks.
  *
  * @property id Unique identifier for the option.
  * @property text Display text for the option.
  */
-annotation class NativeActionValuePickerOption(
+annotation class BlockValuePickerOption(
     val id: String,
     val text: String
 )
@@ -111,19 +116,19 @@ annotation class NativeActionValuePickerOption(
  *
  * @property text The text label for the group.
  */
-annotation class NativeActionValuePickerPosition(
+annotation class BlockValuePickerPosition(
     val text: String,
 )
 
 /**
- * Enum representing the types of value pickers available for Native Action properties.
+ * Enum representing the types of value pickers available for Native Block properties.
  * Defines the UI components used to input or select values for properties.
  */
-enum class NativeActionValuePicker {
+enum class BlockValuePicker {
     TEXT_INPUT,
     TEXT_AREA_INPUT,
     NUMBER_INPUT,
     DROPDOWN,
-    COLOR_PICKER,
-    SCRIPT_AREA_INPUT;
+    COMBOBOX_INPUT,
+    COLOR_PICKER;
 }

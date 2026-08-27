@@ -21,11 +21,11 @@ import io.nativeblocks.compiler.meta.Event
 import io.nativeblocks.compiler.meta.ExtraParam
 import io.nativeblocks.compiler.meta.Property
 import io.nativeblocks.compiler.meta.Slot
-import io.nativeblocks.compiler.type.NativeBlock
-import io.nativeblocks.compiler.type.NativeBlockData
-import io.nativeblocks.compiler.type.NativeBlockEvent
-import io.nativeblocks.compiler.type.NativeBlockProp
-import io.nativeblocks.compiler.type.NativeBlockSlot
+import io.nativeblocks.compiler.type.Block
+import io.nativeblocks.compiler.type.BlockData
+import io.nativeblocks.compiler.type.BlockEvent
+import io.nativeblocks.compiler.type.BlockProp
+import io.nativeblocks.compiler.type.BlockSlot
 import io.nativeblocks.compiler.util.Diagnostic
 import io.nativeblocks.compiler.util.DiagnosticType
 import io.nativeblocks.compiler.util.capitalize
@@ -42,7 +42,7 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         val symbols = resolver
-            .getSymbolsWithAnnotation(annotationName = NativeBlock::class.qualifiedName.orEmpty())
+            .getSymbolsWithAnnotation(annotationName = Block::class.qualifiedName.orEmpty())
             .filterIsInstance<KSFunctionDeclaration>()
             .toList()
 
@@ -63,7 +63,7 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
             val containingFile = listOfNotNull(function.containingFile).toTypedArray()
             // check component duplication (MyButton and myButton are the same from the compiler prospective, we need to normalize it and throw an error)
             val integrationJson =
-                function.getAnnotation(NativeBlock::class.simpleName.orEmpty()).generateIntegrationJson(
+                function.getAnnotation(Block::class.simpleName.orEmpty()).generateIntegrationJson(
                     kind = "BLOCK",
                     integrationKeyTypes = integrationKeyTypes
                 )
@@ -97,7 +97,7 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                         throw Diagnostic.exceptionDispatcher(DiagnosticType.ConflictAnnotation)
                     }
                     when (val annotation = annotations.first().shortName.asString()) {
-                        NativeBlockProp::class.simpleName -> {
+                        BlockProp::class.simpleName -> {
                             val propertyJson = param.getAnnotation(annotation).generatePropertyJson(
                                 param = param,
                                 kind = integrationJson.kind,
@@ -106,19 +106,19 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                             properties.add(propertyJson)
                         }
 
-                        NativeBlockData::class.simpleName -> {
+                        BlockData::class.simpleName -> {
                             val dataJson = param.getAnnotation(annotation).generateDataJson(
                                 param = param,
                             )
                             data.add(dataJson)
                         }
 
-                        NativeBlockEvent::class.simpleName -> {
+                        BlockEvent::class.simpleName -> {
                             val eventJson = param.getAnnotation(annotation).generateEventJson(param = param)
                             events.add(eventJson)
                         }
 
-                        NativeBlockSlot::class.simpleName -> {
+                        BlockSlot::class.simpleName -> {
                             val slotJson = param.getAnnotation(annotation).generateSlotJson(
                                 param = param,
                             )
@@ -199,10 +199,10 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
 
     private fun getNativeblocksAnnotations(param: KSValueParameter): List<KSAnnotation> {
         val nativeblocksAnnotations = param.annotations.filter {
-            it.shortName.asString() == NativeBlockData::class.simpleName ||
-                    it.shortName.asString() == NativeBlockSlot::class.simpleName ||
-                    it.shortName.asString() == NativeBlockEvent::class.simpleName ||
-                    it.shortName.asString() == NativeBlockProp::class.simpleName
+            it.shortName.asString() == BlockData::class.simpleName ||
+                    it.shortName.asString() == BlockSlot::class.simpleName ||
+                    it.shortName.asString() == BlockEvent::class.simpleName ||
+                    it.shortName.asString() == BlockProp::class.simpleName
         }
         return nativeblocksAnnotations.toList()
     }

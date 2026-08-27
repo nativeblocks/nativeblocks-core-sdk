@@ -45,7 +45,7 @@ public struct NativeActionTriggerModel: Hashable, Codable {
     public let scope: String?
 
     /// A dictionary of properties associated with this trigger.
-    @available(*, deprecated, message: "Properties are being replaced by data; declare action arguments with @NativeActionData.")
+    @available(*, deprecated, message: "Properties are being replaced by data; declare action arguments with @ActionData.")
     public let properties: [String: NativeActionTriggerPropertyModel]
 
     /// A dictionary of data models that belong to this trigger.
@@ -79,7 +79,7 @@ public struct NativeActionTriggerEventModel: Hashable, Codable {
 }
 
 /// Represents a property model for a trigger, including key-value pairs and their types.
-@available(*, deprecated, message: "Properties are being replaced by data; declare action arguments with @NativeActionData.")
+@available(*, deprecated, message: "Properties are being replaced by data; declare action arguments with @ActionData.")
 public struct NativeActionTriggerPropertyModel: Hashable, Codable {
     /// The key associated with the property.
     public let key: String

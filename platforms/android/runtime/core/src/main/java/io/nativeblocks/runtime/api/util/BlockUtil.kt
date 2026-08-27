@@ -29,15 +29,15 @@ fun Context.findActivity(): Activity? {
     return null
 }
 
-@Deprecated("Breakpoints are being dropped along with properties; declare block arguments with @NativeBlockData.")
+@Deprecated("Breakpoints are being dropped along with properties; declare block arguments with @BlockData.")
 enum class NativeDeviceWidth { MOBILE, TABLET, DESKTOP }
 
-@Deprecated("Breakpoints are being dropped along with properties; declare block arguments with @NativeBlockData.")
+@Deprecated("Breakpoints are being dropped along with properties; declare block arguments with @BlockData.")
 val LocalNativeWindowWidthClass = staticCompositionLocalOf { NativeDeviceWidth.MOBILE }
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
-@Deprecated("Breakpoints are being dropped along with properties; declare block arguments with @NativeBlockData.")
+@Deprecated("Breakpoints are being dropped along with properties; declare block arguments with @BlockData.")
 internal fun currentWindowWidthClass(): NativeDeviceWidth {
     val activity = LocalContext.current.findActivity() ?: return NativeDeviceWidth.MOBILE
     return when (calculateWindowSizeClass(activity).widthSizeClass) {
@@ -56,7 +56,7 @@ internal fun currentWindowWidthClass(): NativeDeviceWidth {
  * @param windowManager The device width for the current frame.
  * @return The appropriate size value, or `null` when [prop] is null.
  */
-@Deprecated("Breakpoints are being dropped along with properties; declare block arguments with @NativeBlockData.")
+@Deprecated("Breakpoints are being dropped along with properties; declare block arguments with @BlockData.")
 fun findWindowSizeClass(prop: NativeBlockPropertyModel?, windowManager: NativeDeviceWidth): String? {
     prop ?: return null
     return when (windowManager) {

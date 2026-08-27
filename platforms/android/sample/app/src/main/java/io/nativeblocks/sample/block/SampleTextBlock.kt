@@ -7,12 +7,12 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
-import io.nativeblocks.compiler.type.NativeBlock
-import io.nativeblocks.compiler.type.NativeBlockData
-import io.nativeblocks.compiler.type.NativeBlockProp
+import io.nativeblocks.compiler.type.Block
+import io.nativeblocks.compiler.type.BlockData
+import io.nativeblocks.compiler.type.BlockProp
 import io.nativeblocks.runtime.api.provider.block.BlockContext
 
-@NativeBlock(
+@Block(
     keyType = "SAMPLE_TEXT",
     name = "Sample text",
     description = "Renders a line of text supplied by the frame",
@@ -20,13 +20,13 @@ import io.nativeblocks.runtime.api.provider.block.BlockContext
 @Composable
 fun SampleText(
     blockContext: BlockContext? = null,
-    @NativeBlockData(description = "Text to render")
+    @BlockData(description = "Text to render")
     text: String,
-    @NativeBlockData(description = "Font size in sp", defaultValue = "16")
+    @BlockData(description = "Font size in sp", defaultValue = "16")
     fontSize: Int,
-    @NativeBlockProp(description = "Render the text in bold", defaultValue = "false")
+    @BlockProp(description = "Render the text in bold", defaultValue = "false")
     bold: Boolean,
-    @NativeBlockData(description = "Render the text in bold", defaultValue = "12")
+    @BlockData(description = "Render the text in bold", defaultValue = "12")
     someValueForDp: Dp,
 ) {
     Text(

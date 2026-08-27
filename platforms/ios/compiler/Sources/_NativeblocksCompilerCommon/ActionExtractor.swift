@@ -3,11 +3,11 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 
 public struct ActionExtractor {
-    static let NativeActionDataType = "NativeActionData"
-    static let NativeActionPropType = "NativeActionProp"
-    static let NativeActionEventType = "NativeActionEvent"
-    static let NativeActionFunctionType = "NativeActionFunction"
-    static let NativeActionParameterType = "NativeActionParameter"
+    static let NativeActionDataType = "ActionData"
+    static let NativeActionPropType = "ActionProp"
+    static let NativeActionEventType = "ActionEvent"
+    static let NativeActionFunctionType = "ActionFunction"
+    static let NativeActionParameterType = "ActionParameter"
 
     public static func extractVariable(from structDecl: ClassDeclSyntax) -> ([NativeMeta], [Diagnostic]) {
         var meta: [NativeMeta] = []
