@@ -72,6 +72,10 @@ internal final class FrameViewModel: ObservableObject {
         return variables[key]
     }
 
+    func valueOf(_ key: String) -> String? {
+        return variables[key]?.value
+    }
+
     func blockOf(_ key: String) -> NativeBlockModel? {
         return blocks[key]
     }

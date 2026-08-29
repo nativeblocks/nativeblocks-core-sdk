@@ -9,6 +9,7 @@ use crate::feature::frame::presenter::state_manager::model::{
 };
 use crate::feature::frame::presenter::state_manager::observer::Observer;
 use crate::feature::frame::presenter::state_manager::snapshot::{FrameSnapshot, SnapshotStore};
+use crate::feature::frame::presenter::state_manager::refs;
 use crate::feature::frame::presenter::state_manager::state::InternalState;
 use crate::feature::frame::presenter::state_manager::{action, block, snapshot, variable};
 use crate::library::result::ErrorType;
@@ -150,7 +151,7 @@ fn frame_full(
         state: state.state.clone(),
         root_key: state.root_key.clone(),
         blocks,
-        variables: state.variables.clone(),
+        variables: refs::resolved_all(&state.variables),
         actions,
         restored: false,
     };

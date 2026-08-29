@@ -97,7 +97,7 @@ private struct Block: View {
     let parentScope: Any?
 
     var body: some View {
-        if let block = vm.blockOf(blockKey) {
+        if let block = vm.blockOf(blockKey), vm.valueOf(block.visibility) != "false" {
             let blockContext = makeBlockContext(for: block)
             if block.keyType == "ROOT" {
                 AnyView(RootBlock(blockContext: blockContext))
@@ -133,7 +133,7 @@ private struct Block: View {
                         instanceName: instanceName,
                         listItemIndex: listItemIndex,
                         onFindVariable: { data in
-                            vm.variableOf(data?.value ?? "")?.value
+                            vm.valueOf(data?.value ?? "")
                         },
                         onUpdateVariable: { data, value in
                             guard let data = data else { return }
@@ -161,11 +161,8 @@ private struct Block: View {
         return BlockContext(
             instanceName: instanceName,
             listItemIndex: listItemIndex,
-            onFindVisibility: {
-                vm.variableOf(block.visibility)?.value
-            },
             onFindVariable: { data in
-                vm.variableOf(data?.value ?? "")?.value
+                vm.valueOf(data?.value ?? "")
             },
             onUpdateVariable: { data, value in
                 guard let data = data else { return }

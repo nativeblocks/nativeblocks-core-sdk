@@ -14,164 +14,143 @@ struct BlockCreator {
         return try StructDeclSyntax("public struct \(raw: structName)Block: View") {
             try VariableDeclSyntax("var blockContext: BlockContext")
             try VariableDeclSyntax(
-                  """
-                  public var body: some View
-                  """
-            ) {
                 """
-                Group {
-                    if let visibility = blockContext.onFindVisibility(),
-                       visibility == "false" {
-                        EmptyView()
-                    } else {
-                        InternalView(blockContext: blockContext)
-                    }
-                }
+                @Environment(\\.nativeWindowWidthClass) var windowManager
                 """
-            }
-           
-            try StructDeclSyntax("private struct InternalView: View") {
-                try VariableDeclSyntax("var blockContext: BlockContext")
+            )
 
+            for data in metaData where SyntaxUtils.isPrimitiveTypeSupported(data.type) {
                 try VariableDeclSyntax(
                     """
-                    @Environment(\\.nativeWindowWidthClass) var windowManager
+                    @State private var \(raw: data.key)DataValue: \(raw: data.type) = \(raw: dataDefaultMapper(dataItem: data))
                     """
                 )
+            }
 
-                for data in metaData where SyntaxUtils.isPrimitiveTypeSupported(data.type) {
-                    try VariableDeclSyntax(
+            try VariableDeclSyntax(
+                """
+                public var body: some View
+                """
+            ) {
+                if !metaData.isEmpty {
+                    """
+                    let data = blockContext.block.data
+                    """
+                }
+                if !metaProp.isEmpty {
+                    """
+                    let properties = blockContext.block.properties
+                    """
+                }
+                """
+                //Block Data
+                """
+                for data in metaData {
+                    """
+                    let \(raw: data.key)Data = blockContext.onFindVariable(data["\(raw: data.key)"])
+                    """
+                    if !SyntaxUtils.isPrimitiveTypeSupported(data.type) {
                         """
-                        @State private var \(raw: data.key)DataValue: \(raw: data.type) = \(raw: dataDefaultMapper(dataItem: data))
+                        let \(raw: data.key)DataValue = \(raw: TypeUtils.valueConversion(type: data.type, source: "\(data.key)Data", defaultValue: data.value, instance: "blockContext.instanceName"))
+                        """
+                    }
+                }
+
+                """
+                //Block Properties
+                """
+                for prop in metaProp {
+                    """
+                    let \(raw: prop.key)Prop = \(raw: propTypeMapper(item: prop) ?? "")
+                    """
+                }
+
+                """
+                //Block Events
+                """
+                for event in metaEvent {
+                    """
+                    let \(raw: event.event)Event = blockProvideEvent(blockContext: blockContext, eventType: "\(raw: event.event)")
+                    """
+                }
+
+                """
+                //Block Slots
+                """
+                for slot in metaSlot {
+                    """
+                    let \(raw: slot.slot)Slot = blockProvideSlot(blockContext: blockContext, slotType: "\(raw: slot.slot)")
+                    """
+                }
+
+                let dataArguments = metaData.map {
+                    (
+                        $0.position,
+                        """
+                        \($0.key): \($0.key)DataValue
                         """
                     )
                 }
 
-                try VariableDeclSyntax(
-                    """
-                    var body: some View
-                    """
-                ) {
-                    if !metaData.isEmpty {
+                let propArguments = metaProp.map {
+                    (
+                        $0.position,
                         """
-                        let data = blockContext.block.data
+                        \($0.key): \($0.key)Prop
                         """
-                    }
-                    if !metaProp.isEmpty {
-                        """
-                        let properties = blockContext.block.properties
-                        """
-                    }
-                    """
-                    //Block Data
-                    """
-                    for data in metaData {
-                        """
-                        let \(raw: data.key)Data = blockContext.onFindVariable(data["\(raw: data.key)"])
-                        """
-                        if !SyntaxUtils.isPrimitiveTypeSupported(data.type) {
-                            """
-                            let \(raw: data.key)DataValue = \(raw: TypeUtils.valueConversion(type: data.type, source: "\(data.key)Data", defaultValue: data.value, instance: "blockContext.instanceName"))
-                            """
-                        }
-                    }
+                    )
+                }
 
-                    """
-                    //Block Properties
-                    """
-                    for prop in metaProp {
+                let eventArguments = metaEvent.map { event in
+                    (
+                        event.position,
                         """
-                        let \(raw: prop.key)Prop = \(raw: propTypeMapper(item: prop) ?? "")
-                        """
-                    }
-
-                    """
-                    //Block Events
-                    """
-                    for event in metaEvent {
-                        """
-                        let \(raw: event.event)Event = blockProvideEvent(blockContext: blockContext, eventType: "\(raw: event.event)")
-                        """
-                    }
-
-                    """
-                    //Block Slots
-                    """
-                    for slot in metaSlot {
-                        """
-                        let \(raw: slot.slot)Slot = blockProvideSlot(blockContext: blockContext, slotType: "\(raw: slot.slot)")
-                        """
-                    }
-
-                    let dataArguments = metaData.map {
-                        (
-                            $0.position,
+                        \(event.event):\(event.isOptionalFunction ? "\(event.event)Event == nil ? nil :" : "") { \(event.dataBindings.map { "\($0)Param" }.joined(separator: ",")) \(event.dataBindings.isEmpty ? "" : "in")
+                        \(event.dataBindings.map { param in
                             """
-                            \($0.key): \($0.key)DataValue
+                            blockContext.onUpdateVariable(data["\(param)"], String(describing: \(param)Param))
                             """
-                        )
-                    }
-
-                    let propArguments = metaProp.map {
-                        (
-                            $0.position,
-                            """
-                            \($0.key): \($0.key)Prop
-                            """
-                        )
-                    }
-
-                    let eventArguments = metaEvent.map { event in
-                        (
-                            event.position,
-                            """
-                            \(event.event):\(event.isOptionalFunction ? "\(event.event)Event == nil ? nil :" : "") { \(event.dataBindings.map { "\($0)Param" }.joined(separator: ",")) \(event.dataBindings.isEmpty ? "" : "in")
-                            \(event.dataBindings.map { param in
-                                """
-                                blockContext.onUpdateVariable(data["\(param)"], String(describing: \(param)Param))
-                                """
-                            }.joined())
-                            \(event.event)Event?()
-                            }
-                            """
-                        )
-                    }
-                    let slotArguments = metaSlot.map { slot in
-                        (
-                            slot.position,
-                            """
-                            \(slot.slot): \(slot.slot)Slot == nil ? \(slot.isOptionalFunction ? "nil" : "{ \(slot.hasBlockIndex ? "index" : "")\(slot.hasBlockIndex && slot.hasBlockScope ? ", ":"")\(slot.hasBlockScope ? "scope" : "")\((slot.hasBlockIndex || slot.hasBlockScope) ? " in" : "") AnyView(EmptyView())}") : { \(slot.hasBlockIndex ? "index" : "")\(slot.hasBlockIndex && slot.hasBlockScope ? ", ":"")\(slot.hasBlockScope ? "scope" : "")\((slot.hasBlockIndex || slot.hasBlockScope) ? " in" : "")
-                                (blockContext.onSubBlock(blockContext.block.subBlocks ?? [:], \(slot.slot)Slot!, \(slot.hasBlockIndex ?"index": "-1"), \(slot.hasBlockScope ? "scope" : "nil")))
-                            }
-                            """
-                        )
-                    }
-
-                    let extraParamArguments = metaExtraParams.map {
-                        (
-                            $0.position,
-                            """
-                            \($0.key): \($0.key)
-                            """
-                        )
-                    }
-
-                    let arguments = (dataArguments + propArguments + eventArguments + slotArguments + extraParamArguments)
-                        .sorted { $0.0 < $1.0 }
-                        .map { $0.1 }
-                        .joined(separator: ",\n")
-
-                    """
-                    return \(raw: structName)(\n\(raw: arguments)\n)
-                    """
-                    for data in metaData where SyntaxUtils.isPrimitiveTypeSupported(data.type) {
-                        """
-                        .task(id: \(raw: data.key)Data) {
-                        let result = \(raw: data.key)Data
-                        \(raw: data.key)DataValue = \(raw: dataTypeMapper(dataItem: data))
+                        }.joined())
+                        \(event.event)Event?()
                         }
                         """
+                    )
+                }
+                let slotArguments = metaSlot.map { slot in
+                    (
+                        slot.position,
+                        """
+                        \(slot.slot): \(slot.slot)Slot == nil ? \(slot.isOptionalFunction ? "nil" : "{ \(slot.hasBlockIndex ? "index" : "")\(slot.hasBlockIndex && slot.hasBlockScope ? ", ":"")\(slot.hasBlockScope ? "scope" : "")\((slot.hasBlockIndex || slot.hasBlockScope) ? " in" : "") AnyView(EmptyView())}") : { \(slot.hasBlockIndex ? "index" : "")\(slot.hasBlockIndex && slot.hasBlockScope ? ", ":"")\(slot.hasBlockScope ? "scope" : "")\((slot.hasBlockIndex || slot.hasBlockScope) ? " in" : "")
+                            (blockContext.onSubBlock(blockContext.block.subBlocks ?? [:], \(slot.slot)Slot!, \(slot.hasBlockIndex ?"index": "-1"), \(slot.hasBlockScope ? "scope" : "nil")))
+                        }
+                        """
+                    )
+                }
+
+                let extraParamArguments = metaExtraParams.map {
+                    (
+                        $0.position,
+                        """
+                        \($0.key): \($0.key)
+                        """
+                    )
+                }
+
+                let arguments = (dataArguments + propArguments + eventArguments + slotArguments + extraParamArguments)
+                    .sorted { $0.0 < $1.0 }
+                    .map { $0.1 }
+                    .joined(separator: ",\n")
+
+                """
+                return \(raw: structName)(\n\(raw: arguments)\n)
+                """
+                for data in metaData where SyntaxUtils.isPrimitiveTypeSupported(data.type) {
+                    """
+                    .task(id: \(raw: data.key)Data) {
+                    let result = \(raw: data.key)Data
+                    \(raw: data.key)DataValue = \(raw: dataTypeMapper(dataItem: data))
                     }
+                    """
                 }
             }
         }

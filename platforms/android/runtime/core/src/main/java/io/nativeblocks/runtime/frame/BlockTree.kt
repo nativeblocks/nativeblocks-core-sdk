@@ -66,6 +66,7 @@ private fun Block(
     parentScope: Any?,
 ) {
     val block = vm.blockOf(blockKey) ?: return
+    if (vm.valueOf(block.visibility) == "false") return
 
     val nativeBlock = remember(block.keyType) {
         if (block.keyType == "ROOT") { blockContext -> RootBlock(blockContext) }
@@ -83,8 +84,7 @@ private fun Block(
         BlockContext(
             instanceName = instanceName,
             listItemIndex = listItemIndex,
-            onFindVisibility = { vm.variableOf(block.visibility)?.value?.value },
-            onFindVariable = { data -> vm.variableOf(data?.value.orEmpty())?.value?.value },
+            onFindVariable = { data -> vm.valueOf(data?.value.orEmpty()) },
             onUpdateVariable = { data, value -> vm.updateVariable(data?.value.orEmpty(), value) },
             onFindAction = { vm.actionOf(blockKey, it) },
             onHandleAction = { index, action, event -> vm.handleAction(index, action, event) },
@@ -130,7 +130,7 @@ private fun blockModifier(
             val modifierContext = ModifierContext(
                 instanceName = instanceName,
                 listItemIndex = listItemIndex,
-                onFindVariable = { data -> vm.variableOf(data?.value.orEmpty())?.value?.value },
+                onFindVariable = { data -> vm.valueOf(data?.value.orEmpty()) },
                 onUpdateVariable = { data, value -> vm.updateVariable(data?.value.orEmpty(), value) },
                 onFindAction = { vm.actionOf(blockKey, it) },
                 onHandleAction = { index, action, event -> vm.handleAction(index, action, event) },

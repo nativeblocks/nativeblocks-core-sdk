@@ -49,10 +49,6 @@ internal class BlockVisitor(
         val func = FunSpec.builder(fileName)
             .addAnnotation(importComposable)
             .addParameter("blockContext", importBlockContext)
-            .addStatement("val visibility = blockContext.onFindVisibility.invoke()")
-            .beginControlFlow("""if ((visibility ?: "true") == "false")""")
-            .addStatement("return")
-            .endControlFlow()
             .addComment("block meta fields")
             .addCode(
                 """

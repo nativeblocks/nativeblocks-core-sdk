@@ -1,5 +1,6 @@
 use crate::feature::frame::domain::model::NativeVariableModel;
 use crate::feature::frame::presenter::state_manager::model::FrameDiff;
+use crate::feature::frame::presenter::state_manager::refs;
 use crate::feature::frame::presenter::state_manager::state::InternalState;
 use std::collections::HashMap;
 
@@ -35,8 +36,16 @@ pub(super) fn change(state: &mut InternalState, key: &str, value: String) -> Opt
         value,
         variable_type: existing.variable_type.clone(),
     };
-    state.variables.insert(key.to_string(), updated.clone());
-    return Some(FrameDiff {
-        variables: HashMap::from([(key.to_string(), updated)]),
-    });
+    state.variables.insert(key.to_string(), updated);
+
+    let mut changed = HashMap::new();
+    for (candidate, variable) in state.variables.iter() {
+        if candidate == key || refs::has_references(&variable.value, key) {
+            changed.insert(
+                candidate.clone(),
+                refs::resolved_model(variable, &state.variables),
+            );
+        }
+    }
+    return Some(FrameDiff { variables: changed });
 }

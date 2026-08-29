@@ -96,6 +96,8 @@ internal class FrameViewModel(
         return variables[key]
     }
 
+    fun valueOf(key: String): String? = variableOf(key)?.value?.value
+
     fun blockOf(key: String): NativeBlockModel? {
         return blocks[key]
     }

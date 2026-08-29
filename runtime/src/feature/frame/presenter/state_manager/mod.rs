@@ -1,6 +1,7 @@
 mod action;
 mod api;
 mod block;
+mod refs;
 pub mod model;
 pub mod observer;
 mod snapshot;

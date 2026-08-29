@@ -9,7 +9,6 @@ public let NONE_INDEX = -1
 /// - Parameters:
 ///   - instanceName: Instance name of NativeblocksManager.
 ///   - listItemIndex: Index of the list item this block belongs to, or `NONE_INDEX` outside a list.
-///   - onFindVisibility: Resolves the block's visibility value.
 ///   - onFindVariable: Resolves the value a block data entry points at.
 ///   - onUpdateVariable: Writes a value back to the variable a block data entry points at.
 ///   - onFindAction: Finds the action bound to the given event type.
@@ -20,7 +19,6 @@ public let NONE_INDEX = -1
 public struct BlockContext {
     public let instanceName: String
     public let listItemIndex: Int
-    public let onFindVisibility: () -> String?
     public let onFindVariable: (NativeBlockDataModel?) -> String?
     public let onUpdateVariable: (NativeBlockDataModel?, String) -> Void
     public let onFindAction: (String) -> NativeActionModel?

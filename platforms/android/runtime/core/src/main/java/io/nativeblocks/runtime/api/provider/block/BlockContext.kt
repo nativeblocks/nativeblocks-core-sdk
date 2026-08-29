@@ -17,7 +17,6 @@ internal typealias BlockComposable = @Composable (blockContext: BlockContext) ->
  *
  * @param instanceName Instance name of NativeblocksManager.
  * @param listItemIndex Index of the list item this block belongs to, or [NONE_INDEX] outside a list.
- * @param onFindVisibility Resolves the block's visibility value.
  * @param onFindVariable Resolves the value a block data entry points at.
  * @param onUpdateVariable Writes a value back to the variable a block data entry points at.
  * @param onFindAction Finds the action bound to the given event type.
@@ -30,7 +29,6 @@ internal typealias BlockComposable = @Composable (blockContext: BlockContext) ->
 data class BlockContext(
     val instanceName: String,
     val listItemIndex: Int,
-    val onFindVisibility: () -> String?,
     val onFindVariable: (NativeBlockDataModel?) -> String?,
     val onUpdateVariable: (NativeBlockDataModel?, String) -> Unit,
     val onFindAction: (String) -> NativeActionModel?,
