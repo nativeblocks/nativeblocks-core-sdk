@@ -24,6 +24,7 @@ public struct NativeActionMacro: PeerMacro {
         }
 
         let metaData = variables.compactMap { $0 as? DataMeta }
+        let metaBindingData = variables.compactMap { ($0 as? BindingDataMeta)?.data }
         let metaProp = variables.compactMap { $0 as? PropertyMeta }
         let metaEvent = variables.compactMap { $0 as? EventMeta }
         let actionInfo = variables.compactMap { $0 as? ActionMeta }.first
@@ -33,6 +34,7 @@ public struct NativeActionMacro: PeerMacro {
             structName: structDecl.name.text,
             actionInfo: actionInfo,
             metaData: metaData,
+            metaBindingData: metaBindingData,
             metaProp: metaProp,
             metaEvent: metaEvent,
             metaExtraParams: metaExtraParams

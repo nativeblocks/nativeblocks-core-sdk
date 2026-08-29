@@ -73,14 +73,14 @@ annotation class BlockData(
  * Annotation to define an event binding for a Native Block.
  *
  * @property description A brief description of the event binding.
- * @property dataBinding Array of data bindings for the event.
+ * @property dataBindings Data keys this event hands back, in the order the callback reports them.
  * @property deprecated Indicates if the event binding is deprecated.
  * @property deprecatedReason Reason for deprecation, if applicable.
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class BlockEvent(
     val description: String = "",
-    val dataBinding: Array<String> = [],
+    val dataBindings: Array<String> = [],
     val deprecated: Boolean = false,
     val deprecatedReason: String = ""
 )
@@ -89,6 +89,8 @@ annotation class BlockEvent(
  * Annotation to define a slot for a Native Block.
  *
  * @property description A brief description of the slot.
+ * @property scope The scope this slot hands to the blocks inside it.
+ * @property dataBindings Data keys this slot hands back, in the order the callback reports them.
  * @property deprecated Indicates if the slot is deprecated.
  * @property deprecatedReason Reason for deprecation, if applicable.
  */
@@ -96,6 +98,7 @@ annotation class BlockEvent(
 annotation class BlockSlot(
     val description: String = "",
     val scope: String = "",
+    val dataBindings: Array<String> = [],
     val deprecated: Boolean = false,
     val deprecatedReason: String = ""
 )

@@ -35,7 +35,7 @@ public macro BlockProp(
 @attached(peer)
 public macro BlockEvent(
     description: String = "",
-    dataBinding: [String] = [],
+    dataBindings: [String] = [],
     deprecated: Bool = false,
     deprecatedReason: String = ""
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeBlockEventMacro")
@@ -44,6 +44,7 @@ public macro BlockEvent(
 public macro BlockSlot(
     description: String = "",
     scope: String = "",
+    dataBindings: [String] = [],
     deprecated: Bool = false,
     deprecatedReason: String = ""
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeBlockSlotMacro")
@@ -122,7 +123,7 @@ public macro ActionProp(
 public macro ActionEvent(
     description: String = "",
     scope: String = "",
-    dataBinding: [String] = [],
+    dataBindings: [String] = [],
     deprecated: Bool = false,
     deprecatedReason: String = ""
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeActionEventMacro")
@@ -177,7 +178,7 @@ public macro ModifierData(
 @attached(peer)
 public macro ModifierEvent(
     description: String = "",
-    dataBinding: [String] = [],
+    dataBindings: [String] = [],
     deprecated: Bool = false,
     deprecatedReason: String = ""
 ) = #externalMacro(module: "NativeblocksCompilerMacros", type: "NativeModifierEventMacro")

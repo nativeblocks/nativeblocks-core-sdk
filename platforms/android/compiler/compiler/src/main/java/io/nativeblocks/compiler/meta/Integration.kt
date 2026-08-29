@@ -68,8 +68,8 @@ internal data class Event(
     val description: String,
     val deprecated: Boolean,
     val deprecatedReason: String,
+    val dataBindings: List<String> = listOf(),
     @Transient val functionName: String = "",
-    @Transient val dataBinding: List<String> = listOf(),
 )
 
 @Serializable
@@ -79,6 +79,7 @@ internal data class Slot(
     val description: String,
     val deprecated: Boolean,
     val deprecatedReason: String,
+    val dataBindings: List<String> = listOf(),
 )
 
 @Serializable

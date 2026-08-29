@@ -54,6 +54,18 @@ public struct DataMeta: NativeMeta {
     }
 }
 
+public struct BindingDataMeta: NativeMeta {
+    public let data: DataMeta
+
+    init(data: DataMeta) {
+        self.data = data
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        try data.encode(to: encoder)
+    }
+}
+
 public struct ValuePickerOption: Encodable {
     public var id: String
     public var text: String
@@ -127,7 +139,7 @@ public struct EventMeta: NativeMeta {
     public var description: String
     public var deprecated: Bool
     public var deprecatedReason: String
-    public var dataBinding: [String] = []
+    public var dataBindings: [String] = []
     public var isOptionalFunction: Bool
     public var block: AttributeSyntax?
     public var variable: PatternBindingSyntax?
@@ -140,7 +152,7 @@ public struct EventMeta: NativeMeta {
         description: String,
         deprecated: Bool,
         deprecatedReason: String,
-        dataBinding: [String],
+        dataBindings: [String],
         isOptionalFunction: Bool,
         block: AttributeSyntax? = nil,
         variable: PatternBindingSyntax? = nil
@@ -150,7 +162,7 @@ public struct EventMeta: NativeMeta {
         self.event = event
         self.scope = scope
         self.description = description
-        self.dataBinding = dataBinding
+        self.dataBindings = dataBindings
         self.isOptionalFunction = isOptionalFunction
         self.block = block
         self.variable = variable
@@ -159,7 +171,7 @@ public struct EventMeta: NativeMeta {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case event, scope, description, deprecated, deprecatedReason
+        case event, scope, description, deprecated, deprecatedReason, dataBindings
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -179,6 +191,7 @@ public struct SlotMeta: NativeMeta {
     public var description: String
     public var deprecated: Bool
     public var deprecatedReason: String
+    public var dataBindings: [String] = []
     public var hasBlockIndex: Bool
     public var hasBlockScope: Bool
     public var isOptionalFunction: Bool
@@ -192,6 +205,7 @@ public struct SlotMeta: NativeMeta {
         description: String,
         deprecated: Bool,
         deprecatedReason: String,
+        dataBindings: [String],
         hasBlockIndex: Bool,
         hasBlockScope: Bool,
         isOptionalFunction: Bool,
@@ -202,6 +216,7 @@ public struct SlotMeta: NativeMeta {
         self.slot = slot
         self.scope = scope
         self.description = description
+        self.dataBindings = dataBindings
         self.hasBlockIndex = hasBlockIndex
         self.hasBlockScope = hasBlockScope
         self.isOptionalFunction = isOptionalFunction
@@ -212,7 +227,19 @@ public struct SlotMeta: NativeMeta {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case slot, scope, description, deprecated, deprecatedReason
+        case slot, scope, description, deprecated, deprecatedReason, dataBindings
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(self.slot, forKey: .slot)
+        try container.encodeIfPresent(self.scope, forKey: .scope)
+        try container.encode(self.description, forKey: .description)
+        try container.encode(self.deprecated, forKey: .deprecated)
+        try container.encode(self.deprecatedReason, forKey: .deprecatedReason)
+        if !self.dataBindings.isEmpty {
+            try container.encode(self.dataBindings, forKey: .dataBindings)
+        }
     }
 }
 

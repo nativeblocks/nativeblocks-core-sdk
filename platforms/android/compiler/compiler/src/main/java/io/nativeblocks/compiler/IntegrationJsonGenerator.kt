@@ -139,7 +139,7 @@ internal fun KSAnnotation.generateEventJson(param: KSValueParameter): Event {
     val description = getArgument<String>("description")
     val deprecated = getArgument<Boolean>("deprecated")
     val deprecatedReason = getArgument<String>("deprecatedReason")
-    val dataBinding = getArgument<ArrayList<String>>("dataBinding")
+    val dataBindings = getArgument<ArrayList<String>>("dataBindings")
     val name = param.name?.asString().orEmpty()
     val eventJson = Event(
         event = name,
@@ -147,8 +147,8 @@ internal fun KSAnnotation.generateEventJson(param: KSValueParameter): Event {
         description = description,
         deprecated = deprecated,
         deprecatedReason = deprecatedReason,
+        dataBindings = dataBindings,
         functionName = param.name?.asString().orEmpty(),
-        dataBinding = dataBinding,
     )
     return eventJson
 }
@@ -181,6 +181,57 @@ internal fun KSAnnotation.generateDataJson(param: KSValueParameter): Data {
     return dataJson
 }
 
+internal fun KSValueParameter.generateBindingDataJson(event: String, bindings: List<String>): List<Data> {
+    // A function type's arguments end with its return type, which is not a parameter.
+    val parameters = type.resolve().arguments.dropLast(1)
+    if (bindings.size != parameters.size) {
+        throw Diagnostic.exceptionDispatcher(
+            DiagnosticType.BindingParamCountMismatch(event, bindings.size, parameters.size)
+        )
+    }
+    return bindings.mapIndexedNotNull { index, key ->
+        val declaration = parameters.getOrNull(index)?.type?.resolve()?.declaration
+            ?: return@mapIndexedNotNull null
+        val typeClass = TypeClass(
+            packageName = declaration.packageName.asString(),
+            simpleNames = generateSequence(declaration) { it.parentDeclaration }
+                .map { it.simpleName.asString() }
+                .toList()
+                .reversed()
+        )
+        Data(
+            key = key,
+            type = if (isPrimitiveType(typeClass.canonicalName)) {
+                typeMapper(key, typeClass.canonicalName)
+            } else "STRING",
+            description = "",
+            deprecated = false,
+            deprecatedReason = "",
+            typeClass = typeClass,
+        )
+    }
+}
+
+internal fun undeclaredBindingData(data: List<Data>, bindingData: List<Data>): List<Data> {
+    val kept = mutableListOf<Data>()
+    for (candidate in bindingData) {
+        if (data.none { it.key == candidate.key } && kept.none { it.key == candidate.key }) {
+            kept.add(candidate)
+        }
+    }
+    return kept
+}
+
+internal fun validateSlotBindings(slots: List<Slot>, data: List<Data>) {
+    for (slot in slots) {
+        for (key in slot.dataBindings) {
+            if (data.none { it.key == key }) {
+                throw Diagnostic.exceptionDispatcher(DiagnosticType.SlotBindingUnknownData(slot.slot, key))
+            }
+        }
+    }
+}
+
 internal fun KSValueParameter.getExtraParam(): ExtraParam {
     val key = this.name?.asString().orEmpty()
     val type = this.type.resolve().declaration.qualifiedName?.asString().orEmpty()
@@ -201,6 +252,7 @@ internal fun KSAnnotation.generateSlotJson(param: KSValueParameter): Slot {
         description = description,
         deprecated = deprecated,
         deprecatedReason = deprecatedReason,
+        dataBindings = getArgument<ArrayList<String>>("dataBindings"),
     )
     return slotJson
 }

@@ -113,6 +113,7 @@ public class JsonGenerator {
         var export: [JsonMetaType: Data] = [:]
         export[JsonMetaType.integration] = try JSONEncoder().encode(block)
         let datas = block.meta.compactMap { $0 as? DataMeta }
+            + block.meta.compactMap { ($0 as? BindingDataMeta)?.data }
         let events = block.meta.compactMap { $0 as? EventMeta }
         let properties = block.meta.compactMap { $0 as? PropertyMeta }
         let slots = block.meta.compactMap { $0 as? SlotMeta }
@@ -127,6 +128,7 @@ public class JsonGenerator {
         var export: [JsonMetaType: Data] = [:]
         export[JsonMetaType.integration] = try JSONEncoder().encode(action)
         let datas = action.meta.compactMap { $0 as? DataMeta }
+            + action.meta.compactMap { ($0 as? BindingDataMeta)?.data }
         let events = action.meta.compactMap { $0 as? EventMeta }
         let properties = action.meta.compactMap { $0 as? PropertyMeta }
         export[JsonMetaType.data] = try JSONEncoder().encode(datas)
@@ -139,6 +141,7 @@ public class JsonGenerator {
         var export: [JsonMetaType: Data] = [:]
         export[JsonMetaType.integration] = try JSONEncoder().encode(modifier)
         let datas = modifier.meta.compactMap { $0 as? DataMeta }
+            + modifier.meta.compactMap { ($0 as? BindingDataMeta)?.data }
         let events = modifier.meta.compactMap { $0 as? EventMeta }
         export[JsonMetaType.data] = try JSONEncoder().encode(datas)
         export[JsonMetaType.event] = try JSONEncoder().encode(events)

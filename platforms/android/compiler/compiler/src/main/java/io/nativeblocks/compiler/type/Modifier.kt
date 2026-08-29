@@ -51,14 +51,14 @@ annotation class ModifierData(
  * The parameter's own name is the event name, and triggers are filed under it.
  *
  * @property description A brief description of the event binding.
- * @property dataBinding Array of data bindings for the event.
+ * @property dataBindings Data keys this event hands back, in the order the callback reports them.
  * @property deprecated Indicates if the event binding is deprecated.
  * @property deprecatedReason Reason for deprecation, if applicable.
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class ModifierEvent(
     val description: String = "",
-    val dataBinding: Array<String> = [],
+    val dataBindings: Array<String> = [],
     val deprecated: Boolean = false,
     val deprecatedReason: String = ""
 )

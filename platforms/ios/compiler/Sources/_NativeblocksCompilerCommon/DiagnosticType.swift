@@ -8,7 +8,7 @@ public enum DiagnosticType: String, DiagnosticMessage {
     case functionTypeError
     case eventTypeMisMachParamCount
     case primitiveTypeSupported
-    case eventDataMissing
+    case slotBindingUnknownData
     case requiredNativeActionFunction
     case requiredNativeActionFunctionParameter
     case actionNotSupportedThrows
@@ -29,11 +29,11 @@ public enum DiagnosticType: String, DiagnosticMessage {
         case .functionTypeError:
             return "Expected a function."
         case .eventTypeMisMachParamCount:
-            return "Parameter count must match 'dataBinding'."
+            return "Parameter count must match 'dataBindings'."
         case .primitiveTypeSupported:
             return "Only primitive types are supported."
-        case .eventDataMissing:
-            return "Add '@BlockData' with matching type and name."
+        case .slotBindingUnknownData:
+            return "Slot 'dataBindings' must name a data key this integration declares."
         case .requiredNativeActionFunction:
             return "Add one '@ActionFunction'."
         case .requiredNativeActionFunctionParameter:

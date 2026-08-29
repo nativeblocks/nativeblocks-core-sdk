@@ -9,10 +9,12 @@ import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.validate
+import io.nativeblocks.compiler.generateBindingDataJson
 import io.nativeblocks.compiler.generateDataJson
 import io.nativeblocks.compiler.generateEventJson
 import io.nativeblocks.compiler.generateIntegrationJson
 import io.nativeblocks.compiler.getExtraParam
+import io.nativeblocks.compiler.undeclaredBindingData
 import io.nativeblocks.compiler.meta.Data
 import io.nativeblocks.compiler.meta.Event
 import io.nativeblocks.compiler.meta.ExtraParam
@@ -66,6 +68,7 @@ internal class ModifierProcessor(private val environment: SymbolProcessorEnviron
                 )
             )
             val packageName = fullPackageName.replace(".", "/")
+
             writeJson(
                 codeGenerator = environment.codeGenerator,
                 packageName = packageName + "/" + function.simpleName.asString().capitalize(),
@@ -77,6 +80,7 @@ internal class ModifierProcessor(private val environment: SymbolProcessorEnviron
             val data = mutableListOf<Data>()
             val events = mutableListOf<Event>()
             val extraParams = mutableListOf<ExtraParam>()
+            val bindingData = mutableListOf<Data>()
 
             function.parameters.forEach { param ->
                 if (param.annotations.firstOrNull() != null) {
@@ -95,6 +99,7 @@ internal class ModifierProcessor(private val environment: SymbolProcessorEnviron
                         ModifierEvent::class.simpleName -> {
                             val eventJson = param.getAnnotation(annotation).generateEventJson(param = param)
                             events.add(eventJson)
+                            bindingData.addAll(param.generateBindingDataJson(eventJson.event, eventJson.dataBindings))
                         }
                     }
                 } else {
@@ -104,11 +109,13 @@ internal class ModifierProcessor(private val environment: SymbolProcessorEnviron
                 }
             }
 
+            val syntheticData = undeclaredBindingData(data, bindingData)
+
             writeJson(
                 codeGenerator = environment.codeGenerator,
                 packageName = fullPackageName.replace(".", "/") + "/" + function.simpleName.asString().capitalize(),
                 fileName = "data",
-                json = data,
+                json = data + syntheticData,
                 sources = containingFile
             )
             writeJson(

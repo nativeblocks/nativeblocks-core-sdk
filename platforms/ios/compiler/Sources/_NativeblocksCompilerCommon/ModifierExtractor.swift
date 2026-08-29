@@ -48,13 +48,9 @@ public enum ModifierExtractor {
         let dataModifiers = meta.compactMap { $0 as? DataMeta }
         let eventModifiers = meta.compactMap { $0 as? EventMeta }
 
-        for event in eventModifiers {
-            for binding in event.dataBinding {
-                if dataModifiers.first(where: { data in data.key == binding }) == nil {
-                    errors.append(Diagnostic(node: event.variable!, message: DiagnosticType.eventDataMissing))
-                }
-            }
-        }
+        let startPosition = max(dataModifiers.map { $0.position }.max() ?? 0, eventModifiers.map { $0.position }.max() ?? 0)
+        let bindingData = eventModifiers.flatMap { generateBindingDataJson(for: $0, startPosition: startPosition) }
+        meta.append(contentsOf: undeclaredBindingData(declared: dataModifiers, bindings: bindingData))
         return (meta, errors)
     }
 
@@ -111,7 +107,7 @@ public enum ModifierExtractor {
         }
 
         let description = SyntaxUtils.extractDescription(from: blockAttribute) ?? ""
-        let dataBinding = SyntaxUtils.extractDataBinding(from: blockAttribute) ?? []
+        let dataBindings = SyntaxUtils.extractDataBindings(from: blockAttribute) ?? []
         let deprecated = SyntaxUtils.extractDeprecated(from: blockAttribute) ?? false
         let deprecatedReason = SyntaxUtils.extractDeprecatedReason(from: blockAttribute) ?? ""
 
@@ -129,7 +125,7 @@ public enum ModifierExtractor {
                     diagnostic.append(Diagnostic(node: binding, message: DiagnosticType.functionTypeError))
                 }
 
-                if parameters.count != dataBinding.count {
+                if parameters.count != dataBindings.count {
                     diagnostic.append(Diagnostic(node: binding, message: DiagnosticType.eventTypeMisMachParamCount))
                 }
 
@@ -142,7 +138,7 @@ public enum ModifierExtractor {
                         description: description,
                         deprecated: deprecated,
                         deprecatedReason: deprecatedReason,
-                        dataBinding: dataBinding,
+                        dataBindings: dataBindings,
                         isOptionalFunction: isOptionalFunction,
                         block: blockAttribute,
                         variable: binding

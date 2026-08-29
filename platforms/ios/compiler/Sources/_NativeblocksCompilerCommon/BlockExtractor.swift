@@ -72,11 +72,14 @@ public enum BlockExtractor {
         let dataBlocks = meta.compactMap { $0 as? DataMeta }
         let eventBlocks = meta.compactMap { $0 as? EventMeta }
 
-        for event in eventBlocks {
-            for binding in event.dataBinding {
-                if dataBlocks.first(where: { data in data.key == binding }) == nil {
-                    errors.append(Diagnostic(node: event.variable!, message: DiagnosticType.eventDataMissing))
-                }
+        let startPosition = max(dataBlocks.map { $0.position }.max() ?? 0, eventBlocks.map { $0.position }.max() ?? 0)
+        let bindingData = eventBlocks.flatMap { generateBindingDataJson(for: $0, startPosition: startPosition) }
+        meta.append(contentsOf: undeclaredBindingData(declared: dataBlocks, bindings: bindingData))
+
+        let declaredKeys = Set(dataBlocks.map { $0.key } + bindingData.map { $0.data.key })
+        for slot in meta.compactMap({ $0 as? SlotMeta }) {
+            for key in slot.dataBindings where !declaredKeys.contains(key) {
+                errors.append(Diagnostic(node: slot.variable!, message: DiagnosticType.slotBindingUnknownData))
             }
         }
         return (meta, errors)
@@ -194,7 +197,7 @@ public enum BlockExtractor {
         var position = startPosition
         let attributes = varDecl.attributes
         var description = ""
-        var dataBinding: [String] = []
+        var dataBindings: [String] = []
         var isOptionalFunction = false
         var blockAttribute: AttributeSyntax?
         var diagnostic: [Diagnostic] = []
@@ -213,7 +216,7 @@ public enum BlockExtractor {
         }
 
         description = SyntaxUtils.extractDescription(from: blockAttribute!) ?? ""
-        dataBinding = SyntaxUtils.extractDataBinding(from: blockAttribute!) ?? []
+        dataBindings = SyntaxUtils.extractDataBindings(from: blockAttribute!) ?? []
         deprecated = SyntaxUtils.extractDeprecated(from: blockAttribute!) ?? false
         deprecatedReason = SyntaxUtils.extractDeprecatedReason(from: blockAttribute!) ?? ""
 
@@ -243,7 +246,7 @@ public enum BlockExtractor {
                     diagnostic.append(Diagnostic(node: binding, message: DiagnosticType.functionTypeError))
                 }
 
-                if parameters.count != dataBinding.count {
+                if parameters.count != dataBindings.count {
                     diagnostic.append(Diagnostic(node: binding, message: DiagnosticType.eventTypeMisMachParamCount))
                 }
 
@@ -256,7 +259,7 @@ public enum BlockExtractor {
                         description: description,
                         deprecated: deprecated,
                         deprecatedReason: deprecatedReason ?? "",
-                        dataBinding: dataBinding,
+                        dataBindings: dataBindings,
                         isOptionalFunction: isOptionalFunction,
                         block: blockAttribute,
                         variable: binding) : nil
@@ -346,6 +349,7 @@ public enum BlockExtractor {
                         description: description,
                         deprecated: deprecated,
                         deprecatedReason: deprecatedReason ?? "",
+                        dataBindings: SyntaxUtils.extractDataBindings(from: blockAttribute!) ?? [],
                         hasBlockIndex: hasBlockIndex,
                         hasBlockScope: hasBlockScope,
                         isOptionalFunction: isOptionalFunction,

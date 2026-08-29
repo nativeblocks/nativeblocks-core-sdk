@@ -12,11 +12,13 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.validate
+import io.nativeblocks.compiler.generateBindingDataJson
 import io.nativeblocks.compiler.generateDataJson
 import io.nativeblocks.compiler.generateEventJson
 import io.nativeblocks.compiler.generateIntegrationJson
 import io.nativeblocks.compiler.generatePropertyJson
 import io.nativeblocks.compiler.getExtraParam
+import io.nativeblocks.compiler.undeclaredBindingData
 import io.nativeblocks.compiler.meta.Data
 import io.nativeblocks.compiler.meta.Event
 import io.nativeblocks.compiler.meta.ExtraParam
@@ -88,6 +90,7 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
             val data = mutableListOf<Data>()
             val events = mutableListOf<Event>()
             val extraParams = mutableListOf<ExtraParam>()
+            val bindingData = mutableListOf<Data>()
 
             val functions = klass.getAllFunctions().filter { function ->
                 function.annotations.filter {
@@ -143,6 +146,7 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
                             ActionEvent::class.simpleName -> {
                                 val event = param.getAnnotation(annotation).generateEventJson(param = param)
                                 events.add(event)
+                                bindingData.addAll(param.generateBindingDataJson(event.event, event.dataBindings))
                             }
                         }
                     } else {
@@ -152,6 +156,8 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
                     }
                 }
             }
+
+            val syntheticData = undeclaredBindingData(data, bindingData)
 
             writeJson(
                 codeGenerator = environment.codeGenerator,
@@ -171,7 +177,7 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
                 codeGenerator = environment.codeGenerator,
                 packageName = fullPackageName.replace(".", "/") + "/" + klass.simpleName.asString().capitalize(),
                 fileName = "data",
-                json = data,
+                json = data + syntheticData,
                 sources = containingFile
             )
 
@@ -193,6 +199,7 @@ internal class ActionProcessor(private val environment: SymbolProcessorEnvironme
                     metaProperties = properties,
                     metaEvents = events,
                     metaData = data,
+                    metaBindingData = syntheticData,
                     extraParams = extraParams,
                 ), Unit
             )

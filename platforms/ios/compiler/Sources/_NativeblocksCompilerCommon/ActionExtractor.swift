@@ -70,13 +70,9 @@ public struct ActionExtractor {
         let dataActions = meta.compactMap { $0 as? DataMeta }
         let eventActions = meta.compactMap { $0 as? EventMeta }
 
-        for event in eventActions {
-            for binding in event.dataBinding {
-                if dataActions.first(where: { data in data.key == binding }) == nil {
-                    errors.append(Diagnostic(node: event.variable!, message: DiagnosticType.eventDataMissing))
-                }
-            }
-        }
+        let startPosition = max(dataActions.map { $0.position }.max() ?? 0, eventActions.map { $0.position }.max() ?? 0)
+        let bindingData = eventActions.flatMap { generateBindingDataJson(for: $0, startPosition: startPosition) }
+        meta.append(contentsOf: undeclaredBindingData(declared: dataActions, bindings: bindingData))
 
         return (meta, errors)
     }
@@ -261,7 +257,7 @@ public struct ActionExtractor {
         var position = startPosition
         let attributes = varDecl.attributes
         var description = ""
-        var dataBinding: [String] = []
+        var dataBindings: [String] = []
         var isOptionalFunction = false
         var blockAttribute: AttributeSyntax?
         var diagnostic: [Diagnostic] = []
@@ -279,7 +275,7 @@ public struct ActionExtractor {
         }
 
         description = SyntaxUtils.extractDescription(from: blockAttribute!) ?? ""
-        dataBinding = SyntaxUtils.extractDataBinding(from: blockAttribute!) ?? []
+        dataBindings = SyntaxUtils.extractDataBindings(from: blockAttribute!) ?? []
         deprecated = SyntaxUtils.extractDeprecated(from: blockAttribute!) ?? false
         deprecatedReason = SyntaxUtils.extractDeprecatedReason(from: blockAttribute!) ?? ""
 
@@ -307,7 +303,7 @@ public struct ActionExtractor {
                     diagnostic.append(Diagnostic(node: binding, message: DiagnosticType.functionTypeError))
                 }
 
-                if parameters.count != dataBinding.count {
+                if parameters.count != dataBindings.count {
                     diagnostic.append(Diagnostic(node: binding, message: DiagnosticType.eventTypeMisMachParamCount))
                 }
 
@@ -320,7 +316,7 @@ public struct ActionExtractor {
                         description: description,
                         deprecated: deprecated,
                         deprecatedReason: deprecatedReason ?? "",
-                        dataBinding: dataBinding,
+                        dataBindings: dataBindings,
                         isOptionalFunction: isOptionalFunction,
                         block: blockAttribute,
                         variable: binding

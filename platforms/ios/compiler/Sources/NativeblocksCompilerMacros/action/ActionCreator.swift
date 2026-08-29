@@ -7,6 +7,7 @@ enum ActionCreator {
         structName: String,
         actionInfo: ActionMeta?,
         metaData: [DataMeta],
+        metaBindingData: [DataMeta],
         metaProp: [PropertyMeta],
         metaEvent: [EventMeta],
         metaExtraParams: [ExtraParamMeta]
@@ -42,7 +43,7 @@ enum ActionCreator {
                 """
                 //Action trigger Data
                 """
-                for data in metaData {
+                for data in metaData + metaBindingData {
                     """
                     let \(raw: data.key)Data = actionContext.onFindVariable(data["\(raw: data.key)"]?.value ?? "")
                     """
@@ -83,8 +84,8 @@ enum ActionCreator {
                     (
                         event.position,
                         """
-                        \(event.event): { \(event.dataBinding.map { "\($0)Param" }.joined(separator: ",")) \(event.dataBinding.isEmpty ? "" : "in")
-                        \(event.dataBinding.map { param in
+                        \(event.event): { \(event.dataBindings.map { "\($0)Param" }.joined(separator: ",")) \(event.dataBindings.isEmpty ? "" : "in")
+                        \(event.dataBindings.map { param in
                             """
                             if var \(param)Updated = \(param)Data {
                                 \(param)Updated.value = String(describing: \(param)Param)

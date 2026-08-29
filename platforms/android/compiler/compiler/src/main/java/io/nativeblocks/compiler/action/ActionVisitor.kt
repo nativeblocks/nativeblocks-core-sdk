@@ -32,6 +32,7 @@ internal class ActionVisitor(
     private val metaProperties: MutableList<Property>,
     private val metaEvents: MutableList<Event>,
     private val metaData: MutableList<Data>,
+    private val metaBindingData: List<Data>,
     private val extraParams: MutableList<ExtraParam>,
 ) : KSVisitorVoid() {
 
@@ -72,7 +73,7 @@ internal class ActionVisitor(
         }
 
         func.addComment("action trigger data")
-        metaData.forEach {
+        (metaData + metaBindingData).forEach {
             func.addStatement("val ${it.key} = actionContext.onFindVariable.invoke(data[\"${it.key}\"]?.value.orEmpty())")
         }
 
@@ -113,7 +114,7 @@ internal class ActionVisitor(
             items.removeAt(items.lastIndex)
 
             func.addStatement("${it.functionName} = { ${items.joinToString()} ->")
-            it.dataBinding.forEachIndexed { index, dataBound ->
+            it.dataBindings.forEachIndexed { index, dataBound ->
                 func.addStatement("val ${dataBound}Updated = $dataBound?.copy(value = p${index}.toString())")
                     .beginControlFlow("if (${dataBound}Updated != null)")
                     .addStatement("actionContext.onUpdateVariable.invoke(${dataBound}Updated)")

@@ -24,6 +24,19 @@ object Diagnostic {
                 return IllegalArgumentException("Custom picker is not supported, please use supported one for (${type.key}) ${type.filePath}")
             }
 
+            is DiagnosticType.SlotBindingUnknownData -> {
+                return IllegalArgumentException(
+                    "Slot '${type.slot}' binds to data key '${type.key}', which this integration does not declare"
+                )
+            }
+
+            is DiagnosticType.BindingParamCountMismatch -> {
+                return IllegalArgumentException(
+                    "Event '${type.event}' declares ${type.bindings} dataBindings but its callback takes " +
+                        "${type.parameters} parameter(s); a binding takes its type from the parameter at the same position"
+                )
+            }
+
             is DiagnosticType.ConflictAnnotation -> {
                 return IllegalArgumentException("You can not use all annotations at the same time, please use one")
             }
@@ -53,6 +66,17 @@ sealed interface DiagnosticType {
     data class IntegrationKeyTypeUniqueness(val keyType: String) : DiagnosticType
     data class MetaCustomType(val key: String, val type: String) : DiagnosticType
     data class MetaCustomPicker(val filePath: String, val key: String) : DiagnosticType
+    data class SlotBindingUnknownData(
+        val slot: String,
+        val key: String
+    ) : DiagnosticType
+
+    data class BindingParamCountMismatch(
+        val event: String,
+        val bindings: Int,
+        val parameters: Int
+    ) : DiagnosticType
+
     data object ConflictAnnotation : DiagnosticType
     data object RequireFunctionAnnotation : DiagnosticType
     data object RequireFunctionParameterAnnotation : DiagnosticType

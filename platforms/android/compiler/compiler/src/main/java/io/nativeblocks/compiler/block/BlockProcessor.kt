@@ -10,12 +10,15 @@ import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.validate
+import io.nativeblocks.compiler.generateBindingDataJson
 import io.nativeblocks.compiler.generateDataJson
 import io.nativeblocks.compiler.generateEventJson
 import io.nativeblocks.compiler.generateIntegrationJson
 import io.nativeblocks.compiler.generatePropertyJson
 import io.nativeblocks.compiler.generateSlotJson
 import io.nativeblocks.compiler.getExtraParam
+import io.nativeblocks.compiler.undeclaredBindingData
+import io.nativeblocks.compiler.validateSlotBindings
 import io.nativeblocks.compiler.meta.Data
 import io.nativeblocks.compiler.meta.Event
 import io.nativeblocks.compiler.meta.ExtraParam
@@ -74,6 +77,7 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                 )
             )
             val packageName = fullPackageName.replace(".", "/")
+
             writeJson(
                 codeGenerator = environment.codeGenerator,
                 packageName = packageName + "/" + function.simpleName.asString().capitalize(),
@@ -87,6 +91,7 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
             val events = mutableListOf<Event>()
             val slots = mutableListOf<Slot>()
             val extraParams = mutableListOf<ExtraParam>()
+            val bindingData = mutableListOf<Data>()
 
             function.parameters.forEach { param ->
                 // check the field has any annotation or not
@@ -116,6 +121,7 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                         BlockEvent::class.simpleName -> {
                             val eventJson = param.getAnnotation(annotation).generateEventJson(param = param)
                             events.add(eventJson)
+                            bindingData.addAll(param.generateBindingDataJson(eventJson.event, eventJson.dataBindings))
                         }
 
                         BlockSlot::class.simpleName -> {
@@ -131,6 +137,9 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                         extraParams.add(extraParam)
                 }
             }
+
+            val syntheticData = undeclaredBindingData(data, bindingData)
+            validateSlotBindings(slots, data + syntheticData)
 
             writeJson(
                 codeGenerator = environment.codeGenerator,
@@ -150,7 +159,7 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                 codeGenerator = environment.codeGenerator,
                 packageName = fullPackageName.replace(".", "/") + "/" + function.simpleName.asString().capitalize(),
                 fileName = "data",
-                json = data,
+                json = data + syntheticData,
                 sources = containingFile
             )
             writeJson(

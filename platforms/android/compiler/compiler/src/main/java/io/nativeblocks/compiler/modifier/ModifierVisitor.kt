@@ -90,7 +90,7 @@ internal class ModifierVisitor(
             if (type?.isMarkedNullable == true) {
                 func.beginControlFlow("${it.event} = if (${it.event} != null)")
                 func.addStatement("{ ${items.joinToString()} ->")
-                it.dataBinding.forEachIndexed { index, dataBound ->
+                it.dataBindings.forEachIndexed { index, dataBound ->
                     func.addStatement("modifierContext.onUpdateVariable.invoke(data[\"$dataBound\"], p${index}.toString())")
                 }
                 func.addStatement("${it.event}.invoke()")
@@ -100,7 +100,7 @@ internal class ModifierVisitor(
                 func.addStatement("},")
             } else {
                 func.addStatement("${it.event} = { ${items.joinToString()} ->")
-                it.dataBinding.forEachIndexed { index, dataBound ->
+                it.dataBindings.forEachIndexed { index, dataBound ->
                     func.addStatement("modifierContext.onUpdateVariable.invoke(data[\"$dataBound\"], p${index}.toString())")
                 }
                 func.addStatement("${it.event}?.invoke()")

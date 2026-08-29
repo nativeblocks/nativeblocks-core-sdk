@@ -82,7 +82,7 @@ annotation class ActionData(
  * The parameter's own name is the event name, and triggers are filed under it.
  * @property description A brief description of the event binding.
  * @property scope The scope this event hands to the triggers filed under it.
- * @property dataBinding Array of data bindings for the event.
+ * @property dataBindings Data keys this event hands back, in the order the callback reports them.
  * @property deprecated Indicates if the event binding is deprecated.
  * @property deprecatedReason Reason for deprecation, if applicable.
  */
@@ -90,7 +90,7 @@ annotation class ActionData(
 annotation class ActionEvent(
     val description: String = "",
     val scope: String = "",
-    val dataBinding: Array<String> = [],
+    val dataBindings: Array<String> = [],
     val deprecated: Boolean = false,
     val deprecatedReason: String = ""
 )

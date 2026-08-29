@@ -62,8 +62,8 @@ struct ModifierCreator {
                     (
                         event.position,
                         """
-                        \(event.event):\(event.isOptionalFunction ? "\(event.event)Event == nil ? nil :" : "") { \(event.dataBinding.map { "\($0)Param" }.joined(separator: ",")) \(event.dataBinding.isEmpty ? "" : "in")
-                        \(event.dataBinding.map { param in
+                        \(event.event):\(event.isOptionalFunction ? "\(event.event)Event == nil ? nil :" : "") { \(event.dataBindings.map { "\($0)Param" }.joined(separator: ",")) \(event.dataBindings.isEmpty ? "" : "in")
+                        \(event.dataBindings.map { param in
                             """
                             modifierContext.onUpdateVariable(data["\(param)"], String(describing: \(param)Param))
                             """

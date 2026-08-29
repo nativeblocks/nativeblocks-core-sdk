@@ -114,9 +114,19 @@ public enum SyntaxUtils {
         return options
     }
 
-    static func extractDataBinding(from attribute: AttributeSyntax) -> [String]? {
+    static func extractFunctionType(from binding: PatternBindingSyntax) -> FunctionTypeSyntax? {
+        if let function = binding.typeAnnotation?.as(TypeAnnotationSyntax.self)?.type.as(FunctionTypeSyntax.self) {
+            return function
+        }
+        return binding.typeAnnotation?.as(TypeAnnotationSyntax.self)?.type.as(
+            OptionalTypeSyntax.self)?.wrappedType.as(
+                TupleTypeSyntax.self)?.elements.as(TupleTypeElementListSyntax.self)?.first?.type.as(
+                FunctionTypeSyntax.self)
+    }
+
+    static func extractDataBindings(from attribute: AttributeSyntax) -> [String]? {
         guard let arguments = attribute.arguments?.as(LabeledExprListSyntax.self) else { return nil }
-        for argument in arguments where argument.label?.text == "dataBinding" {
+        for argument in arguments where argument.label?.text == "dataBindings" {
             if let arrayElements = argument.expression.as(ArrayExprSyntax.self)?.elements {
                 return arrayElements.compactMap { element in
                     element.expression.as(StringLiteralExprSyntax.self)?.segments.compactMap { segment in
