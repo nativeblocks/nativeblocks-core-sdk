@@ -19,6 +19,9 @@ internal class BlockProviderVisitor(
     private val importNativeblocksManager =
         ClassName("io.nativeblocks.runtime.api", "NativeblocksManager")
 
+    private val importNativeBlock =
+        ClassName("io.nativeblocks.runtime.api.provider.block", "NativeBlock")
+
     init {
         val func = FunSpec.builder("provideBlocks")
             .addParameter(
@@ -28,18 +31,32 @@ internal class BlockProviderVisitor(
             )
             .addStatement("NativeblocksManager.getInstance(instanceName)")
         integrations.forEach {
-            func.addCode(
-                """
-                |.provideBlock(
-                |   blockType = "${it.keyType}",
-                |   block = { blockContext -> ${it.functionName}Block(blockContext) }
-                |)
-                """.trimMargin()
-            )
+            if (it.describing) {
+                func.addCode(
+                    """
+                    |.provideBlock(
+                    |   blockType = "${it.keyType}",
+                    |   block = NativeBlock.Describing { blockContext, describeScope ->
+                    |       ${it.functionName}Block(blockContext, describeScope)
+                    |   }
+                    |)
+                    """.trimMargin()
+                )
+            } else {
+                func.addCode(
+                    """
+                    |.provideBlock(
+                    |   blockType = "${it.keyType}",
+                    |   block = NativeBlock.Rendering { blockContext -> ${it.functionName}Block(blockContext) }
+                    |)
+                    """.trimMargin()
+                )
+            }
         }
 
         val blockClass = FileSpec.builder(packageName, fileName)
             .addImport(importNativeblocksManager, "")
+            .addImport(importNativeBlock, "")
             .addType(
                 TypeSpec.objectBuilder(fileName)
                     .addFunction(func.build())

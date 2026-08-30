@@ -7,6 +7,7 @@ import io.nativeblocks.runtime.api.provider.action.INativeAction
 import io.nativeblocks.runtime.api.provider.action.INativeActionContractor
 import io.nativeblocks.runtime.api.provider.action.NativeActionProviderRegistry
 import io.nativeblocks.runtime.api.provider.block.BlockContext
+import io.nativeblocks.runtime.api.provider.block.NativeBlock
 import io.nativeblocks.runtime.api.provider.block.NativeBlockProviderRegistry
 import io.nativeblocks.runtime.api.provider.kit.Kit
 import io.nativeblocks.runtime.api.provider.logger.INativeLogger
@@ -110,7 +111,7 @@ class NativeblocksManager internal constructor(
      */
     fun provideBlock(
         blockType: String,
-        block: @Composable (blockContext: BlockContext) -> Unit
+        block: NativeBlock
     ): NativeblocksManager {
         blockProvider.provideBlock(blockType, block)
         return this

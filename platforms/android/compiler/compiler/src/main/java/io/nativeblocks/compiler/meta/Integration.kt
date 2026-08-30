@@ -80,6 +80,7 @@ internal data class Slot(
     val deprecated: Boolean,
     val deprecatedReason: String,
     val dataBindings: List<String> = listOf(),
+    @Transient val describing: Boolean = false,
 )
 
 @Serializable

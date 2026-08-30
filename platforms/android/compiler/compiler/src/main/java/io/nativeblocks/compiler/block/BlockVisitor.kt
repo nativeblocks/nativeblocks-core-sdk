@@ -2,6 +2,7 @@ package io.nativeblocks.compiler.block
 
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSVisitorVoid
+import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
@@ -30,6 +31,7 @@ internal class BlockVisitor(
     private val metaProperties: MutableList<Property>,
     private val metaEvents: MutableList<Event>,
     private val metaData: MutableList<Data>,
+    private val describing: Boolean,
     private val metaSlots: MutableList<Slot>,
     private val extraParams: MutableList<ExtraParam>,
 ) : KSVisitorVoid() {
@@ -47,8 +49,9 @@ internal class BlockVisitor(
         val importBlockProvideSlot = ClassName("io.nativeblocks.runtime.api.util", "blockProvideSlot")
 
         val func = FunSpec.builder(fileName)
-            .addAnnotation(importComposable)
+            .apply { if (!describing) addAnnotation(importComposable) }
             .addParameter("blockContext", importBlockContext)
+            .apply { if (describing) addParameter("describeScope", ANY) }
             .addComment("block meta fields")
             .addCode(
                 """
@@ -72,7 +75,12 @@ internal class BlockVisitor(
             }
             metaData.forEach {
                 func.addStatement("val ${it.key} = blockContext.onFindVariable.invoke(data[\"${it.key}\"])")
-                func.beginControlFlow("val ${it.key}Value = remember(${it.key})")
+                // a describing block runs outside composition, so it cannot remember
+                if (describing) {
+                    func.beginControlFlow("val ${it.key}Value = run")
+                } else {
+                    func.beginControlFlow("val ${it.key}Value = remember(${it.key})")
+                }
                 func.addStatement("val result = ${it.key}")
                 func.addStatement(dataTypeMapper(it))
                 func.endControlFlow()
@@ -126,8 +134,17 @@ internal class BlockVisitor(
             val slotArg = function.parameters.find { arg -> arg.name?.asString() == it.slot }
             val type = slotArg?.type?.resolve()
 
-            if (type?.isFunctionType == false) {
+            if (!it.describing && type?.isFunctionType == false) {
                 throw Diagnostic.exceptionDispatcher(DiagnosticType.SlotMustBeComposable)
+            }
+
+            if (it.describing) {
+                func.addStatement("${it.slot} = { describeScope: Any -> ")
+                func.beginControlFlow("if (${it.slot} != null)")
+                func.addStatement("blockContext.onDescribeSubBlock.invoke(blockContext.block.subBlocks.orEmpty(), ${it.slot}, describeScope)")
+                func.endControlFlow()
+                func.addStatement("},")
+                return@forEach
             }
 
             val blockIndexes = type?.arguments?.filter { ksArg ->
@@ -196,6 +213,8 @@ internal class BlockVisitor(
         func.addCode(")")
 
         val blockFileBuilder = FileSpec.builder(packageName, fileName)
+            // a describing wrapper is not annotated @Composable, but its slot lambdas still are
+            .apply { if (describing) addImport(importComposable, "") }
             .addImport(importBlockFunction, "")
             .addImport(importBlockProvideSlot, "")
             .addImport(importBlockFindWindowSizeClass, "")

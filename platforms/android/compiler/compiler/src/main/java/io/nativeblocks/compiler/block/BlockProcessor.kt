@@ -36,6 +36,8 @@ import io.nativeblocks.compiler.util.getAnnotation
 import io.nativeblocks.compiler.writeJson
 import java.io.OutputStream
 
+internal const val DESCRIBE_SCOPE_PARAM = "describeScope"
+
 private const val PACKAGE_NAME_SUFFIX = ".integration.consumer.block"
 
 internal class BlockProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
@@ -70,10 +72,14 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                     kind = "BLOCK",
                     integrationKeyTypes = integrationKeyTypes
                 )
+            val describing = function.parameters.any { param ->
+                param.name?.asString() == DESCRIBE_SCOPE_PARAM
+            }
             integrations.add(
                 BlockFunctionModel(
                     functionName = function.simpleName.asString(),
-                    keyType = integrationJson.keyType
+                    keyType = integrationJson.keyType,
+                    describing = describing,
                 )
             )
             val packageName = fullPackageName.replace(".", "/")
@@ -135,6 +141,8 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                     val extraParam = param.getExtraParam()
                     if (extraParam.key == "blockContext" && extraParam.type == "io.nativeblocks.runtime.api.provider.block.BlockContext")
                         extraParams.add(extraParam)
+                    if (extraParam.key == DESCRIBE_SCOPE_PARAM)
+                        extraParams.add(extraParam)
                 }
             }
 
@@ -185,6 +193,7 @@ internal class BlockProcessor(private val environment: SymbolProcessorEnvironmen
                     metaProperties = properties,
                     metaEvents = events,
                     metaData = data,
+                    describing = describing,
                     metaSlots = slots,
                     extraParams = extraParams,
                 ), Unit

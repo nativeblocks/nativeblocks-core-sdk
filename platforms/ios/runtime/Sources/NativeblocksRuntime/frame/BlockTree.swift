@@ -101,8 +101,8 @@ private struct Block: View {
             let blockContext = makeBlockContext(for: block)
             if block.keyType == "ROOT" {
                 AnyView(RootBlock(blockContext: blockContext))
-            } else if let nativeBlock = vm.blockProvider.getProvidedBlocks()[block.keyType] {
-                AnyView(nativeBlock(blockContext))
+            } else if case .rendering(let render) = vm.blockProvider.getProvidedBlocks()[block.keyType] {
+                AnyView(render(blockContext))
             } else if let fallbackBlock = vm.blockProvider.getFallbackBlock() {
                 AnyView(fallbackBlock(block.keyType, blockKey))
                     .onAppear { vm.logBlockFallback(keyType: block.keyType, blockKey: blockKey) }
@@ -176,6 +176,19 @@ private struct Block: View {
             },
             block: block,
             modifier: blockModifier(for: block),
+            onDescribeSubBlock: { blockKeys, subSlot, describeScope in
+                return AnyView(
+                    ForEach(blockKeys[subSlot.slot] ?? [], id: \.self) { childKey in
+                        if let child = vm.blockOf(childKey),
+                            case .describing(let describe) = vm.blockProvider.getProvidedBlocks()[child.keyType] {
+                            AnyView(describe(makeBlockContext(for: child), describeScope))
+                        } else {
+                            Color.clear.frame(width: 0, height: 0)
+                                .onAppear { vm.logBlockFallback(keyType: block.keyType, blockKey: childKey) }
+                        }
+                    }
+                )
+            },
             onSubBlock: { blockKeys, subSlot, itemIndex, scope in
                 return AnyView(
                     ForEach(blockKeys[subSlot.slot] ?? [], id: \.self) { childKey in

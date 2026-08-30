@@ -192,6 +192,7 @@ public struct SlotMeta: NativeMeta {
     public var deprecated: Bool
     public var deprecatedReason: String
     public var dataBindings: [String] = []
+    public var describing: Bool { !hasBlockIndex && hasBlockScope }
     public var hasBlockIndex: Bool
     public var hasBlockScope: Bool
     public var isOptionalFunction: Bool
@@ -256,6 +257,8 @@ public struct ActionMeta: NativeMeta {
         self.isAsync = isAsync
     }
 }
+
+public let describeScopeParam = "describeScope"
 
 public struct ExtraParamMeta: NativeMeta {
     public var position: Int

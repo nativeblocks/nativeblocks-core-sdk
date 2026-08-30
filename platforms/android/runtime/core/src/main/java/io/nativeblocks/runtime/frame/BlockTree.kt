@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.nativeblocks.runtime.api.provider.block.BlockContext
+import io.nativeblocks.runtime.api.provider.block.NativeBlock
 import io.nativeblocks.runtime.api.provider.block.NONE_INDEX
 import io.nativeblocks.runtime.api.provider.block.defaults.InternalFallbackBlock
 import io.nativeblocks.runtime.api.provider.block.defaults.RootBlock
@@ -69,10 +70,10 @@ private fun Block(
     if (vm.valueOf(block.visibility) == "false") return
 
     val nativeBlock = remember(block.keyType) {
-        if (block.keyType == "ROOT") { blockContext -> RootBlock(blockContext) }
+        if (block.keyType == "ROOT") NativeBlock.Rendering { blockContext -> RootBlock(blockContext) }
         else vm.blockProvider.getProvidedBlocks()[block.keyType]
     }
-    if (nativeBlock == null) {
+    if (nativeBlock !is NativeBlock.Rendering) {
         vm.logBlockFallback(block.keyType, blockKey)
         vm.blockProvider.getFallbackBlock()?.invoke(block.keyType, blockKey) ?: InternalFallbackBlock(block.keyType)
         return
@@ -81,33 +82,10 @@ private fun Block(
     val modifier = blockModifier(instanceName, vm, block, blockKey, listItemIndex, parentScope)
 
     val blockContext = remember(block, listItemIndex, modifier) {
-        BlockContext(
-            instanceName = instanceName,
-            listItemIndex = listItemIndex,
-            onFindVariable = { data -> vm.valueOf(data?.value.orEmpty()) },
-            onUpdateVariable = { data, value -> vm.updateVariable(data?.value.orEmpty(), value) },
-            onFindAction = { vm.actionOf(blockKey, it) },
-            onHandleAction = { index, action, event -> vm.handleAction(index, action, event) },
-            block = block,
-            modifier = modifier,
-            onSubBlock = { blockKeys, subSlot, itemIndex, scope ->
-                blockKeys[subSlot.slot]?.forEach { childKey ->
-                    key(childKey) {
-                        Block(
-                            instanceName = instanceName,
-                            vm = vm,
-                            blockKey = childKey,
-                            listItemIndex = if (itemIndex == NONE_INDEX) listItemIndex else itemIndex,
-                            frameGeneration = frameGeneration,
-                            parentScope = scope,
-                        )
-                    }
-                }
-            },
-        )
+        blockContextOf(instanceName, vm, block, blockKey, listItemIndex, modifier, frameGeneration)
     }
 
-    nativeBlock.invoke(blockContext)
+    nativeBlock.Render(blockContext)
 }
 
 @Composable
@@ -144,3 +122,50 @@ private fun blockModifier(
     }
     return chain
 }
+
+private fun blockContextOf(
+    instanceName: String,
+    vm: FrameViewModel,
+    block: NativeBlockModel,
+    blockKey: String,
+    listItemIndex: Int,
+    modifier: Modifier,
+    frameGeneration: Int,
+): BlockContext = BlockContext(
+    instanceName = instanceName,
+    listItemIndex = listItemIndex,
+    onFindVariable = { data -> vm.valueOf(data?.value.orEmpty()) },
+    onUpdateVariable = { data, value -> vm.updateVariable(data?.value.orEmpty(), value) },
+    onFindAction = { vm.actionOf(blockKey, it) },
+    onHandleAction = { index, action, event -> vm.handleAction(index, action, event) },
+    block = block,
+    modifier = modifier,
+    onSubBlock = { blockKeys, subSlot, itemIndex, scope ->
+        blockKeys[subSlot.slot]?.forEach { childKey ->
+            key(childKey) {
+                Block(
+                    instanceName = instanceName,
+                    vm = vm,
+                    blockKey = childKey,
+                    listItemIndex = if (itemIndex == NONE_INDEX) listItemIndex else itemIndex,
+                    frameGeneration = frameGeneration,
+                    parentScope = scope,
+                )
+            }
+        }
+    },
+    onDescribeSubBlock = { blockKeys, subSlot, describeScope ->
+        for (childKey in blockKeys[subSlot.slot].orEmpty()) {
+            val child = vm.blockOf(childKey) ?: continue
+            val provided = vm.blockProvider.getProvidedBlocks()[child.keyType]
+            if (provided !is NativeBlock.Describing) {
+                vm.logBlockFallback(child.keyType, childKey)
+                continue
+            }
+            provided.describe(
+                blockContextOf(instanceName, vm, child, childKey, NONE_INDEX, Modifier, frameGeneration),
+                describeScope,
+            )
+        }
+    },
+)

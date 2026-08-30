@@ -84,11 +84,25 @@ public class ProviderGenerator {
             try ClassDeclSyntax("public class \(raw: prefix)BlockProvider") {
                 try FunctionDeclSyntax("public static func provideBlocks(name: String = \"default\")") {
                     for block in blocks {
-                        """
-                        NativeblocksManager.getInstance(name: name).provideBlock(blockType: "\(raw: block.keyType)") { blockContext in
-                            \(raw: block.declName)Block(blockContext: blockContext)
+                        if block.describing {
+                            """
+                            NativeblocksManager.getInstance(name: name).provideBlock(
+                                blockType: "\(raw: block.keyType)",
+                                block: .describing { blockContext, describeScope in
+                                    \(raw: block.declName)Block(blockContext: blockContext, describeScope: describeScope)
+                                }
+                            )
+                            """
+                        } else {
+                            """
+                            NativeblocksManager.getInstance(name: name).provideBlock(
+                                blockType: "\(raw: block.keyType)",
+                                block: .rendering { blockContext in
+                                    \(raw: block.declName)Block(blockContext: blockContext)
+                                }
+                            )
+                            """
                         }
-                        """
                     }
                 }
             }

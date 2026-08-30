@@ -21,6 +21,10 @@ public struct Integration: Encodable {
     public var organizationId = ""
     public var `public` = false
 
+    public var describing: Bool {
+        return meta.contains { ($0 as? ExtraParamMeta)?.key == describeScopeParam }
+    }
+
     private enum CodingKeys: String, CodingKey {
         case name,
             scope,

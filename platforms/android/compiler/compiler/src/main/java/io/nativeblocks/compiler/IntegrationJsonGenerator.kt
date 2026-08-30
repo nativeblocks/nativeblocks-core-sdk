@@ -232,6 +232,11 @@ internal fun validateSlotBindings(slots: List<Slot>, data: List<Data>) {
     }
 }
 
+/** Whether this parameter's type is a composable function. */
+internal fun KSValueParameter.isComposable(): Boolean =
+    type.annotations.any { it.shortName.asString() == "Composable" } ||
+            type.resolve().annotations.any { it.shortName.asString() == "Composable" }
+
 internal fun KSValueParameter.getExtraParam(): ExtraParam {
     val key = this.name?.asString().orEmpty()
     val type = this.type.resolve().declaration.qualifiedName?.asString().orEmpty()
@@ -253,6 +258,7 @@ internal fun KSAnnotation.generateSlotJson(param: KSValueParameter): Slot {
         deprecated = deprecated,
         deprecatedReason = deprecatedReason,
         dataBindings = getArgument<ArrayList<String>>("dataBindings"),
+        describing = !param.isComposable(),
     )
     return slotJson
 }

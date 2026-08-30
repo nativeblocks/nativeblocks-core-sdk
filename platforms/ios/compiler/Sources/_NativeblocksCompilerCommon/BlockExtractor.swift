@@ -63,6 +63,9 @@ public enum BlockExtractor {
                     if param.key == "blockContext" && param.type == "BlockContext" {
                         meta.append(param)
                     }
+                    if param.key == describeScopeParam {
+                        meta.append(param)
+                    }
                 }
                 position = block.last?.position ?? position
                 errors.append(contentsOf: blockErrors)

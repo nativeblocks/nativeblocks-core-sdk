@@ -1,8 +1,8 @@
 package io.nativeblocks.runtime.api.provider.block
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.Modifier
 import io.nativeblocks.runtime.api.provider.model.NativeActionModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockDataModel
 import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
@@ -10,7 +10,19 @@ import io.nativeblocks.runtime.api.provider.model.NativeBlockSlotModel
 
 const val NONE_INDEX = -1
 
-internal typealias BlockComposable = @Composable (blockContext: BlockContext) -> Unit
+sealed interface NativeBlock {
+
+    /** Produces UI where it sits. */
+    fun interface Rendering : NativeBlock {
+        @Composable
+        fun Render(blockContext: BlockContext)
+    }
+
+    /** Says what will exist in the slot it sits in, into the scope that slot hands it. */
+    fun interface Describing : NativeBlock {
+        fun describe(blockContext: BlockContext, scope: Any)
+    }
+}
 
 /**
  * Everything a block needs while it renders, handed to it by the tree.
@@ -24,6 +36,7 @@ internal typealias BlockComposable = @Composable (blockContext: BlockContext) ->
  * @param block The block being rendered.
  * @param modifier Modifiers attached to the block, already ordered and scope checked.
  * @param onSubBlock Renders the child blocks of a slot, handing them the index and the slot's scope.
+ * @param onDescribeSubBlock Lets the child blocks of a describing slot say what will exist.
  */
 @Immutable
 data class BlockContext(
@@ -35,5 +48,6 @@ data class BlockContext(
     val onHandleAction: (Int, NativeActionModel?, String) -> Unit,
     val block: NativeBlockModel,
     val modifier: Modifier,
-    val onSubBlock: @Composable (blockKeys: Map<String, List<String>>, slot: NativeBlockSlotModel, index: Int, scope: Any?) -> Unit
+    val onSubBlock: @Composable (blockKeys: Map<String, List<String>>, slot: NativeBlockSlotModel, index: Int, scope: Any?) -> Unit,
+    val onDescribeSubBlock: (blockKeys: Map<String, List<String>>, slot: NativeBlockSlotModel, scope: Any) -> Unit = { _, _, _ -> },
 )

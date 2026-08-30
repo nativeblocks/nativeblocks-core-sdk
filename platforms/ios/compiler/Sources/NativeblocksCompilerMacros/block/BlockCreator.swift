@@ -11,8 +11,12 @@ struct BlockCreator {
         metaSlot: [SlotMeta],
         metaExtraParams: [ExtraParamMeta]
     ) throws -> StructDeclSyntax {
+        let describing = metaExtraParams.contains { $0.key == describeScopeParam }
         return try StructDeclSyntax("public struct \(raw: structName)Block: View") {
             try VariableDeclSyntax("var blockContext: BlockContext")
+            if describing {
+                try VariableDeclSyntax("var describeScope: Any")
+            }
             try VariableDeclSyntax(
                 """
                 @Environment(\\.nativeWindowWidthClass) var windowManager
@@ -116,8 +120,18 @@ struct BlockCreator {
                         """
                     )
                 }
-                let slotArguments = metaSlot.map { slot in
-                    (
+                let slotArguments = metaSlot.map { slot -> (Int, String) in
+                    if slot.describing {
+                        return (
+                            slot.position,
+                            """
+                            \(slot.slot): \(slot.slot)Slot == nil ? { _ in AnyView(EmptyView()) } : { describeScope in
+                                (blockContext.onDescribeSubBlock(blockContext.block.subBlocks ?? [:], \(slot.slot)Slot!, describeScope))
+                            }
+                            """
+                        )
+                    }
+                    return (
                         slot.position,
                         """
                         \(slot.slot): \(slot.slot)Slot == nil ? \(slot.isOptionalFunction ? "nil" : "{ \(slot.hasBlockIndex ? "index" : "")\(slot.hasBlockIndex && slot.hasBlockScope ? ", ":"")\(slot.hasBlockScope ? "scope" : "")\((slot.hasBlockIndex || slot.hasBlockScope) ? " in" : "") AnyView(EmptyView())}") : { \(slot.hasBlockIndex ? "index" : "")\(slot.hasBlockIndex && slot.hasBlockScope ? ", ":"")\(slot.hasBlockScope ? "scope" : "")\((slot.hasBlockIndex || slot.hasBlockScope) ? " in" : "")

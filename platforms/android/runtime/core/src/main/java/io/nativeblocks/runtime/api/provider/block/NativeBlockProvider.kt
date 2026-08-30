@@ -10,7 +10,7 @@ internal class NativeBlockProvider {
     /**
      * Map of block types to their corresponding implementations.
      */
-    private val blocks = mutableMapOf<String, BlockComposable>()
+    private val blocks = mutableMapOf<String, NativeBlock>()
 
     /**
      * Fallback block implementation to be used when a specific block type is not found.
@@ -22,7 +22,7 @@ internal class NativeBlockProvider {
      * @param blockType The type of the block.
      * @param block The block implementation to register.
      */
-    fun provideBlock(blockType: String, block: BlockComposable) {
+    fun provideBlock(blockType: String, block: NativeBlock) {
         blocks[blockType] = block
     }
 
@@ -30,7 +30,7 @@ internal class NativeBlockProvider {
      * Retrieves all registered block implementations.
      * @return A map of block types to their implementations.
      */
-    fun getProvidedBlocks(): Map<String, BlockComposable> {
+    fun getProvidedBlocks(): Map<String, NativeBlock> {
         return blocks.toMap()
     }
 
