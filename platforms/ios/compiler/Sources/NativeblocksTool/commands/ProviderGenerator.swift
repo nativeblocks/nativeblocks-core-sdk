@@ -17,7 +17,13 @@ public class ProviderGenerator {
     public func generate(from files: [String]) throws {
         print("Generate providers...")
 
-        let (blocks, actions, modifiers) = NativeItemVisitor.extractNatives(from: files)
+        let (extractedBlocks, actions, modifiers) = NativeItemVisitor.extractNatives(from: files)
+
+        let blocks = extractedBlocks.map { block -> Integration in
+            var copy = block
+            copy.meta = BlockExtractor.extractVariable(from: block.syntaxStruct!).0
+            return copy
+        }
 
         if blocks.isEmpty && actions.isEmpty && modifiers.isEmpty {
             print("There is no actions, blocks or modifiers to generate providers")
