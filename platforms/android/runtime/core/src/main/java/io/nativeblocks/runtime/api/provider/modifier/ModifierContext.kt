@@ -16,6 +16,7 @@ import io.nativeblocks.runtime.api.provider.model.NativeBlockModifierModel
  * @param onHandleAction Runs an action for the given list item index and event type.
  * @param modifier The modifier being applied.
  * @param scope Layout scope of the slot the host block sits in, or null when it declares none.
+ * @resolveTemplate Fills in whatever that scope reports, leaving the value alone outside one.
  */
 @Immutable
 data class ModifierContext(
@@ -27,4 +28,5 @@ data class ModifierContext(
     val onHandleAction: (Int, NativeActionModel?, String) -> Unit,
     val modifier: NativeBlockModifierModel,
     val scope: Any?,
+    val resolveTemplate: (String?) -> String? = { it },
 )

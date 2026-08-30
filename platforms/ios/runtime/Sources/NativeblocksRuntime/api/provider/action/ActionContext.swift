@@ -38,4 +38,7 @@ public struct ActionContext {
 
     /// Runs the triggers filed under one of this action's events.
     public let onHandleEvent: (String) -> Void
+
+    /// resolveTemplate Fills in whatever that scope reports, leaving the value alone outside one.
+    public let resolveTemplate: (String?) -> String?
 }

@@ -12,6 +12,7 @@ import SwiftUI
 ///   - onHandleAction: Runs an action for the given list item index and event type.
 ///   - modifier: The modifier being applied.
 ///   - scope: Layout scope of the slot the host block sits in, or nil when it declares none.
+///   - resolveTemplate Fills in whatever that scope reports, leaving the value alone outside one.
 public struct ModifierContext {
     public let instanceName: String
     public let listItemIndex: Int
@@ -21,6 +22,7 @@ public struct ModifierContext {
     public let onHandleAction: (Int, NativeActionModel?, String) -> Void
     public let modifier: NativeBlockModifierModel
     public let scope: Any?
+    public let resolveTemplate: (String?) -> String?
 }
 
 /// The modifiers attached to a block, already ordered and scope checked, folded into one value a

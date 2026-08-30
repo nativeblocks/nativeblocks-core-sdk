@@ -37,6 +37,8 @@ sealed interface NativeBlock {
  * @param modifier Modifiers attached to the block, already ordered and scope checked.
  * @param onSubBlock Renders the child blocks of a slot, handing them the index and the slot's scope.
  * @param onDescribeSubBlock Lets the child blocks of a describing slot say what will exist.
+ * @param scope The scope this block sits in, or null outside one.
+ * @param resolveTemplate Fills in whatever that scope reports, leaving the value alone outside one.
  */
 @Immutable
 data class BlockContext(
@@ -50,4 +52,6 @@ data class BlockContext(
     val modifier: Modifier,
     val onSubBlock: @Composable (blockKeys: Map<String, List<String>>, slot: NativeBlockSlotModel, index: Int, scope: Any?) -> Unit,
     val onDescribeSubBlock: (blockKeys: Map<String, List<String>>, slot: NativeBlockSlotModel, scope: Any) -> Unit = { _, _, _ -> },
+    val scope: Any? = null,
+    val resolveTemplate: (String?) -> String? = { it },
 )

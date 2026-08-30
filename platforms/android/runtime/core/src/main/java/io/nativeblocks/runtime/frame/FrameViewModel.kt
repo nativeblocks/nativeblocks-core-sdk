@@ -118,8 +118,8 @@ internal class FrameViewModel(
         logBlock(BlockLogEvent.ModifierFallback(keyType = keyType, blockKey = blockKey))
     }
 
-    fun handleAction(index: Int, action: NativeActionModel?, performedEventType: String) {
-        actionTree.handle(index, action, performedEventType)
+    fun handleAction(index: Int, action: NativeActionModel?, performedEventType: String, scope: Any? = null) {
+        actionTree.handle(index, action, performedEventType, scope)
     }
 
     fun rootEntered(rootKey: String) {

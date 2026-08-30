@@ -51,7 +51,7 @@ struct BlockCreator {
                 """
                 for data in metaData {
                     """
-                    let \(raw: data.key)Data = blockContext.onFindVariable(data["\(raw: data.key)"])
+                    let \(raw: data.key)Data = blockContext.resolveTemplate(blockContext.onFindVariable(data["\(raw: data.key)"]))
                     """
                     if !SyntaxUtils.isPrimitiveTypeSupported(data.type) {
                         """

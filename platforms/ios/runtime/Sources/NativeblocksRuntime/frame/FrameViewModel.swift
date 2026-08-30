@@ -98,8 +98,8 @@ internal final class FrameViewModel: ObservableObject {
         frameStateBridge.logBlock(event: .modifierFallback(keyType: keyType, blockKey: blockKey))
     }
 
-    func handleAction(_ index: Int, _ action: NativeActionModel?, _ performedEventType: String) {
-        actionTree.handle(index: index, action: action, performedEventType: performedEventType)
+    func handleAction(_ index: Int, _ action: NativeActionModel?, _ performedEventType: String, _ scope: Any? = nil) {
+        actionTree.handle(index: index, action: action, performedEventType: performedEventType, scope: scope)
     }
 
     func updateVariable(key: String, value: String) {

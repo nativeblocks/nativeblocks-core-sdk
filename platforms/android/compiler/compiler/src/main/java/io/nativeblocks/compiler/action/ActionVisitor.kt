@@ -167,7 +167,7 @@ internal class ActionVisitor(
     private fun dataTypeMapper(dataItem: Data): String =
         valueConversion(
             canonicalName = dataItem.typeClass.canonicalName,
-            source = "${dataItem.key}?.value",
+            source = "actionContext.resolveTemplate(${dataItem.key}?.value)",
             default = dataItem.value
         )
 

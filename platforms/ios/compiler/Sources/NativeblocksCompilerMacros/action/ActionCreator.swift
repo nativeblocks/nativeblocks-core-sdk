@@ -137,7 +137,7 @@ enum ActionCreator {
     private static func dataTypeMapper(dataItem: DataMeta) -> String? {
         return TypeUtils.valueConversion(
             type: dataItem.type,
-            source: "\(dataItem.key)Data?.value",
+            source: "actionContext.resolveTemplate(\(dataItem.key)Data?.value)",
             defaultValue: dataItem.value,
             instance: "actionContext.instanceName"
         )

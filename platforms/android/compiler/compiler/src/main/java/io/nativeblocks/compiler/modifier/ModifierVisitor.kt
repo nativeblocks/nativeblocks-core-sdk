@@ -53,7 +53,7 @@ internal class ModifierVisitor(
                 func.addStatement("val ${converterVar(it)} = manager.getTypeConverter($it::class)")
             }
             metaData.forEach {
-                func.addStatement("val ${it.key} = modifierContext.onFindVariable.invoke(data[\"${it.key}\"])")
+                func.addStatement("val ${it.key} = modifierContext.resolveTemplate(modifierContext.onFindVariable.invoke(data[\"${it.key}\"]))")
                 func.beginControlFlow("val ${it.key}Value = remember(${it.key})")
                 func.addStatement("val result = ${it.key}")
                 func.addStatement(dataTypeMapper(it))

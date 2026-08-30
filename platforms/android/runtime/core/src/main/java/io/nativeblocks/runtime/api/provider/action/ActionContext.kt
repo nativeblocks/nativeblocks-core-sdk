@@ -39,6 +39,7 @@ interface INativeActionContractor {
  * @param onUpdateVariable Callback invoked when a variable changes.
  * @param trigger Trigger model representing the conditions and outcomes of the action.
  * @param onHandleEvent Runs the triggers filed under one of this action's events.
+ * @resolveTemplate Fills in whatever that scope reports, leaving the value alone outside one.
  */
 data class ActionContext(
     val instanceName: String,
@@ -47,5 +48,6 @@ data class ActionContext(
     val onFindVariable: (String) -> NativeVariableModel?,
     val onUpdateVariable: (NativeVariableModel?) -> Unit,
     val trigger: NativeActionTriggerModel?,
-    val onHandleEvent: (String) -> Unit
+    val onHandleEvent: (String) -> Unit,
+    val resolveTemplate: (String?) -> String? = { it },
 )

@@ -24,7 +24,7 @@ internal final class ActionTree {
         return NativeActionProviderRegistry.getOrCreate(instanceName)
     }
 
-    func handle(index: Int, action: NativeActionModel?, performedEventType: String) {
+    func handle(index: Int, action: NativeActionModel?, performedEventType: String, scope: Any? = nil) {
         guard let action, action.event == performedEventType else {
             onLog(.eventIgnored(event: performedEventType))
             return
@@ -38,6 +38,7 @@ internal final class ActionTree {
             handleTrigger(
                 action: action,
                 index: index,
+                scope: scope,
                 trigger: rootTrigger,
                 onFind: { [weak self] keyType in
                     self?.nativeActionProvider.getProvidedActions()[keyType]
@@ -57,6 +58,7 @@ internal final class ActionTree {
     private func handleTrigger(
         action: NativeActionModel,
         index: Int,
+        scope: Any?,
         trigger: NativeActionTriggerModel,
         onFind: @escaping (String) -> (any INativeAction)?,
         onTriggerFallBack: @escaping (String, String) -> Void
@@ -89,10 +91,11 @@ internal final class ActionTree {
             trigger: trigger,
             onHandleEvent: { [weak self] event in
                 self?.advanceSubTriggers(
-                    action: action, index: index, trigger: trigger, event: event,
+                    action: action, index: index, scope: scope, trigger: trigger, event: event,
                     onFind: onFind, onTriggerFallBack: onTriggerFallBack
                 )
-            }
+            },
+            resolveTemplate: { resolveIn(scope, $0) }
         )
         nativeAction.handle(actionContext: actionContext)
     }
@@ -100,6 +103,7 @@ internal final class ActionTree {
     private func advanceSubTriggers(
         action: NativeActionModel,
         index: Int,
+        scope: Any?,
         trigger: NativeActionTriggerModel,
         event: String,
         onFind: @escaping (String) -> (any INativeAction)?,
@@ -109,6 +113,7 @@ internal final class ActionTree {
             handleTrigger(
                 action: action,
                 index: index,
+                scope: scope,
                 trigger: subTrigger,
                 onFind: onFind,
                 onTriggerFallBack: onTriggerFallBack

@@ -12,11 +12,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.nativeblocks.runtime.api.provider.block.BlockContext
-import io.nativeblocks.runtime.api.provider.block.NativeBlock
 import io.nativeblocks.runtime.api.provider.block.NONE_INDEX
+import io.nativeblocks.runtime.api.provider.block.NativeBlock
 import io.nativeblocks.runtime.api.provider.block.defaults.InternalFallbackBlock
 import io.nativeblocks.runtime.api.provider.block.defaults.RootBlock
 import io.nativeblocks.runtime.api.provider.model.NativeBlockModel
+import io.nativeblocks.runtime.api.provider.model.TemplateResolver
 import io.nativeblocks.runtime.api.provider.modifier.ModifierContext
 import io.nativeblocks.runtime.api.util.LocalNativeWindowWidthClass
 import io.nativeblocks.runtime.api.util.currentWindowWidthClass
@@ -65,6 +66,7 @@ private fun Block(
     listItemIndex: Int,
     frameGeneration: Int,
     parentScope: Any?,
+    resolver: TemplateResolver? = null,
 ) {
     val block = vm.blockOf(blockKey) ?: return
     if (vm.valueOf(block.visibility) == "false") return
@@ -79,10 +81,20 @@ private fun Block(
         return
     }
 
-    val modifier = blockModifier(instanceName, vm, block, blockKey, listItemIndex, parentScope)
+    val modifier = blockModifier(instanceName, vm, block, blockKey, listItemIndex, parentScope, resolver)
 
-    val blockContext = remember(block, listItemIndex, modifier) {
-        blockContextOf(instanceName, vm, block, blockKey, listItemIndex, modifier, frameGeneration)
+    val blockContext = remember(block, listItemIndex, modifier, parentScope, resolver) {
+        blockContextOf(
+            instanceName,
+            vm,
+            block,
+            blockKey,
+            listItemIndex,
+            modifier,
+            frameGeneration,
+            parentScope,
+            resolver
+        )
     }
 
     nativeBlock.Render(blockContext)
@@ -96,6 +108,7 @@ private fun blockModifier(
     blockKey: String,
     listItemIndex: Int,
     parentScope: Any?,
+    resolver: TemplateResolver?,
 ): Modifier {
     if (block.modifiers.isEmpty()) {
         return Modifier
@@ -114,6 +127,7 @@ private fun blockModifier(
                 onHandleAction = { index, action, event -> vm.handleAction(index, action, event) },
                 modifier = item,
                 scope = parentScope,
+                resolveTemplate = { value -> resolver?.resolve(value) ?: value },
             )
             chain = chain.then(key(item.keyType, item.position) { nativeModifier.invoke(modifierContext) })
         } else {
@@ -131,13 +145,15 @@ private fun blockContextOf(
     listItemIndex: Int,
     modifier: Modifier,
     frameGeneration: Int,
+    parentScope: Any?,
+    resolver: TemplateResolver?,
 ): BlockContext = BlockContext(
     instanceName = instanceName,
     listItemIndex = listItemIndex,
     onFindVariable = { data -> vm.valueOf(data?.value.orEmpty()) },
     onUpdateVariable = { data, value -> vm.updateVariable(data?.value.orEmpty(), value) },
     onFindAction = { vm.actionOf(blockKey, it) },
-    onHandleAction = { index, action, event -> vm.handleAction(index, action, event) },
+    onHandleAction = { index, action, event -> vm.handleAction(index, action, event, parentScope) },
     block = block,
     modifier = modifier,
     onSubBlock = { blockKeys, subSlot, itemIndex, scope ->
@@ -150,10 +166,13 @@ private fun blockContextOf(
                     listItemIndex = if (itemIndex == NONE_INDEX) listItemIndex else itemIndex,
                     frameGeneration = frameGeneration,
                     parentScope = scope,
+                    resolver = (scope as? TemplateResolver) ?: resolver,
                 )
             }
         }
     },
+    scope = parentScope,
+    resolveTemplate = { value -> resolver?.resolve(value) ?: value },
     onDescribeSubBlock = { blockKeys, subSlot, describeScope ->
         for (childKey in blockKeys[subSlot.slot].orEmpty()) {
             val child = vm.blockOf(childKey) ?: continue
@@ -163,7 +182,17 @@ private fun blockContextOf(
                 continue
             }
             provided.describe(
-                blockContextOf(instanceName, vm, child, childKey, NONE_INDEX, Modifier, frameGeneration),
+                blockContextOf(
+                    instanceName = instanceName,
+                    vm = vm,
+                    block = child,
+                    blockKey = childKey,
+                    listItemIndex = NONE_INDEX,
+                    modifier = Modifier,
+                    frameGeneration = frameGeneration,
+                    parentScope = describeScope,
+                    resolver = (describeScope as? TemplateResolver) ?: resolver,
+                ),
                 describeScope,
             )
         }

@@ -73,7 +73,8 @@ private struct RootLifecycle: View {
                     vm: vm,
                     blockKey: rootKey,
                     listItemIndex: NONE_INDEX,
-                    parentScope: nil
+                    parentScope: nil,
+                    resolver: nil
                 )
                     .task(id: vm.frameUpdateGeneration) {
                         vm.rootEntered(rootKey)
@@ -95,6 +96,7 @@ private struct Block: View {
     let blockKey: String
     let listItemIndex: Int
     let parentScope: Any?
+    var resolver: TemplateResolver? = nil
 
     var body: some View {
         if let block = vm.blockOf(blockKey), vm.valueOf(block.visibility) != "false" {
@@ -124,6 +126,7 @@ private struct Block: View {
         let instanceName = instanceName
         let listItemIndex = listItemIndex
         let parentScope = parentScope
+        let resolver = resolver
         let vm = vm
         return NativeblocksModifier { content in
             var view = content
@@ -143,10 +146,11 @@ private struct Block: View {
                             vm.actionOf(blockKey: blockKey, eventType: eventType)
                         },
                         onHandleAction: { index, action, event in
-                            vm.handleAction(index, action, event)
+                            vm.handleAction(index, action, event, parentScope)
                         },
                         modifier: item,
-                        scope: parentScope
+                        scope: parentScope,
+                        resolveTemplate: { resolver?.resolve($0) ?? $0 }
                     )
                     view = nativeModifier(view, modifierContext)
                 } else {
@@ -157,7 +161,8 @@ private struct Block: View {
         }
     }
 
-    private func makeBlockContext(for block: NativeBlockModel) -> BlockContext {
+    private func makeBlockContext(for block: NativeBlockModel, resolver: TemplateResolver? = nil) -> BlockContext {
+        let resolver = resolver ?? self.resolver
         return BlockContext(
             instanceName: instanceName,
             listItemIndex: listItemIndex,
@@ -172,7 +177,7 @@ private struct Block: View {
                 vm.actionOf(blockKey: blockKey, eventType: eventType)
             },
             onHandleAction: { index, action, event in
-                vm.handleAction(index, action, event)
+                vm.handleAction(index, action, event, parentScope)
             },
             block: block,
             modifier: blockModifier(for: block),
@@ -181,7 +186,15 @@ private struct Block: View {
                     ForEach(blockKeys[subSlot.slot] ?? [], id: \.self) { childKey in
                         if let child = vm.blockOf(childKey),
                             case .describing(let describe) = vm.blockProvider.getProvidedBlocks()[child.keyType] {
-                            AnyView(describe(makeBlockContext(for: child), describeScope))
+                            AnyView(
+                                describe(
+                                    makeBlockContext(
+                                        for: child,
+                                        resolver: (describeScope as? TemplateResolver) ?? resolver
+                                    ),
+                                    describeScope
+                                )
+                            )
                         } else {
                             Color.clear.frame(width: 0, height: 0)
                                 .onAppear { vm.logBlockFallback(keyType: block.keyType, blockKey: childKey) }
@@ -197,11 +210,14 @@ private struct Block: View {
                             vm: vm,
                             blockKey: childKey,
                             listItemIndex: itemIndex == NONE_INDEX ? listItemIndex : itemIndex,
-                            parentScope: scope
+                            parentScope: scope,
+                            resolver: (scope as? TemplateResolver) ?? resolver
                         )
                     }
                 )
-            }
+            },
+            scope: parentScope,
+            resolveTemplate: { resolver?.resolve($0) ?? $0 }
         )
     }
 }

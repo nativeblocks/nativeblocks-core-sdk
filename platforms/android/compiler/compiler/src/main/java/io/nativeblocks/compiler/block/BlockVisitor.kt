@@ -74,7 +74,7 @@ internal class BlockVisitor(
                 func.addStatement("val ${converterVar(it)} = manager.getTypeConverter($it::class)")
             }
             metaData.forEach {
-                func.addStatement("val ${it.key} = blockContext.onFindVariable.invoke(data[\"${it.key}\"])")
+                func.addStatement("val ${it.key} = blockContext.resolveTemplate(blockContext.onFindVariable.invoke(data[\"${it.key}\"]))")
                 // a describing block runs outside composition, so it cannot remember
                 if (describing) {
                     func.beginControlFlow("val ${it.key}Value = run")

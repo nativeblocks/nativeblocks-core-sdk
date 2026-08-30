@@ -10,6 +10,7 @@ import io.nativeblocks.runtime.api.provider.action.defaults.internalFallbackActi
 import io.nativeblocks.runtime.api.provider.model.NativeActionModel
 import io.nativeblocks.runtime.api.provider.model.NativeActionTriggerModel
 import io.nativeblocks.runtime.api.provider.model.NativeVariableModel
+import io.nativeblocks.runtime.api.provider.model.resolveIn
 import io.nativeblocks.runtime.ffi.ActionLogEvent
 import kotlinx.coroutines.CoroutineScope
 
@@ -23,7 +24,7 @@ internal class ActionTree(
 
     private val nativeActionProvider = NativeActionProviderRegistry.getOrCreate(instanceName)
 
-    fun handle(index: Int, action: NativeActionModel?, performedEventType: String) {
+    fun handle(index: Int, action: NativeActionModel?, performedEventType: String, scope: Any? = null) {
         if (action == null || action.event != performedEventType) {
             onLog(ActionLogEvent.EventIgnored(performedEventType))
             return
@@ -37,6 +38,7 @@ internal class ActionTree(
                 handleTrigger(
                     action = action,
                     index = index,
+                    scope = scope,
                     trigger = trigger.copy(subTriggers = action.triggers.filter { it.parentId == trigger.id }),
                     onFind = { keyType ->
                         nativeActionProvider.getProvidedActions()[keyType]
@@ -52,6 +54,7 @@ internal class ActionTree(
     private fun handleTrigger(
         action: NativeActionModel,
         index: Int,
+        scope: Any?,
         trigger: NativeActionTriggerModel,
         onFind: (String) -> INativeAction?,
         onTriggerFallBack: (keyType: String, name: String) -> Unit,
@@ -80,8 +83,11 @@ internal class ActionTree(
                 variable?.let { onVariableChange(it) }
             },
             onHandleEvent = { event ->
-                advanceSubTriggers(action, index, trigger, event, onFind, onTriggerFallBack)
-            }
+                advanceSubTriggers(action, index, scope, trigger, event, onFind, onTriggerFallBack)
+            },
+            resolveTemplate = { value ->
+                resolveIn(scope, value)
+            },
         )
         nativeAction.handle(actionContext)
     }
@@ -89,6 +95,7 @@ internal class ActionTree(
     private fun advanceSubTriggers(
         action: NativeActionModel,
         index: Int,
+        scope: Any?,
         trigger: NativeActionTriggerModel,
         event: String,
         onFind: (String) -> INativeAction?,
@@ -96,6 +103,6 @@ internal class ActionTree(
     ) {
         action.triggers
             .filter { it.parentId == trigger.id && it.event == event }
-            .forEach { handleTrigger(action, index, it, onFind, onTriggerFallBack) }
+            .forEach { handleTrigger(action, index, scope, it, onFind, onTriggerFallBack) }
     }
 }
