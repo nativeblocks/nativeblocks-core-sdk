@@ -244,6 +244,9 @@ class IntegrationRepository {
                                     ?: false
                             ),
                             deprecatedReason = Optional.presentIfNotNull(event.jsonObject["deprecatedReason"]?.jsonPrimitive?.content.orEmpty()),
+                            dataBindings = Optional.presentIfNotNull(
+                                event.jsonObject["dataBindings"]?.jsonArray?.map { it.jsonPrimitive.content }
+                            ),
                         )
                     }
                 )
@@ -309,6 +312,9 @@ class IntegrationRepository {
                                 slot.jsonObject["deprecated"]?.jsonPrimitive?.booleanOrNull ?: false
                             ),
                             deprecatedReason = Optional.presentIfNotNull(slot.jsonObject["deprecatedReason"]?.jsonPrimitive?.content.orEmpty()),
+                            dataBindings = Optional.presentIfNotNull(
+                                slot.jsonObject["dataBindings"]?.jsonArray?.map { it.jsonPrimitive.content }
+                            ),
                         )
                     }
                 )

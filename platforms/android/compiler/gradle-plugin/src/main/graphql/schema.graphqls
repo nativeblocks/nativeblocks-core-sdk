@@ -808,6 +808,8 @@ input IntegrationEventInput {
   deprecatedReason: String
 
   scope: String
+
+  dataBindings: [String!]
 }
 
 type IntegrationEventResult {
@@ -964,6 +966,8 @@ input IntegrationSlotInput {
   deprecatedReason: String
 
   scope: String
+
+  dataBindings: [String!]
 }
 
 type IntegrationSlotResult {
