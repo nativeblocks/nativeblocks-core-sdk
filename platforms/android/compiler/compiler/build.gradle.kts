@@ -3,10 +3,10 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
-    id("java-library")
-    id("org.jetbrains.kotlin.jvm")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("com.vanniktech.maven.publish")
+    alias(libs.plugins.java.library)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.vanniktech.publish)
 }
 
 java {
@@ -50,9 +50,9 @@ mavenPublishing {
 }
 
 dependencies {
-    implementation("com.google.devtools.ksp:symbol-processing-api:2.2.0-2.0.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
-    implementation("com.squareup:kotlinpoet:1.18.1")
+    implementation(libs.ksp.symbol.processing.api)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinpoet)
 }
 
 object ModuleInfo {
