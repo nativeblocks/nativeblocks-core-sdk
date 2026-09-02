@@ -1,0 +1,47 @@
+[versions]
+agp = "8.13.2"
+kotlin = "2.2.0"
+kotlinSerializationPlugin = "2.2.21"
+ksp = "2.2.21-2.0.5"
+nexusPublish = "1.1.0"
+mavenPublish = "0.29.0"
+coreKtx = "1.13.1"
+coroutines = "1.9.0"
+serializationJson = "1.6.3"
+lifecycleViewmodelCompose = "2.8.6"
+activityCompose = "1.9.3"
+compose = "1.7.4"
+coil = "2.6.0"
+junit = "4.13.2"
+robolectric = "4.14.1"
+nativeblocksRuntime = "1.0.0-beta1"
+nativeblocksCompiler = "1.0.0-beta1"
+nativeblocksGradlePlugin = "1.0.0-beta1"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serializationJson" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "compose" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "compose" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "compose" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "compose" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+nativeblocks-runtime = { group = "io.nativeblocks", name = "runtime-android", version.ref = "nativeblocksRuntime" }
+nativeblocks-compiler = { group = "io.nativeblocks", name = "compiler-android", version.ref = "nativeblocksCompiler" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerializationPlugin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublish" }
+vanniktech-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+nativeblocks = { id = "io.nativeblocks.gradle-plugin-android", version.ref = "nativeblocksGradlePlugin" }

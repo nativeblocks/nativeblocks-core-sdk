@@ -22,6 +22,11 @@ let package = Package(
             dependencies: [
                 .product(name: "NativeblocksRuntime", package: "runtime"),
                 .product(name: "NativeblocksCompiler", package: "compiler"),
+            ],
+            swiftSettings: [
+                .unsafeFlags([
+                    "-enable-library-evolution"
+                ])
             ]
         ),
     ]
