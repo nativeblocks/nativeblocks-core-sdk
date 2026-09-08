@@ -1,3 +1,6 @@
+/deploy/build
+/deploy/.env
+
 # Rust build output (runtime/)
 /runtime/target
 /runtime/debug
@@ -28,6 +31,8 @@ platforms/android/*/*.gpg
 
 platforms/ios/*/.build
 platforms/ios/*/build
+platforms/ios/*/output
+platforms/nbBundle
 platforms/ios/*/.swiftpm
 platforms/ios/*/.xcworkspace
 platforms/ios/*/xcuserdata

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Package NativeblocksDevkit — the live-preview development kit — as a static xcframework.
+# Package NativeblocksFoundation — the block, action and modifier library — as a static xcframework.
 #
 # Name, bundle id, version, deployment target, symbol stripping and the
 # verification pass all live in ../nb-xcframework.sh so that this artifact
@@ -13,8 +13,8 @@ cd "$(dirname "$0")"
 source ../nb-xcframework.sh
 nb_set_version
 
-FRAMEWORK_NAME="NativeblocksDevkit"
-BUNDLE_ID="io.nativeblocks.devkit"
+FRAMEWORK_NAME="NativeblocksFoundation"
+BUNDLE_ID="io.nativeblocks.foundation"
 
 OUTPUT_DIR="output"
 XCFRAMEWORK_PATH="$OUTPUT_DIR/$FRAMEWORK_NAME.xcframework"

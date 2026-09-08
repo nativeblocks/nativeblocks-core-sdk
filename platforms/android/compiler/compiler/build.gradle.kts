@@ -1,6 +1,5 @@
 import com.vanniktech.maven.publish.JavaLibrary
 import com.vanniktech.maven.publish.JavadocJar
-import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     alias(libs.plugins.java.library)
@@ -9,19 +8,34 @@ plugins {
     alias(libs.plugins.vanniktech.publish)
 }
 
+val moduleVersion: String = Regex("""(?ms)^\[versions].*?^\s*android\s*=\s*"([^"]+)"""")
+    .find(file("$rootDir/../../../versions.toml").readText())
+    ?.groupValues?.get(1)
+    ?: error("no [versions].android in versions.toml")
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "staging"
+            url = uri(
+                providers.gradleProperty("nbStagingRepo")
+                    .getOrElse("$rootDir/../../../deploy/build/maven")
+            )
+        }
+    }
+}
+
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-    coordinates(ModuleInfo.GROUP_ID, ModuleInfo.ARTIFACT_ID, ModuleInfo.VERSION)
-//    signAllPublications()
+    coordinates(ModuleInfo.GROUP_ID, ModuleInfo.ARTIFACT_ID, moduleVersion)
     configure(
         JavaLibrary(
-            javadocJar = JavadocJar.Javadoc(),
-            sourcesJar = true,
+            javadocJar = JavadocJar.None(),
+            sourcesJar = false,
         )
     )
 
@@ -58,7 +72,6 @@ dependencies {
 object ModuleInfo {
     const val GROUP_ID = "io.nativeblocks"
     const val ARTIFACT_ID = "compiler-android"
-    const val VERSION = "1.0.0-beta1"
     const val DESCRIPTION = "Nativeblocks compiler for Android"
     const val URL = "https://nativeblocks.io"
 }

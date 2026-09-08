@@ -1,5 +1,4 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
-import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     alias(libs.plugins.android.library)
@@ -10,6 +9,11 @@ plugins {
     alias(libs.plugins.vanniktech.publish)
     alias(libs.plugins.nativeblocks)
 }
+
+val moduleVersion: String = Regex("""(?ms)^\[versions].*?^\s*android\s*=\s*"([^"]+)"""")
+    .find(file("$rootDir/../../../versions.toml").readText())
+    ?.groupValues?.get(1)
+    ?: error("no [versions].android in versions.toml")
 
 android {
     testOptions { unitTests.isIncludeAndroidResources = true }
@@ -23,12 +27,12 @@ android {
 
     buildTypes {
         getByName("release") {
-            buildConfigField("String", "VERSION", "\"${ModuleInfo.VERSION}\"")
+            buildConfigField("String", "VERSION", "\"${moduleVersion}\"")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
         }
         getByName("debug") {
-            buildConfigField("String", "VERSION", "\"${ModuleInfo.VERSION}\"")
+            buildConfigField("String", "VERSION", "\"${moduleVersion}\"")
         }
     }
     compileOptions {
@@ -44,15 +48,25 @@ android {
     }
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "staging"
+            url = uri(
+                providers.gradleProperty("nbStagingRepo")
+                    .getOrElse("$rootDir/../../../deploy/build/maven")
+            )
+        }
+    }
+}
+
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-    coordinates(ModuleInfo.GROUP_ID, ModuleInfo.ARTIFACT_ID, ModuleInfo.VERSION)
-//    signAllPublications()
+    coordinates(ModuleInfo.GROUP_ID, ModuleInfo.ARTIFACT_ID, moduleVersion)
     configure(
         AndroidSingleVariantLibrary(
             variant = "release",
-            sourcesJar = true,
-            publishJavadocJar = true,
+            sourcesJar = false,
+            publishJavadocJar = false,
         )
     )
 
@@ -105,7 +119,6 @@ dependencies {
 object ModuleInfo {
     const val GROUP_ID = "io.nativeblocks"
     const val ARTIFACT_ID = "foundation-android"
-    const val VERSION = "1.0.0-beta1"
     const val DESCRIPTION = "Nativeblocks foundation SDK for Android"
     const val URL = "https://nativeblocks.io"
 }

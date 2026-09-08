@@ -1,5 +1,4 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
-import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -8,6 +7,11 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.vanniktech.publish)
 }
+
+val moduleVersion: String = Regex("""(?ms)^\[versions].*?^\s*android\s*=\s*"([^"]+)"""")
+    .find(file("$rootDir/../../../versions.toml").readText())
+    ?.groupValues?.get(1)
+    ?: error("no [versions].android in versions.toml")
 
 android {
     namespace = "io.nativeblocks.runtime"
@@ -22,10 +26,10 @@ android {
         getByName("release") {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
-            buildConfigField("String", "VERSION", "\"${ModuleInfo.VERSION}\"")
+            buildConfigField("String", "VERSION", "\"${moduleVersion}\"")
         }
         getByName("debug") {
-            buildConfigField("String", "VERSION", "\"${ModuleInfo.VERSION}\"")
+            buildConfigField("String", "VERSION", "\"${moduleVersion}\"")
         }
     }
     compileOptions {
@@ -43,15 +47,25 @@ kotlin {
     }
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "staging"
+            url = uri(
+                providers.gradleProperty("nbStagingRepo")
+                    .getOrElse("$rootDir/../../../deploy/build/maven")
+            )
+        }
+    }
+}
+
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-    coordinates(ModuleInfo.GROUP_ID, ModuleInfo.ARTIFACT_ID, ModuleInfo.VERSION)
-//    signAllPublications()
+    coordinates(ModuleInfo.GROUP_ID, ModuleInfo.ARTIFACT_ID, moduleVersion)
     configure(
         AndroidSingleVariantLibrary(
             variant = "release",
-            sourcesJar = true,
-            publishJavadocJar = true,
+            sourcesJar = false,
+            publishJavadocJar = false,
         )
     )
 
@@ -82,7 +96,9 @@ mavenPublishing {
 dependencies {
     //==========================kotlin===========================
     implementation(libs.androidx.core.ktx)
-    implementation(libs.kotlinx.coroutines.core)
+    // api, not implementation: KSP-generated action providers reference
+    // CoroutineScope and launch in the consumer's own module.
+    api(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.collections.immutable)
     //==========================compose==========================
     implementation(platform(libs.androidx.compose.bom))
@@ -107,7 +123,6 @@ dependencies {
 object ModuleInfo {
     const val GROUP_ID = "io.nativeblocks"
     const val ARTIFACT_ID = "runtime-android"
-    const val VERSION = "1.0.0-beta1"
     const val DESCRIPTION = "Nativeblocks runtime for Android"
     const val URL = "https://nativeblocks.io"
 }

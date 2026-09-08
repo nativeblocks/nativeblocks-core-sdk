@@ -1,0 +1,12 @@
+# Single source of truth for every published NativeBlocks version.
+#
+# Modules inside a platform move in lockstep; platforms drift freely from each
+# other. Run `scripts/sync-versions.sh` after editing to fan these values out
+# into the per-package VERSION files, then `scripts/check-version.sh <tag>`.
+#
+# Tags: android/v<android>  ios/v<ios>  core/v<core>
+
+[versions]
+android = "0.1.0"
+ios = "0.1.0"
+core = "0.1.0"

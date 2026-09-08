@@ -39,10 +39,12 @@ kotlin {
 
 dependencies {
     //==========================nativeblocks=====================
+    implementation(platform(libs.nativeblocks.bom))
     implementation(libs.nativeblocks.runtime)
     implementation(libs.nativeblocks.foundation)
-    debugImplementation(libs.nativeblocks.devkit)
     implementation(libs.nativeblocks.compiler)
+    debugImplementation(libs.nativeblocks.devkit)
+    ksp(platform(libs.nativeblocks.bom))
     ksp(libs.nativeblocks.compiler)
     //==========================navigation 3======================
     implementation(libs.androidx.navigation3.runtime)

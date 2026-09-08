@@ -76,7 +76,7 @@ open class NativeblocksGradlePlugin : Plugin<Project> {
         val assembleTaskName = "assemble$flavor"
 
         project.tasks.register("nativeblocksSync$flavor", NativeblocksSyncTask::class.java) {
-            it.config.set(readConfig(project))
+            it.config.set(project.provider { readConfig(project) })
             it.flavor.set(flavor)
             it.basePackageName.set(project.namespace())
             it.moduleName.set(project.name)

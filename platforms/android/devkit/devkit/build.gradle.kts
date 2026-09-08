@@ -1,5 +1,4 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
-import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -9,6 +8,11 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.vanniktech.publish)
 }
+
+val moduleVersion: String = Regex("""(?ms)^\[versions].*?^\s*android\s*=\s*"([^"]+)"""")
+    .find(file("$rootDir/../../../versions.toml").readText())
+    ?.groupValues?.get(1)
+    ?: error("no [versions].android in versions.toml")
 
 android {
     namespace = "io.nativeblocks.devkit"
@@ -23,10 +27,10 @@ android {
         getByName("release") {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
-            buildConfigField("String", "VERSION", "\"${ModuleInfo.VERSION}\"")
+            buildConfigField("String", "VERSION", "\"${moduleVersion}\"")
         }
         getByName("debug") {
-            buildConfigField("String", "VERSION", "\"${ModuleInfo.VERSION}\"")
+            buildConfigField("String", "VERSION", "\"${moduleVersion}\"")
         }
     }
     compileOptions {
@@ -44,14 +48,24 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_17)
     }
 }
+publishing {
+    repositories {
+        maven {
+            name = "staging"
+            url = uri(
+                providers.gradleProperty("nbStagingRepo")
+                    .getOrElse("$rootDir/../../../deploy/build/maven")
+            )
+        }
+    }
+}
+
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-    coordinates(ModuleInfo.GROUP_ID, ModuleInfo.ARTIFACT_ID, ModuleInfo.VERSION)
-//    signAllPublications()
+    coordinates(ModuleInfo.GROUP_ID, ModuleInfo.ARTIFACT_ID, moduleVersion)
     configure(
         AndroidSingleVariantLibrary(
             variant = "release",
-            sourcesJar = true,
+            sourcesJar = false,
             publishJavadocJar = false,
         )
     )
@@ -119,7 +133,6 @@ dependencies {
 object ModuleInfo {
     const val GROUP_ID = "io.nativeblocks"
     const val ARTIFACT_ID = "devkit-android"
-    const val VERSION = "1.0.0-beta1"
     const val DESCRIPTION = "Nativeblocks Devkit for Android"
     const val URL = "https://nativeblocks.io"
 }

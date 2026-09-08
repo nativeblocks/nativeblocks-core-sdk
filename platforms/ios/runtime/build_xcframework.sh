@@ -28,8 +28,11 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
+source ../nb-xcframework.sh
+nb_set_version
 
 FRAMEWORK_NAME="NativeblocksRuntime"
+BUNDLE_ID="io.nativeblocks.runtime"
 FFI_MODULE="NativeblocksRuntimeFFI"
 C_MODULE="NativeblocksRuntimeCFFI"
 
@@ -37,10 +40,6 @@ OUTPUT_DIR="output"
 STAGE_DIR="$OUTPUT_DIR/stage"
 SLICES_DIR="$OUTPUT_DIR/slices"
 XCFRAMEWORK_PATH="$OUTPUT_DIR/$FRAMEWORK_NAME.xcframework"
-ZIP_NAME="$FRAMEWORK_NAME.xcframework.zip"
-
-# xcframework slice ids, shared by the Swift builds and the vendored Rust one.
-SLICES=("ios-arm64" "ios-arm64-simulator")
 
 VENDORED_CFFI="Frameworks/$C_MODULE.xcframework"
 
@@ -48,10 +47,7 @@ VENDORED_CFFI="Frameworks/$C_MODULE.xcframework"
 # PREFLIGHT
 # =============================================================================
 
-command -v xccache >/dev/null || {
-  echo "❌ xccache not found. Install it with: gem install xccache"
-  exit 1
-}
+nb_require xccache xcodebuild libtool strip plutil zip swift
 
 if [ ! -d "$VENDORED_CFFI" ]; then
   echo "❌ $VENDORED_CFFI not found."
@@ -59,7 +55,7 @@ if [ ! -d "$VENDORED_CFFI" ]; then
   exit 1
 fi
 
-for slice in "${SLICES[@]}"; do
+for slice in "${NB_SLICES[@]}"; do
   if ! ls "$VENDORED_CFFI/$slice"/*.a >/dev/null 2>&1; then
     echo "❌ $VENDORED_CFFI/$slice holds no static library (.a)."
     echo "   The Rust side has to be a staticlib for it to link INTO the framework."
@@ -71,17 +67,13 @@ done
 echo "🧹 Cleaning previous build artifacts..."
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$STAGE_DIR" "$SLICES_DIR"
+nb_clean_build .
 
 # =============================================================================
 # BUILD THE SWIFT TARGETS
 # =============================================================================
 
-echo "⚙️  Building $FRAMEWORK_NAME and $FFI_MODULE with library evolution..."
-xccache pkg build "$FRAMEWORK_NAME" "$FFI_MODULE" \
-  --sdk=iphoneos,iphonesimulator \
-  --config=release \
-  --library-evolution \
-  --out="$STAGE_DIR"
+nb_build "$STAGE_DIR" "$FRAMEWORK_NAME" "$FFI_MODULE"
 
 for module in "$FRAMEWORK_NAME" "$FFI_MODULE"; do
   [ -d "$STAGE_DIR/$module.xcframework" ] || {
@@ -91,10 +83,24 @@ for module in "$FRAMEWORK_NAME" "$FFI_MODULE"; do
 done
 
 # =============================================================================
+# STALE OBJECT CHECK
+# =============================================================================
+# Must run before the merge: once the Rust archive is folded in, the member list
+# is full of objects that never had a Swift source, and the signal is lost.
+
+echo "🔍 Checking every object traces to a source file..."
+for slice in "${NB_SLICES[@]}"; do
+  for module in "$FRAMEWORK_NAME" "$FFI_MODULE"; do
+    nb_check_sources "Sources/$module" \
+      "$STAGE_DIR/$module.xcframework/$slice/$module.framework/$module"
+  done
+done
+
+# =============================================================================
 # MERGE EACH SLICE INTO ONE FRAMEWORK
 # =============================================================================
 
-for slice in "${SLICES[@]}"; do
+for slice in "${NB_SLICES[@]}"; do
   echo "🔗 Merging $slice..."
 
   HOST_FW="$STAGE_DIR/$FRAMEWORK_NAME.xcframework/$slice/$FRAMEWORK_NAME.framework"
@@ -112,10 +118,9 @@ for slice in "${SLICES[@]}"; do
 
   # Everything besides the binary comes from the host framework, so the FFI
   # module's .swiftmodule is simply never copied — that is what makes it
-  # unimportable downstream.
+  # unimportable downstream. Info.plist is written by nb_finalize.
   cp -R "$HOST_FW/Headers" "$OUT_FW/" 2>/dev/null || true
   cp -R "$HOST_FW/Modules" "$OUT_FW/"
-  cp "$HOST_FW/Info.plist" "$OUT_FW/Info.plist"
 
   SWIFTMODULE="$OUT_FW/Modules/$FRAMEWORK_NAME.swiftmodule"
 
@@ -152,24 +157,26 @@ done
 
 echo "📦 Assembling $FRAMEWORK_NAME.xcframework..."
 CREATE_ARGS=()
-for slice in "${SLICES[@]}"; do
+for slice in "${NB_SLICES[@]}"; do
   CREATE_ARGS+=(-framework "$SLICES_DIR/$slice/$FRAMEWORK_NAME.framework")
 done
 xcodebuild -create-xcframework "${CREATE_ARGS[@]}" -output "$XCFRAMEWORK_PATH" >/dev/null
 
 # =============================================================================
-# VERIFY
+# SELF-CONTAINMENT CHECK
 # =============================================================================
+# Runs before nb_finalize: stripping only removes debug info and local symbols,
+# so the global symbols this inspects are the same either way, and a failure
+# here should be reported against the artifact as it was merged.
 
 echo "🔍 Verifying the artifact is self-contained..."
 
 # Swift mangles a module reference as <length><name>, e.g. 22NativeblocksRuntimeFFI.
 FFI_MANGLED="${#FFI_MODULE}$FFI_MODULE"
 
-for slice in "${SLICES[@]}"; do
-  FW="$XCFRAMEWORK_PATH/$slice/$FRAMEWORK_NAME.framework"
-  BINARY="$FW/$FRAMEWORK_NAME"
-  MODULES="$FW/Modules"
+for slice in "${NB_SLICES[@]}"; do
+  BINARY="$XCFRAMEWORK_PATH/$slice/$FRAMEWORK_NAME.framework/$FRAMEWORK_NAME"
+  MODULES="$XCFRAMEWORK_PATH/$slice/$FRAMEWORK_NAME.framework/Modules"
 
   # `nm` reports undefineds per object file, so a symbol one member imports from
   # another still shows up as undefined. Subtract what the archive defines to get
@@ -210,41 +217,11 @@ for slice in "${SLICES[@]}"; do
 done
 
 # =============================================================================
-# PACKAGE
+# STAMP, VERIFY, PACKAGE
 # =============================================================================
 
-echo "🗜️  Creating distribution archive..."
-(cd "$OUTPUT_DIR" && zip -r -q "$ZIP_NAME" "$FRAMEWORK_NAME.xcframework")
+nb_finalize "$FRAMEWORK_NAME" "$BUNDLE_ID" "$XCFRAMEWORK_PATH"
+nb_verify   "$FRAMEWORK_NAME" "$BUNDLE_ID" "$XCFRAMEWORK_PATH"
+nb_package  "$FRAMEWORK_NAME" "$XCFRAMEWORK_PATH" "$OUTPUT_DIR"
 
-CHECKSUM=$(swift package compute-checksum "$OUTPUT_DIR/$ZIP_NAME")
-
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ Build completed successfully!"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "📦 XCFramework:  $OUTPUT_DIR/$ZIP_NAME ($(du -h "$OUTPUT_DIR/$ZIP_NAME" | cut -f1))"
-echo "🔐 Checksum:     $CHECKSUM"
-echo ""
-echo "The framework is static, so consumers set it to \"Do Not Embed\"."
 echo "One artifact, one module: import $FRAMEWORK_NAME"
-echo ""
-cat <<EOF
-// swift-tools-version: 5.9
-import PackageDescription
-
-let package = Package(
-    name: "$FRAMEWORK_NAME",
-    platforms: [.iOS(.v15)],
-    products: [
-        .library(name: "$FRAMEWORK_NAME", targets: ["$FRAMEWORK_NAME"])
-    ],
-    targets: [
-        .binaryTarget(
-            name: "$FRAMEWORK_NAME",
-            url: "<your-hosted-url>/$ZIP_NAME",
-            checksum: "$CHECKSUM"
-        )
-    ]
-)
-EOF

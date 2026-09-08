@@ -2,7 +2,7 @@ import SwiftCompilerPlugin
 import SwiftSyntaxMacros
 
 @main
-struct NativeBlocksPlugin: CompilerPlugin {
+struct NativeblocksPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         NativeBlockMacro.self,
         NativeBlockDataMacro.self,
