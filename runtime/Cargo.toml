@@ -24,7 +24,7 @@ script-quickjs = ["dep:rquickjs"]
 script-quickjs-bindgen = ["script-quickjs", "rquickjs/bindgen"]
 
 [dependencies]
-uniffi = { version = "0.31.2", features = ["tokio"] }
+uniffi = { version = "0.32.1", features = ["tokio"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rkyv = { version = "0.8.17" }
