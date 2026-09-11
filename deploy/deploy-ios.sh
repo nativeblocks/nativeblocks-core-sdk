@@ -16,7 +16,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/r2.sh"
 nb_load_env
 
-SWIFT_PUBLIC_URL="${SWIFT_PUBLIC_URL:-https://binaries.nativeblocks.io}"
+SWIFT_PUBLIC_URL="${SWIFT_PUBLIC_URL:-https://spm.nativeblocks.io}"
 DIST_PUBLIC_URL="${DIST_PUBLIC_URL:-https://dist.nativeblocks.io}"
 
 # Package identity. Scope and name split on the first dot, which is what

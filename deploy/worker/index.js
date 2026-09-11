@@ -1,5 +1,5 @@
 /**
- * Swift Package Registry (SE-0292) over an R2 bucket, for binaries.nativeblocks.io.
+ * Swift Package Registry (SE-0292) over an R2 bucket, for spm.nativeblocks.io.
  *
  * Only the registry needs a Worker. The Maven repo (maven.nativeblocks.io) and
  * the XCFramework downloads (dist.nativeblocks.io) are plain GETs that R2's
