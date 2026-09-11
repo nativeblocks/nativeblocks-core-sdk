@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use crate::library::cache::CacheProvider;
+use crate::library::cache::Caches;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::library::net::network::HttpClient;
 use crate::library::result::NBResult;
@@ -17,7 +17,7 @@ pub(crate) fn get_or_create(
     environment: &NativeblocksEnvironment,
     sdk_config: &SdkConfig,
     http: Arc<dyn HttpClient>,
-    cache: Arc<dyn CacheProvider>,
+    caches: Caches,
 ) -> NBResult<Arc<Container>> {
     let mut map = registry().lock().expect("di registry poisoned");
     let container = map
@@ -27,7 +27,7 @@ pub(crate) fn get_or_create(
                 environment.clone(),
                 sdk_config.clone(),
                 http,
-                cache,
+                caches,
             ))
         })
         .clone();

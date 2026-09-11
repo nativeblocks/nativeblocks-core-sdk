@@ -168,8 +168,8 @@ impl FrameRepository for CloudFrameRepository {
         return db_source::clear(self.cache.as_ref(), route).await;
     }
 
-    async fn clear_all(&self, routes: &[String]) -> NBResult<()> {
-        self.memory.clear_all(routes);
-        return db_source::clear_all(self.cache.as_ref(), routes).await;
+    async fn clear_all(&self) -> NBResult<()> {
+        self.memory.clear_all();
+        return db_source::clear_all(self.cache.as_ref()).await;
     }
 }

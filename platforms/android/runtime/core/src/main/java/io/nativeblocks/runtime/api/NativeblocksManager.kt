@@ -211,12 +211,13 @@ class NativeblocksManager internal constructor(
     }
 
     /**
-     * clear all frames from cache.
+     * clear all frames and the scaffold from cache.
      * @return The NativeblocksManager instance for chaining.
      */
     suspend fun clearAllFrames(): NativeblocksManager {
         val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
-        runCatching { runtimeClient.frameClient.clearAll(emptyList()) }
+        runCatching { runtimeClient.frameClient.clearAll() }
+        runCatching { runtimeClient.scaffoldClient.clear() }
         return this
     }
 
@@ -273,10 +274,12 @@ class NativeblocksManager internal constructor(
 
     /**
      * Retrieves the scaffold model for the current configuration.
+     * Returns the cached scaffold when available and refreshes the cache in the background.
+     * @param forceFetch When true, ignores the cache and returns the scaffold from remote.
      */
-    suspend fun getScaffold(): Result<NativeScaffoldModel> {
+    suspend fun getScaffold(forceFetch: Boolean = false): Result<NativeScaffoldModel> {
         val runtimeClient: NativeRuntimeClientManager by getKoin().inject(named(this.name))
-        return runCatching { runtimeClient.scaffoldClient.getScaffold().toHost() }
+        return runCatching { runtimeClient.scaffoldClient.getScaffold(forceFetch).toHost() }
     }
 
     /**

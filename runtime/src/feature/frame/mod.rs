@@ -33,7 +33,7 @@ fn build_repository(container: &Container) -> Arc<dyn FrameRepository> {
         container.http(),
         container.environment().clone(),
         container.sdk_config().clone(),
-        container.cache(),
+        container.caches().frames.clone(),
         container.config_client(),
         container.logger(),
     ));

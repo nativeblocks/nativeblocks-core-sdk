@@ -47,6 +47,25 @@ pub(super) fn log_failure(
     );
 }
 
+pub(super) fn log_not_cached(
+    logger: &Mutex<NativeLoggerProvider>,
+    sdk_config: &SdkConfig,
+    error: &ErrorModel,
+) {
+    let mut params = crate::plugin::logger::error_parameters(error);
+    params.insert(
+        keys::parameter::STATE.to_string(),
+        keys::state::SCAFFOLD_NOT_CACHED.to_string(),
+    );
+    dispatch(
+        logger,
+        sdk_config,
+        LoggerEventLevel::Error,
+        "Failed to fetch scaffold and no cached scaffold is available",
+        params,
+    );
+}
+
 fn dispatch(
     logger: &Mutex<NativeLoggerProvider>,
     sdk_config: &SdkConfig,

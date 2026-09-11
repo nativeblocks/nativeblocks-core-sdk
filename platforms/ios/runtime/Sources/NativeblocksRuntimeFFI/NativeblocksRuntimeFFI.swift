@@ -43,6 +43,52 @@ fileprivate extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
+
+    init(rawBufferPointer: UnsafeRawBufferPointer) {
+        self.init(
+            len: Int32(rawBufferPointer.count),
+            data: rawBufferPointer.baseAddress?.assumingMemoryBound(to: UInt8.self)
+        )
+    }
+}
+
+// Converter for `&[u8]` / `[ByRef] bytes` arguments.
+//
+// Conforms to `FfiConverter` so the compiler enforces the full converter
+// method set. Only the scope-bound `lower(_:_body:)` overload is sound —
+// zero-copy byte buffers only flow foreign -> Rust, and only in argument
+// position. The four protocol-witness methods (`lift`, `lower`, `read`,
+// `write`) `fatalError` at runtime if anyone reaches them.
+//
+// The scope-bound `lower` takes a closure because the `ForeignBytes`
+// pointer is only guaranteed valid for the duration of
+// `Data.withUnsafeBytes`. Callers must run the full FFI call inside
+// the closure body.
+fileprivate enum FfiConverterByRefBytes: FfiConverter {
+    typealias SwiftType = Data
+    typealias FfiType = ForeignBytes
+
+    static func lower<R>(_ value: Data, _ body: (ForeignBytes) throws -> R) rethrows -> R {
+        return try value.withUnsafeBytes { rawBuf in
+            try body(ForeignBytes(rawBufferPointer: rawBuf))
+        }
+    }
+
+    static func lower(_ value: Data) -> ForeignBytes {
+        fatalError("ByRef bytes cannot use the plain lower: returning ForeignBytes escapes the Data.withUnsafeBytes scope. Use the scope-bound lower(_:_body:) overload instead.")
+    }
+
+    static func lift(_ value: ForeignBytes) throws -> Data {
+        fatalError("ByRef bytes cannot be lifted: zero-copy &[u8] only flows foreign->Rust")
+    }
+
+    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Data {
+        fatalError("ByRef bytes cannot be read from a buffer: zero-copy &[u8] is only supported in argument position, not nested in records/options/etc.")
+    }
+
+    static func write(_ value: Data, into buf: inout [UInt8]) {
+        fatalError("ByRef bytes cannot be written to a buffer: zero-copy &[u8] is only supported in argument position, not nested in records/options/etc.")
+    }
 }
 
 // For every type used in the interface, we provide helper methods for conveniently
@@ -610,8 +656,7 @@ package func getExperiment(key: String, cacheTtl: Int64?)async throws  -> Native
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_experimentclient_get_experiment(
-                    self.uniffiCloneHandle(),
-                    FfiConverterString.lower(key),FfiConverterOptionInt64.lower(cacheTtl)
+                        self.uniffiCloneHandle(),FfiConverterString.lower(key),FfiConverterOptionInt64.lower(cacheTtl)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_rust_buffer,
@@ -676,7 +721,7 @@ package protocol FrameClientProtocol: AnyObject, Sendable {
     
     func clear(route: String) async throws 
     
-    func clearAll(routes: [String]) async throws 
+    func clearAll() async throws 
     
     func clearAllFrameStates() 
     
@@ -745,8 +790,7 @@ package func clear(route: String)async throws   {
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_frameclient_clear(
-                    self.uniffiCloneHandle(),
-                    FfiConverterString.lower(route)
+                        self.uniffiCloneHandle(),FfiConverterString.lower(route)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_void,
@@ -757,13 +801,12 @@ package func clear(route: String)async throws   {
         )
 }
     
-package func clearAll(routes: [String])async throws   {
+package func clearAll()async throws   {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_frameclient_clear_all(
-                    self.uniffiCloneHandle(),
-                    FfiConverterSequenceString.lower(routes)
+                        self.uniffiCloneHandle()
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_void,
@@ -775,24 +818,27 @@ package func clearAll(routes: [String])async throws   {
 }
     
 package func clearAllFrameStates()  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_frameclient_clear_all_frame_states(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 }
 }
     
 package func clearFrameState(stateKey: String)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_frameclient_clear_frame_state(
             self.uniffiCloneHandle(),
-        FfiConverterString.lower(stateKey),$0
+        FfiConverterString.lower(stateKey),uniffiCallStatus
     )
 }
 }
     
 package func stateManager() -> FrameStateManager  {
     return try!  FfiConverterTypeFrameStateManager_lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_frameclient_state_manager(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
@@ -802,8 +848,7 @@ package func syncFrame(route: String, parameters: [String: String])async throws 
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_frameclient_sync_frame(
-                    self.uniffiCloneHandle(),
-                    FfiConverterString.lower(route),FfiConverterDictionaryStringString.lower(parameters)
+                        self.uniffiCloneHandle(),FfiConverterString.lower(route),FfiConverterDictionaryStringString.lower(parameters)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_void,
@@ -931,24 +976,27 @@ package class FrameStateManager: FrameStateManagerProtocol, @unchecked Sendable 
 
     
 package func logAction(event: ActionLogEvent)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_action(
             self.uniffiCloneHandle(),
-        FfiConverterTypeActionLogEvent_lower(event),$0
+        FfiConverterTypeActionLogEvent_lower(event),uniffiCallStatus
     )
 }
 }
     
 package func logBlock(event: BlockLogEvent)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_block(
             self.uniffiCloneHandle(),
-        FfiConverterTypeBlockLogEvent_lower(event),$0
+        FfiConverterTypeBlockLogEvent_lower(event),uniffiCallStatus
     )
 }
 }
     
 package func release()  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 }
 }
@@ -958,8 +1006,7 @@ package func setupFrame(route: String, args: [String: String], stateKey: String?
         try!  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(
-                    self.uniffiCloneHandle(),
-                    FfiConverterString.lower(route),FfiConverterDictionaryStringString.lower(args),FfiConverterOptionString.lower(stateKey),FfiConverterTypeFrameStateObserver_lower(observer)
+                        self.uniffiCloneHandle(),FfiConverterString.lower(route),FfiConverterDictionaryStringString.lower(args),FfiConverterOptionString.lower(stateKey),FfiConverterTypeFrameStateObserver_lower(observer)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_void,
@@ -972,10 +1019,11 @@ package func setupFrame(route: String, args: [String: String], stateKey: String?
 }
     
 package func updateVariable(key: String, value: String)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_variable(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(key),
-        FfiConverterString.lower(value),$0
+        FfiConverterString.lower(value),uniffiCallStatus
     )
 }
 }
@@ -1089,9 +1137,10 @@ package class FrameStateObserverImpl: FrameStateObserver, @unchecked Sendable {
 
     
 package func onFrameChange(change: FrameChangeType)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_framestateobserver_on_frame_change(
             self.uniffiCloneHandle(),
-        FfiConverterTypeFrameChangeType_lower(change),$0
+        FfiConverterTypeFrameChangeType_lower(change),uniffiCallStatus
     )
 }
 }
@@ -1289,16 +1338,18 @@ package class GlobalParameterClient: GlobalParameterClientProtocol, @unchecked S
     
 package func get() -> [String: String]  {
     return try!  FfiConverterDictionaryStringString.lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_globalparameterclient_get(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
     
 package func set(parameters: [String: String])  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_globalparameterclient_set(
             self.uniffiCloneHandle(),
-        FfiConverterDictionaryStringString.lower(parameters),$0
+        FfiConverterDictionaryStringString.lower(parameters),uniffiCallStatus
     )
 }
 }
@@ -1418,8 +1469,7 @@ package func get(url: String, headers: [String: String])async throws  -> String 
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_httpclient_get(
-                    self.uniffiCloneHandle(),
-                    FfiConverterString.lower(url),FfiConverterDictionaryStringString.lower(headers)
+                        self.uniffiCloneHandle(),FfiConverterString.lower(url),FfiConverterDictionaryStringString.lower(headers)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_rust_buffer,
@@ -1435,8 +1485,7 @@ package func post(url: String, headers: [String: String], body: String)async thr
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_httpclient_post(
-                    self.uniffiCloneHandle(),
-                    FfiConverterString.lower(url),FfiConverterDictionaryStringString.lower(headers),FfiConverterString.lower(body)
+                        self.uniffiCloneHandle(),FfiConverterString.lower(url),FfiConverterDictionaryStringString.lower(headers),FfiConverterString.lower(body)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_rust_buffer,
@@ -1717,8 +1766,7 @@ package func getLocalization(languageCode: String)async throws  -> NativeLocaliz
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_localizationclient_get_localization(
-                    self.uniffiCloneHandle(),
-                    FfiConverterString.lower(languageCode)
+                        self.uniffiCloneHandle(),FfiConverterString.lower(languageCode)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_rust_buffer,
@@ -1730,17 +1778,19 @@ package func getLocalization(languageCode: String)async throws  -> NativeLocaliz
 }
     
 package func setLanguageCode(languageCode: String)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationclient_set_language_code(
             self.uniffiCloneHandle(),
-        FfiConverterString.lower(languageCode),$0
+        FfiConverterString.lower(languageCode),uniffiCallStatus
     )
 }
 }
     
 package func stateManager() -> LocalizationStateManager  {
     return try!  FfiConverterTypeLocalizationStateManager_lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationclient_state_manager(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
@@ -1750,8 +1800,7 @@ package func syncLocalization(languageCode: String)async throws   {
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_localizationclient_sync_localization(
-                    self.uniffiCloneHandle(),
-                    FfiConverterString.lower(languageCode)
+                        self.uniffiCloneHandle(),FfiConverterString.lower(languageCode)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_void,
@@ -1764,9 +1813,10 @@ package func syncLocalization(languageCode: String)async throws   {
     
 package func translate(key: String) -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationclient_translate(
             self.uniffiCloneHandle(),
-        FfiConverterString.lower(key),$0
+        FfiConverterString.lower(key),uniffiCallStatus
     )
 })
 }
@@ -1891,31 +1941,35 @@ package class LocalizationStateManager: LocalizationStateManagerProtocol, @unche
     
 package func localizationState() -> LocalizationState  {
     return try!  FfiConverterTypeLocalizationState_lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_localization_state(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
     
 package func observe(observer: LocalizationStateObserver)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_observe(
             self.uniffiCloneHandle(),
-        FfiConverterTypeLocalizationStateObserver_lower(observer),$0
+        FfiConverterTypeLocalizationStateObserver_lower(observer),uniffiCallStatus
     )
 }
 }
     
 package func release()  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_release(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 }
 }
     
 package func setLanguageCode(languageCode: String)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_set_language_code(
             self.uniffiCloneHandle(),
-        FfiConverterString.lower(languageCode),$0
+        FfiConverterString.lower(languageCode),uniffiCallStatus
     )
 }
 }
@@ -1925,8 +1979,7 @@ package func setupLocalization(languageCode: String)async   {
         try!  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_setup_localization(
-                    self.uniffiCloneHandle(),
-                    FfiConverterString.lower(languageCode)
+                        self.uniffiCloneHandle(),FfiConverterString.lower(languageCode)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_void,
@@ -1940,9 +1993,10 @@ package func setupLocalization(languageCode: String)async   {
     
 package func translate(key: String) -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_translate(
             self.uniffiCloneHandle(),
-        FfiConverterString.lower(key),$0
+        FfiConverterString.lower(key),uniffiCallStatus
     )
 })
 }
@@ -2060,25 +2114,28 @@ package class LocalizationStateObserverImpl: LocalizationStateObserver, @uncheck
 
     
 package func onStateChanged(state: LocalizationState)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_state_changed(
             self.uniffiCloneHandle(),
-        FfiConverterTypeLocalizationState_lower(state),$0
+        FfiConverterTypeLocalizationState_lower(state),uniffiCallStatus
     )
 }
 }
     
 package func onLocalizationChanged(localizations: [String: String])  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_localization_changed(
             self.uniffiCloneHandle(),
-        FfiConverterDictionaryStringString.lower(localizations),$0
+        FfiConverterDictionaryStringString.lower(localizations),uniffiCallStatus
     )
 }
 }
     
 package func onLanguageCodeChanged(languageCode: String?)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_language_code_changed(
             self.uniffiCloneHandle(),
-        FfiConverterOptionString.lower(languageCode),$0
+        FfiConverterOptionString.lower(languageCode),uniffiCallStatus
     )
 }
 }
@@ -2317,11 +2374,12 @@ package class NativeblocksRuntime: NativeblocksRuntimeProtocol, @unchecked Senda
 package convenience init(environment: NativeblocksEnvironment, config: SdkConfig, http: HttpClient, cacheDir: String)throws  {
     let handle =
         try rustCallWithError(FfiConverterTypeNBError_lift) {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(
         FfiConverterTypeNativeblocksEnvironment_lower(environment),
         FfiConverterTypeSdkConfig_lower(config),
         FfiConverterTypeHttpClient_lower(http),
-        FfiConverterString.lower(cacheDir),$0
+        FfiConverterString.lower(cacheDir),uniffiCallStatus
     )
 }
     self.init(unsafeFromHandle: handle)
@@ -2341,40 +2399,45 @@ package convenience init(environment: NativeblocksEnvironment, config: SdkConfig
     
 package func experimentClient() -> ExperimentClient  {
     return try!  FfiConverterTypeExperimentClient_lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_experiment_client(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
     
 package func frameClient() -> FrameClient  {
     return try!  FfiConverterTypeFrameClient_lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_frame_client(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
     
 package func globalParameterClient() -> GlobalParameterClient  {
     return try!  FfiConverterTypeGlobalParameterClient_lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_global_parameter_client(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
     
 package func localizationClient() -> LocalizationClient  {
     return try!  FfiConverterTypeLocalizationClient_lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_localization_client(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
     
 package func scaffoldClient() -> ScaffoldClient  {
     return try!  FfiConverterTypeScaffoldClient_lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_scaffold_client(
-            self.uniffiCloneHandle(),$0
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
@@ -2431,7 +2494,9 @@ package func FfiConverterTypeNativeblocksRuntime_lower(_ value: NativeblocksRunt
 
 package protocol ScaffoldClientProtocol: AnyObject, Sendable {
     
-    func getScaffold() async throws  -> ScaffoldModel
+    func clear() async throws 
+    
+    func getScaffold(forceFetch: Bool) async throws  -> ScaffoldModel
     
 }
 package class ScaffoldClient: ScaffoldClientProtocol, @unchecked Sendable {
@@ -2487,13 +2552,28 @@ package class ScaffoldClient: ScaffoldClientProtocol, @unchecked Sendable {
     
 
     
-package func getScaffold()async throws  -> ScaffoldModel  {
+package func clear()async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_nativeblocks_runtime_fn_method_scaffoldclient_clear(
+                        self.uniffiCloneHandle()
+                )
+            },
+            pollFunc: ffi_nativeblocks_runtime_rust_future_poll_void,
+            completeFunc: ffi_nativeblocks_runtime_rust_future_complete_void,
+            freeFunc: ffi_nativeblocks_runtime_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeNBError_lift
+        )
+}
+    
+package func getScaffold(forceFetch: Bool)async throws  -> ScaffoldModel  {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_nativeblocks_runtime_fn_method_scaffoldclient_get_scaffold(
-                    self.uniffiCloneHandle()
-                    
+                        self.uniffiCloneHandle(),FfiConverterBool.lower(forceFetch)
                 )
             },
             pollFunc: ffi_nativeblocks_runtime_rust_future_poll_rust_buffer,
@@ -2616,18 +2696,20 @@ package class ScriptBridgeImpl: ScriptBridge, @unchecked Sendable {
     
 package func getVariable(key: String) -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_scriptbridge_get_variable(
             self.uniffiCloneHandle(),
-        FfiConverterString.lower(key),$0
+        FfiConverterString.lower(key),uniffiCallStatus
     )
 })
 }
     
 package func updateVariable(key: String, value: String)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_variable(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(key),
-        FfiConverterString.lower(value),$0
+        FfiConverterString.lower(value),uniffiCallStatus
     )
 }
 }
@@ -2836,7 +2918,8 @@ package class ScriptEngine: ScriptEngineProtocol, @unchecked Sendable {
 package convenience init() {
     let handle =
         try! rustCall() {
-    uniffi_nativeblocks_runtime_fn_constructor_scriptengine_new($0
+        uniffiCallStatus in
+    uniffi_nativeblocks_runtime_fn_constructor_scriptengine_new(uniffiCallStatus
     )
 }
     self.init(unsafeFromHandle: handle)
@@ -2856,11 +2939,12 @@ package convenience init() {
     
 package func evaluate(script: String, bridge: ScriptBridge, timeoutMs: UInt64) -> ScriptResult  {
     return try!  FfiConverterTypeScriptResult_lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_scriptengine_evaluate(
             self.uniffiCloneHandle(),
         FfiConverterString.lower(script),
         FfiConverterTypeScriptBridge_lower(bridge),
-        FfiConverterUInt64.lower(timeoutMs),$0
+        FfiConverterUInt64.lower(timeoutMs),uniffiCallStatus
     )
 })
 }
@@ -4260,8 +4344,7 @@ package func FfiConverterTypeSdkConfig_lower(_ value: SdkConfig) -> RustBuffer {
     return FfiConverterTypeSdkConfig.lower(value)
 }
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 
 package enum ActionLogEvent: Equatable, Hashable {
     
@@ -4383,8 +4466,7 @@ package func FfiConverterTypeActionLogEvent_lower(_ value: ActionLogEvent) -> Ru
 }
 
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 
 package enum BlockLogEvent: Equatable, Hashable {
     
@@ -4486,8 +4568,7 @@ package func FfiConverterTypeBlockLogEvent_lower(_ value: BlockLogEvent) -> Rust
 }
 
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 
 package enum ErrorType: Equatable, Hashable {
     
@@ -4560,8 +4641,7 @@ package func FfiConverterTypeErrorType_lower(_ value: ErrorType) -> RustBuffer {
 }
 
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 
 package enum FrameChangeType: Equatable, Hashable {
     
@@ -4633,8 +4713,7 @@ package func FfiConverterTypeFrameChangeType_lower(_ value: FrameChangeType) -> 
 }
 
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 
 package enum FrameTypeModel: Equatable, Hashable {
     
@@ -4707,8 +4786,7 @@ package func FfiConverterTypeFrameTypeModel_lower(_ value: FrameTypeModel) -> Ru
 }
 
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 
 package enum LocalizationState: Equatable, Hashable {
     
@@ -4784,8 +4862,7 @@ package func FfiConverterTypeLocalizationState_lower(_ value: LocalizationState)
 }
 
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 
 package enum LoggerEventLevel: Equatable, Hashable {
     
@@ -4852,7 +4929,8 @@ package func FfiConverterTypeLoggerEventLevel_lower(_ value: LoggerEventLevel) -
 
 
 
-package enum NbError: Swift.Error, Equatable, Hashable, Foundation.LocalizedError {
+package 
+enum NbError: Swift.Error, Equatable, Hashable, Foundation.LocalizedError {
 
     
     
@@ -4929,8 +5007,7 @@ package func FfiConverterTypeNBError_lower(_ value: NbError) -> RustBuffer {
     return FfiConverterTypeNBError.lower(value)
 }
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 
 package enum RenderingState: Equatable, Hashable {
     
@@ -5843,30 +5920,34 @@ package func uniffiForeignFutureHandleCountNativeblocksRuntime() -> Int {
     UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.count
 }
 package func disposeInstance(instanceName: String)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_func_dispose_instance(
-        FfiConverterString.lower(instanceName),$0
+        FfiConverterString.lower(instanceName),uniffiCallStatus
     )
 }
 }
 package func isValidInstanceName(name: String) -> Bool  {
     return try!  FfiConverterBool.lift(try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_func_is_valid_instance_name(
-        FfiConverterString.lower(name),$0
+        FfiConverterString.lower(name),uniffiCallStatus
     )
 })
 }
 package func provideLogger(instanceName: String, loggerType: String, logger: Logger)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_func_provide_logger(
         FfiConverterString.lower(instanceName),
         FfiConverterString.lower(loggerType),
-        FfiConverterCallbackInterfaceLogger_lower(logger),$0
+        FfiConverterCallbackInterfaceLogger_lower(logger),uniffiCallStatus
     )
 }
 }
 package func removeLogger(instanceName: String, loggerType: String)  {try! rustCall() {
+        uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_func_remove_logger(
         FfiConverterString.lower(instanceName),
-        FfiConverterString.lower(loggerType),$0
+        FfiConverterString.lower(loggerType),uniffiCallStatus
     )
 }
 }
@@ -5886,145 +5967,148 @@ private let initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_func_dispose_instance() != 8338) {
+    if (uniffi_nativeblocks_runtime_checksum_func_dispose_instance() != 30877) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_func_is_valid_instance_name() != 60594) {
+    if (uniffi_nativeblocks_runtime_checksum_func_is_valid_instance_name() != 58375) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_func_provide_logger() != 17662) {
+    if (uniffi_nativeblocks_runtime_checksum_func_provide_logger() != 49626) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_func_remove_logger() != 46009) {
+    if (uniffi_nativeblocks_runtime_checksum_func_remove_logger() != 20544) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_experiment_client() != 36989) {
+    if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_experiment_client() != 52830) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_frame_client() != 26806) {
+    if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_frame_client() != 45164) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_global_parameter_client() != 22549) {
+    if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_global_parameter_client() != 11886) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_localization_client() != 40357) {
+    if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_localization_client() != 49268) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_scaffold_client() != 12233) {
+    if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_scaffold_client() != 56494) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_experimentclient_get_experiment() != 64299) {
+    if (uniffi_nativeblocks_runtime_checksum_method_experimentclient_get_experiment() != 8941) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear() != 19078) {
+    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear() != 1033) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all() != 60829) {
+    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all() != 28639) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all_frame_states() != 61622) {
+    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all_frame_states() != 35559) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_frame_state() != 24260) {
+    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_frame_state() != 13381) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager() != 2735) {
+    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager() != 30380) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_sync_frame() != 57963) {
+    if (uniffi_nativeblocks_runtime_checksum_method_frameclient_sync_frame() != 61358) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_action() != 55091) {
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_action() != 46754) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_block() != 25667) {
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_block() != 45306) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_release() != 7950) {
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_release() != 13086) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 31603) {
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 7829) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable() != 34459) {
+    if (uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable() != 7803) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change() != 21114) {
+    if (uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change() != 11998) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_get_localization() != 34135) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_get_localization() != 30376) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_set_language_code() != 39407) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_set_language_code() != 55816) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_state_manager() != 35708) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_state_manager() != 64906) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_sync_localization() != 21594) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_sync_localization() != 48554) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_translate() != 63226) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_translate() != 36359) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_localization_state() != 57550) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_localization_state() != 14811) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_observe() != 5813) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_observe() != 22616) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_release() != 63441) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_release() != 17418) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_set_language_code() != 31868) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_set_language_code() != 5504) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_setup_localization() != 50525) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_setup_localization() != 20017) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_translate() != 58652) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_translate() != 38642) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_state_changed() != 63769) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_state_changed() != 13591) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_localization_changed() != 62924) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_localization_changed() != 32219) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_language_code_changed() != 32556) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_language_code_changed() != 34754) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_get_scaffold() != 1926) {
+    if (uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_clear() != 28831) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_httpclient_get() != 8710) {
+    if (uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_get_scaffold() != 55954) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_httpclient_post() != 22786) {
+    if (uniffi_nativeblocks_runtime_checksum_method_httpclient_get() != 33887) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_get() != 21439) {
+    if (uniffi_nativeblocks_runtime_checksum_method_httpclient_post() != 8902) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_set() != 27781) {
+    if (uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_get() != 30591) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_scriptengine_evaluate() != 36866) {
+    if (uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_set() != 30779) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_scriptbridge_get_variable() != 49508) {
+    if (uniffi_nativeblocks_runtime_checksum_method_scriptengine_evaluate() != 26972) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable() != 976) {
+    if (uniffi_nativeblocks_runtime_checksum_method_scriptbridge_get_variable() != 61132) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() != 50980) {
+    if (uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable() != 51465) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_constructor_scriptengine_new() != 769) {
+    if (uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() != 40008) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_logger_log() != 41625) {
+    if (uniffi_nativeblocks_runtime_checksum_constructor_scriptengine_new() != 40155) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nativeblocks_runtime_checksum_method_logger_log() != 51189) {
         return InitializationResult.apiChecksumMismatch
     }
 

@@ -16,11 +16,12 @@ pub(crate) fn get_or_create_client(container: &Container) -> Arc<ScaffoldClient>
 }
 
 fn build_repository(container: &Container) -> Arc<dyn ScaffoldRepository> {
-    return Arc::new(ScaffoldRepositoryImpl::new(
+    return ScaffoldRepositoryImpl::new(
         container.http(),
         container.environment().clone(),
         container.sdk_config().clone(),
+        container.caches().scaffold.clone(),
         container.config_client(),
         container.logger(),
-    ));
+    );
 }

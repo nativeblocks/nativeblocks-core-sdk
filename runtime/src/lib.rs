@@ -45,12 +45,12 @@ impl NativeblocksRuntime {
             return Err(NBError::from(error));
         }
 
-        let cache = match cache::build_provider(&cache_dir, environment.instance_name()) {
-            Ok(cache) => cache,
+        let caches = match cache::build_caches(&cache_dir, environment.instance_name()) {
+            Ok(caches) => caches,
             Err(error) => return Err(NBError::from(error)),
         };
 
-        let container = match di::get_or_create(&environment, &config, http, cache) {
+        let container = match di::get_or_create(&environment, &config, http, caches) {
             Ok(container) => container,
             Err(error) => return Err(NBError::from(error)),
         };

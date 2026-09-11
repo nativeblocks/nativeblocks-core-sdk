@@ -88,12 +88,7 @@ pub(in crate::feature::frame::data) async fn clear(
     return Ok(());
 }
 
-pub(in crate::feature::frame::data) async fn clear_all(
-    cache: &dyn CacheProvider,
-    routes: &[String],
-) -> NBResult<()> {
-    for route in routes {
-        clear(cache, route).await?;
-    }
+pub(in crate::feature::frame::data) async fn clear_all(cache: &dyn CacheProvider) -> NBResult<()> {
+    cache.clear().await?;
     return Ok(());
 }

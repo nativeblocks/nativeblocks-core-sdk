@@ -193,11 +193,12 @@ public class NativeblocksManager {
         return self
     }
 
-    /// Clear all frames from the cache.
+    /// Clear all frames and the scaffold from the cache.
     /// - Returns: The `NativeblocksManager` instance for chaining.
     @discardableResult
     public func clearAllFrames() async -> NativeblocksManager {
-        try? await injector.runtimeClient.frameClient.clearAll(routes: [])
+        try? await injector.runtimeClient.frameClient.clearAll()
+        try? await injector.runtimeClient.scaffoldClient.clear()
         return self
     }
 
@@ -226,10 +227,12 @@ public class NativeblocksManager {
     }
 
     /// Retrieves the scaffold for the frames asynchronously.
+    /// Returns the cached scaffold when available and refreshes the cache in the background.
+    /// - Parameter forceFetch: When `true`, ignores the cache and returns the scaffold from remote.
     /// - Returns: The `NativeScaffoldModel` on success, or the underlying error on failure.
-    public func getScaffold() async -> Result<NativeScaffoldModel, Error> {
+    public func getScaffold(forceFetch: Bool = false) async -> Result<NativeScaffoldModel, Error> {
         do {
-            return .success(try await injector.runtimeClient.scaffoldClient.getScaffold().toHost())
+            return .success(try await injector.runtimeClient.scaffoldClient.getScaffold(forceFetch: forceFetch).toHost())
         } catch {
             return .failure(error)
         }

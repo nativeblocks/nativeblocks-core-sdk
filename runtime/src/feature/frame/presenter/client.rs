@@ -71,11 +71,7 @@ impl FrameClient {
         return self.repository.clear(&route).await.map_err(NBError::from);
     }
 
-    pub async fn clear_all(&self, routes: Vec<String>) -> Result<(), NBError> {
-        return self
-            .repository
-            .clear_all(&routes)
-            .await
-            .map_err(NBError::from);
+    pub async fn clear_all(&self) -> Result<(), NBError> {
+        return self.repository.clear_all().await.map_err(NBError::from);
     }
 }

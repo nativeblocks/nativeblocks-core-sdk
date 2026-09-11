@@ -106,6 +106,43 @@ internal open class ForeignBytes : Structure() {
 
     class ByValue : ForeignBytes(), Structure.ByValue
 }
+
+// Converter for `&[u8]` / `[ByRef] bytes` arguments.
+//
+// Only `lower` is valid — zero-copy byte buffers only flow foreign -> Rust,
+// and only in argument position. `lift`, `read`, `write`, and
+// `allocationSize` have no sound implementation here and all panic at
+// runtime. The `FfiConverter` interface is implemented so that the
+// compiler enforces the full method set (rather than relying on eyeball).
+//
+// The provided `ByteBuffer` MUST be direct — only direct buffers have a
+// stable native address that JNA can expose via `getDirectBufferPointer`.
+// The returned `ForeignBytes.ByValue` is only valid for the duration of
+// the FFI call; the Rust side treats it as a borrow.
+internal object FfiConverterByRefBytes : FfiConverter<java.nio.ByteBuffer, ForeignBytes.ByValue> {
+    override fun lower(value: java.nio.ByteBuffer): ForeignBytes.ByValue {
+        require(value.isDirect) { "UniFFI zero-copy &[u8] requires a direct ByteBuffer. Use ByteBuffer.allocateDirect()." }
+        val remaining = value.remaining()
+        val fb = ForeignBytes.ByValue()
+        fb.len = remaining
+        // Zero-length direct buffers: skip getDirectBufferPointer (platform-variable behavior)
+        // and pass null. The Rust side treats (null, 0) as &[].
+        fb.data = if (remaining == 0) null else com.sun.jna.Native.getDirectBufferPointer(value)
+        return fb
+    }
+
+    override fun lift(value: ForeignBytes.ByValue): java.nio.ByteBuffer =
+        error("ByRef bytes cannot be lifted: zero-copy &[u8] only flows foreign->Rust")
+
+    override fun read(buf: java.nio.ByteBuffer): java.nio.ByteBuffer =
+        error("ByRef bytes cannot be read from a buffer: zero-copy &[u8] is only supported in argument position, not nested in records/options/etc.")
+
+    override fun write(value: java.nio.ByteBuffer, buf: java.nio.ByteBuffer): Unit =
+        error("ByRef bytes cannot be written to a buffer: zero-copy &[u8] is only supported in argument position, not nested in records/options/etc.")
+
+    override fun allocationSize(value: java.nio.ByteBuffer): ULong =
+        error("ByRef bytes have no RustBuffer allocation size: zero-copy &[u8] is only supported in argument position, not nested in records/options/etc.")
+}
 /**
  * The FfiConverter interface handles converter types to and from the FFI
  *
@@ -849,6 +886,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_language_code_changed(
     ): Int
+    external fun uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_clear(
+    ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_get_scaffold(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_httpclient_get(
@@ -895,265 +934,267 @@ internal object UniffiLib {
         
     }
     external fun uniffi_nativeblocks_runtime_fn_clone_nativeblocksruntime(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_nativeblocksruntime(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(`environment`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,`http`: Long,`cacheDir`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_experiment_client(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_frame_client(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_global_parameter_client(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_localization_client(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_scaffold_client(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_clone_experimentclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_experimentclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_experimentclient_get_experiment(`ptr`: Long,`key`: RustBuffer.ByValue,`cacheTtl`: RustBuffer.ByValue,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_clone_frameclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_frameclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_frameclient_clear(`ptr`: Long,`route`: RustBuffer.ByValue,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_frameclient_clear_all(`ptr`: Long,`routes`: RustBuffer.ByValue,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_frameclient_clear_all_frame_states(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_frameclient_clear_frame_state(`ptr`: Long,`stateKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_frameclient_state_manager(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_frameclient_sync_frame(`ptr`: Long,`route`: RustBuffer.ByValue,`parameters`: RustBuffer.ByValue,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_clone_framestatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_framestatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_action(`ptr`: Long,`event`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_block(`ptr`: Long,`event`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(`ptr`: Long,`route`: RustBuffer.ByValue,`args`: RustBuffer.ByValue,`stateKey`: RustBuffer.ByValue,`observer`: Long,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_variable(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_clone_framestateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_framestateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_framestateobserver(`vtable`: UniffiVTableCallbackInterfaceFrameStateObserver,
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_framestateobserver_on_frame_change(`ptr`: Long,`change`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_clone_localizationclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_localizationclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_get_localization(`ptr`: Long,`languageCode`: RustBuffer.ByValue,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_set_language_code(`ptr`: Long,`languageCode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_state_manager(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_sync_localization(`ptr`: Long,`languageCode`: RustBuffer.ByValue,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_translate(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_nativeblocks_runtime_fn_clone_localizationstatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_localizationstatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_localization_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_observe(`ptr`: Long,`observer`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_release(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_set_language_code(`ptr`: Long,`languageCode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_setup_localization(`ptr`: Long,`languageCode`: RustBuffer.ByValue,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_translate(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_nativeblocks_runtime_fn_clone_localizationstateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_localizationstateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_localizationstateobserver(`vtable`: UniffiVTableCallbackInterfaceLocalizationStateObserver,
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_state_changed(`ptr`: Long,`state`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_localization_changed(`ptr`: Long,`localizations`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_language_code_changed(`ptr`: Long,`languageCode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_clone_scaffoldclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_scaffoldclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_scaffoldclient_get_scaffold(`ptr`: Long,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_clone_httpclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_httpclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_httpclient(`vtable`: UniffiVTableCallbackInterfaceHttpClient,
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_httpclient_get(`ptr`: Long,`url`: RustBuffer.ByValue,`headers`: RustBuffer.ByValue,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_httpclient_post(`ptr`: Long,`url`: RustBuffer.ByValue,`headers`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
-): Long
-external fun uniffi_nativeblocks_runtime_fn_clone_globalparameterclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_globalparameterclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_globalparameterclient_get(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_nativeblocks_runtime_fn_method_globalparameterclient_set(`ptr`: Long,`parameters`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_clone_scriptengine(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_scriptengine(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_constructor_scriptengine_new(uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_method_scriptengine_evaluate(`ptr`: Long,`script`: RustBuffer.ByValue,`bridge`: Long,`timeoutMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_nativeblocks_runtime_fn_clone_scriptbridge(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun uniffi_nativeblocks_runtime_fn_free_scriptbridge(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_scriptbridge(`vtable`: UniffiVTableCallbackInterfaceScriptBridge,
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_method_scriptbridge_get_variable(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_variable(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_logger(`vtable`: UniffiVTableCallbackInterfaceLogger,
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_func_dispose_instance(`instanceName`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_func_is_valid_instance_name(`name`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Byte
-external fun uniffi_nativeblocks_runtime_fn_func_provide_logger(`instanceName`: RustBuffer.ByValue,`loggerType`: RustBuffer.ByValue,`logger`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun uniffi_nativeblocks_runtime_fn_func_remove_logger(`instanceName`: RustBuffer.ByValue,`loggerType`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun ffi_nativeblocks_runtime_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun ffi_nativeblocks_runtime_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun ffi_nativeblocks_runtime_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
-external fun ffi_nativeblocks_runtime_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun ffi_nativeblocks_runtime_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_u8(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_u8(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Int
-external fun ffi_nativeblocks_runtime_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_i8(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_i8(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Byte
-external fun ffi_nativeblocks_runtime_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_u16(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_u16(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Int
-external fun ffi_nativeblocks_runtime_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_i16(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_i16(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Short
-external fun ffi_nativeblocks_runtime_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_u32(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_u32(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Int
-external fun ffi_nativeblocks_runtime_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_i32(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_i32(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Int
-external fun ffi_nativeblocks_runtime_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_u64(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_u64(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun ffi_nativeblocks_runtime_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_i64(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_i64(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Long
-external fun ffi_nativeblocks_runtime_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_f32(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_f32(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Float
-external fun ffi_nativeblocks_runtime_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_f64(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_f64(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Double
-external fun ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_rust_buffer(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_rust_buffer(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): RustBuffer.ByValue
-external fun ffi_nativeblocks_runtime_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_cancel_void(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_free_void(`handle`: Long,
-): Unit
-external fun ffi_nativeblocks_runtime_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-): Unit
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_nativeblocksruntime(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(`environment`: RustBuffer.ByValue,`config`: RustBuffer.ByValue,`http`: Long,`cacheDir`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_experiment_client(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_frame_client(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_global_parameter_client(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_localization_client(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_scaffold_client(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_clone_experimentclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_experimentclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_experimentclient_get_experiment(`ptr`: Long,`key`: RustBuffer.ByValue,`cacheTtl`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_clone_frameclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_frameclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_frameclient_clear(`ptr`: Long,`route`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_frameclient_clear_all(`ptr`: Long,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_frameclient_clear_all_frame_states(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_frameclient_clear_frame_state(`ptr`: Long,`stateKey`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_frameclient_state_manager(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_frameclient_sync_frame(`ptr`: Long,`route`: RustBuffer.ByValue,`parameters`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_clone_framestatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_framestatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_action(`ptr`: Long,`event`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_block(`ptr`: Long,`event`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_release(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(`ptr`: Long,`route`: RustBuffer.ByValue,`args`: RustBuffer.ByValue,`stateKey`: RustBuffer.ByValue,`observer`: Long,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_variable(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_clone_framestateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_framestateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_framestateobserver(`vtable`: UniffiVTableCallbackInterfaceFrameStateObserver,
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_framestateobserver_on_frame_change(`ptr`: Long,`change`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_clone_localizationclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_localizationclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_get_localization(`ptr`: Long,`languageCode`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_set_language_code(`ptr`: Long,`languageCode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_state_manager(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_sync_localization(`ptr`: Long,`languageCode`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_translate(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_nativeblocks_runtime_fn_clone_localizationstatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_localizationstatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_localization_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_observe(`ptr`: Long,`observer`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_release(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_set_language_code(`ptr`: Long,`languageCode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_setup_localization(`ptr`: Long,`languageCode`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_translate(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_nativeblocks_runtime_fn_clone_localizationstateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_localizationstateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_localizationstateobserver(`vtable`: UniffiVTableCallbackInterfaceLocalizationStateObserver,
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_state_changed(`ptr`: Long,`state`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_localization_changed(`ptr`: Long,`localizations`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_language_code_changed(`ptr`: Long,`languageCode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_clone_scaffoldclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_scaffoldclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_scaffoldclient_clear(`ptr`: Long,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_scaffoldclient_get_scaffold(`ptr`: Long,`forceFetch`: Byte,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_clone_httpclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_httpclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_httpclient(`vtable`: UniffiVTableCallbackInterfaceHttpClient,
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_httpclient_get(`ptr`: Long,`url`: RustBuffer.ByValue,`headers`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_httpclient_post(`ptr`: Long,`url`: RustBuffer.ByValue,`headers`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_clone_globalparameterclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_globalparameterclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_globalparameterclient_get(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_nativeblocks_runtime_fn_method_globalparameterclient_set(`ptr`: Long,`parameters`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_clone_scriptengine(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_scriptengine(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_constructor_scriptengine_new(uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_scriptengine_evaluate(`ptr`: Long,`script`: RustBuffer.ByValue,`bridge`: Long,`timeoutMs`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_nativeblocks_runtime_fn_clone_scriptbridge(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_free_scriptbridge(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_scriptbridge(`vtable`: UniffiVTableCallbackInterfaceScriptBridge,
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_method_scriptbridge_get_variable(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_variable(`ptr`: Long,`key`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_init_callback_vtable_logger(`vtable`: UniffiVTableCallbackInterfaceLogger,
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_func_dispose_instance(`instanceName`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_func_is_valid_instance_name(`name`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Byte
+    external fun uniffi_nativeblocks_runtime_fn_func_provide_logger(`instanceName`: RustBuffer.ByValue,`loggerType`: RustBuffer.ByValue,`logger`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_nativeblocks_runtime_fn_func_remove_logger(`instanceName`: RustBuffer.ByValue,`loggerType`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun ffi_nativeblocks_runtime_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun ffi_nativeblocks_runtime_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun ffi_nativeblocks_runtime_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_u8(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_u8(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Int
+    external fun ffi_nativeblocks_runtime_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_i8(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_i8(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Byte
+    external fun ffi_nativeblocks_runtime_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_u16(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_u16(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Int
+    external fun ffi_nativeblocks_runtime_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_i16(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_i16(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Short
+    external fun ffi_nativeblocks_runtime_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_u32(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_u32(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Int
+    external fun ffi_nativeblocks_runtime_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_i32(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_i32(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Int
+    external fun ffi_nativeblocks_runtime_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_u64(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_u64(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun ffi_nativeblocks_runtime_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_i64(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_i64(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun ffi_nativeblocks_runtime_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_f32(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_f32(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Float
+    external fun ffi_nativeblocks_runtime_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_f64(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_f64(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Double
+    external fun ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_rust_buffer(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_rust_buffer(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun ffi_nativeblocks_runtime_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_cancel_void(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_free_void(`handle`: Long,
+    ): Unit
+    external fun ffi_nativeblocks_runtime_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
 
-    
+        
 }
 
 private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
@@ -1167,145 +1208,148 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if (lib.uniffi_nativeblocks_runtime_checksum_func_dispose_instance() != 8338) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_func_dispose_instance() and 0xFFFF) != 30877) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_func_is_valid_instance_name() != 60594) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_func_is_valid_instance_name() and 0xFFFF) != 58375) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_func_provide_logger() != 17662) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_func_provide_logger() and 0xFFFF) != 49626) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_func_remove_logger() != 46009) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_func_remove_logger() and 0xFFFF) != 20544) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_experiment_client() != 36989) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_experiment_client() and 0xFFFF) != 52830) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_frame_client() != 26806) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_frame_client() and 0xFFFF) != 45164) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_global_parameter_client() != 22549) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_global_parameter_client() and 0xFFFF) != 11886) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_localization_client() != 40357) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_localization_client() and 0xFFFF) != 49268) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_scaffold_client() != 12233) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_scaffold_client() and 0xFFFF) != 56494) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_experimentclient_get_experiment() != 64299) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_experimentclient_get_experiment() and 0xFFFF) != 8941) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear() != 19078) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear() and 0xFFFF) != 1033) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all() != 60829) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all() and 0xFFFF) != 28639) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all_frame_states() != 61622) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_all_frame_states() and 0xFFFF) != 35559) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_frame_state() != 24260) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_clear_frame_state() and 0xFFFF) != 13381) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager() != 2735) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_state_manager() and 0xFFFF) != 30380) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_sync_frame() != 57963) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_frameclient_sync_frame() and 0xFFFF) != 61358) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_action() != 55091) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_action() and 0xFFFF) != 46754) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_block() != 25667) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_log_block() and 0xFFFF) != 45306) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_release() != 7950) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_release() and 0xFFFF) != 13086) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() != 31603) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_setup_frame() and 0xFFFF) != 7829) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable() != 34459) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_framestatemanager_update_variable() and 0xFFFF) != 7803) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change() != 21114) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_framestateobserver_on_frame_change() and 0xFFFF) != 11998) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_get_localization() != 34135) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_get_localization() and 0xFFFF) != 30376) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_set_language_code() != 39407) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_set_language_code() and 0xFFFF) != 55816) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_state_manager() != 35708) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_state_manager() and 0xFFFF) != 64906) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_sync_localization() != 21594) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_sync_localization() and 0xFFFF) != 48554) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_translate() != 63226) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_translate() and 0xFFFF) != 36359) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_localization_state() != 57550) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_localization_state() and 0xFFFF) != 14811) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_observe() != 5813) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_observe() and 0xFFFF) != 22616) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_release() != 63441) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_release() and 0xFFFF) != 17418) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_set_language_code() != 31868) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_set_language_code() and 0xFFFF) != 5504) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_setup_localization() != 50525) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_setup_localization() and 0xFFFF) != 20017) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_translate() != 58652) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_translate() and 0xFFFF) != 38642) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_state_changed() != 63769) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_state_changed() and 0xFFFF) != 13591) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_localization_changed() != 62924) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_localization_changed() and 0xFFFF) != 32219) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_language_code_changed() != 32556) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_language_code_changed() and 0xFFFF) != 34754) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_get_scaffold() != 1926) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_clear() and 0xFFFF) != 28831) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_httpclient_get() != 8710) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_scaffoldclient_get_scaffold() and 0xFFFF) != 55954) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_httpclient_post() != 22786) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_httpclient_get() and 0xFFFF) != 33887) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_get() != 21439) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_httpclient_post() and 0xFFFF) != 8902) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_set() != 27781) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_get() and 0xFFFF) != 30591) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_scriptengine_evaluate() != 36866) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_set() and 0xFFFF) != 30779) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_scriptbridge_get_variable() != 49508) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_scriptengine_evaluate() and 0xFFFF) != 26972) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable() != 976) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_scriptbridge_get_variable() and 0xFFFF) != 61132) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() != 50980) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable() and 0xFFFF) != 51465) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_constructor_scriptengine_new() != 769) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() and 0xFFFF) != 40008) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_nativeblocks_runtime_checksum_method_logger_log() != 41625) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_constructor_scriptengine_new() and 0xFFFF) != 40155) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_logger_log() and 0xFFFF) != 51189) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1881,6 +1925,11 @@ internal open class ExperimentClient: Disposable, AutoCloseable, ExperimentClien
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
     override fun destroy() {
         // Only allow a single call to this method.
         // TODO: maybe we should log a warning if called more than once?
@@ -1954,7 +2003,9 @@ internal open class ExperimentClient: Disposable, AutoCloseable, ExperimentClien
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_experimentclient_get_experiment(
                 uniffiHandle,
-                FfiConverterString.lower(`key`),FfiConverterOptionalLong.lower(`cacheTtl`),
+                
+        FfiConverterString.lower(`key`),
+        FfiConverterOptionalLong.lower(`cacheTtl`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -2105,7 +2156,7 @@ internal interface FrameClientInterface {
     
     suspend fun `clear`(`route`: kotlin.String)
     
-    suspend fun `clearAll`(`routes`: List<kotlin.String>)
+    suspend fun `clearAll`()
     
     fun `clearAllFrameStates`()
     
@@ -2148,6 +2199,11 @@ internal open class FrameClient: Disposable, AutoCloseable, FrameClientInterface
 
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
+
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
 
     override fun destroy() {
         // Only allow a single call to this method.
@@ -2222,7 +2278,8 @@ internal open class FrameClient: Disposable, AutoCloseable, FrameClientInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_frameclient_clear(
                 uniffiHandle,
-                FfiConverterString.lower(`route`),
+                
+        FfiConverterString.lower(`route`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(future, callback, continuation) },
@@ -2239,12 +2296,12 @@ internal open class FrameClient: Disposable, AutoCloseable, FrameClientInterface
     
     @Throws(NbException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `clearAll`(`routes`: List<kotlin.String>) {
+    override suspend fun `clearAll`() {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_frameclient_clear_all(
                 uniffiHandle,
-                FfiConverterSequenceString.lower(`routes`),
+                
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(future, callback, continuation) },
@@ -2276,6 +2333,7 @@ internal open class FrameClient: Disposable, AutoCloseable, FrameClientInterface
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_frameclient_clear_frame_state(
         it,
+        
         FfiConverterString.lower(`stateKey`),_status)
 }
     }
@@ -2303,7 +2361,9 @@ internal open class FrameClient: Disposable, AutoCloseable, FrameClientInterface
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_frameclient_sync_frame(
                 uniffiHandle,
-                FfiConverterString.lower(`route`),FfiConverterMapStringString.lower(`parameters`),
+                
+        FfiConverterString.lower(`route`),
+        FfiConverterMapStringString.lower(`parameters`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(future, callback, continuation) },
@@ -2497,6 +2557,11 @@ internal open class FrameStateManager: Disposable, AutoCloseable, FrameStateMana
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
     override fun destroy() {
         // Only allow a single call to this method.
         // TODO: maybe we should log a warning if called more than once?
@@ -2568,6 +2633,7 @@ internal open class FrameStateManager: Disposable, AutoCloseable, FrameStateMana
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_action(
         it,
+        
         FfiConverterTypeActionLogEvent.lower(`event`),_status)
 }
     }
@@ -2580,6 +2646,7 @@ internal open class FrameStateManager: Disposable, AutoCloseable, FrameStateMana
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_log_block(
         it,
+        
         FfiConverterTypeBlockLogEvent.lower(`event`),_status)
 }
     }
@@ -2605,7 +2672,11 @@ internal open class FrameStateManager: Disposable, AutoCloseable, FrameStateMana
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_setup_frame(
                 uniffiHandle,
-                FfiConverterString.lower(`route`),FfiConverterMapStringString.lower(`args`),FfiConverterOptionalString.lower(`stateKey`),FfiConverterTypeFrameStateObserver.lower(`observer`),
+                
+        FfiConverterString.lower(`route`),
+        FfiConverterMapStringString.lower(`args`),
+        FfiConverterOptionalString.lower(`stateKey`),
+        FfiConverterTypeFrameStateObserver.lower(`observer`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(future, callback, continuation) },
@@ -2625,7 +2696,9 @@ internal open class FrameStateManager: Disposable, AutoCloseable, FrameStateMana
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestatemanager_update_variable(
         it,
-        FfiConverterString.lower(`key`),FfiConverterString.lower(`value`),_status)
+        
+        FfiConverterString.lower(`key`),
+        FfiConverterString.lower(`value`),_status)
 }
     }
     
@@ -2803,6 +2876,11 @@ internal open class FrameStateObserverImpl: Disposable, AutoCloseable, FrameStat
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
     override fun destroy() {
         // Only allow a single call to this method.
         // TODO: maybe we should log a warning if called more than once?
@@ -2874,6 +2952,7 @@ internal open class FrameStateObserverImpl: Disposable, AutoCloseable, FrameStat
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_framestateobserver_on_frame_change(
         it,
+        
         FfiConverterTypeFrameChangeType.lower(`change`),_status)
 }
     }
@@ -3110,6 +3189,11 @@ internal open class GlobalParameterClient: Disposable, AutoCloseable, GlobalPara
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
     override fun destroy() {
         // Only allow a single call to this method.
         // TODO: maybe we should log a warning if called more than once?
@@ -3194,6 +3278,7 @@ internal open class GlobalParameterClient: Disposable, AutoCloseable, GlobalPara
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_globalparameterclient_set(
         it,
+        
         FfiConverterMapStringString.lower(`parameters`),_status)
 }
     }
@@ -3374,6 +3459,11 @@ internal open class HttpClientImpl: Disposable, AutoCloseable, HttpClient
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
     override fun destroy() {
         // Only allow a single call to this method.
         // TODO: maybe we should log a warning if called more than once?
@@ -3447,7 +3537,9 @@ internal open class HttpClientImpl: Disposable, AutoCloseable, HttpClient
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_httpclient_get(
                 uniffiHandle,
-                FfiConverterString.lower(`url`),FfiConverterMapStringString.lower(`headers`),
+                
+        FfiConverterString.lower(`url`),
+        FfiConverterMapStringString.lower(`headers`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -3468,7 +3560,10 @@ internal open class HttpClientImpl: Disposable, AutoCloseable, HttpClient
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_httpclient_post(
                 uniffiHandle,
-                FfiConverterString.lower(`url`),FfiConverterMapStringString.lower(`headers`),FfiConverterString.lower(`body`),
+                
+        FfiConverterString.lower(`url`),
+        FfiConverterMapStringString.lower(`headers`),
+        FfiConverterString.lower(`body`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -3777,6 +3872,11 @@ internal open class LocalizationClient: Disposable, AutoCloseable, LocalizationC
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
     override fun destroy() {
         // Only allow a single call to this method.
         // TODO: maybe we should log a warning if called more than once?
@@ -3850,7 +3950,8 @@ internal open class LocalizationClient: Disposable, AutoCloseable, LocalizationC
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationclient_get_localization(
                 uniffiHandle,
-                FfiConverterString.lower(`languageCode`),
+                
+        FfiConverterString.lower(`languageCode`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -3869,6 +3970,7 @@ internal open class LocalizationClient: Disposable, AutoCloseable, LocalizationC
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationclient_set_language_code(
         it,
+        
         FfiConverterString.lower(`languageCode`),_status)
 }
     }
@@ -3896,7 +3998,8 @@ internal open class LocalizationClient: Disposable, AutoCloseable, LocalizationC
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationclient_sync_localization(
                 uniffiHandle,
-                FfiConverterString.lower(`languageCode`),
+                
+        FfiConverterString.lower(`languageCode`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(future, callback, continuation) },
@@ -3916,6 +4019,7 @@ internal open class LocalizationClient: Disposable, AutoCloseable, LocalizationC
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationclient_translate(
         it,
+        
         FfiConverterString.lower(`key`),_status)
 }
     }
@@ -4105,6 +4209,11 @@ internal open class LocalizationStateManager: Disposable, AutoCloseable, Localiz
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
     override fun destroy() {
         // Only allow a single call to this method.
         // TODO: maybe we should log a warning if called more than once?
@@ -4189,6 +4298,7 @@ internal open class LocalizationStateManager: Disposable, AutoCloseable, Localiz
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_observe(
         it,
+        
         FfiConverterTypeLocalizationStateObserver.lower(`observer`),_status)
 }
     }
@@ -4213,6 +4323,7 @@ internal open class LocalizationStateManager: Disposable, AutoCloseable, Localiz
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_set_language_code(
         it,
+        
         FfiConverterString.lower(`languageCode`),_status)
 }
     }
@@ -4226,7 +4337,8 @@ internal open class LocalizationStateManager: Disposable, AutoCloseable, Localiz
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_setup_localization(
                 uniffiHandle,
-                FfiConverterString.lower(`languageCode`),
+                
+        FfiConverterString.lower(`languageCode`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(future, callback, continuation) },
@@ -4246,6 +4358,7 @@ internal open class LocalizationStateManager: Disposable, AutoCloseable, Localiz
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_translate(
         it,
+        
         FfiConverterString.lower(`key`),_status)
 }
     }
@@ -4429,6 +4542,11 @@ internal open class LocalizationStateObserverImpl: Disposable, AutoCloseable, Lo
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
     override fun destroy() {
         // Only allow a single call to this method.
         // TODO: maybe we should log a warning if called more than once?
@@ -4500,6 +4618,7 @@ internal open class LocalizationStateObserverImpl: Disposable, AutoCloseable, Lo
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_state_changed(
         it,
+        
         FfiConverterTypeLocalizationState.lower(`state`),_status)
 }
     }
@@ -4512,6 +4631,7 @@ internal open class LocalizationStateObserverImpl: Disposable, AutoCloseable, Lo
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_localization_changed(
         it,
+        
         FfiConverterMapStringString.lower(`localizations`),_status)
 }
     }
@@ -4524,6 +4644,7 @@ internal open class LocalizationStateObserverImpl: Disposable, AutoCloseable, Lo
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstateobserver_on_language_code_changed(
         it,
+        
         FfiConverterOptionalString.lower(`languageCode`),_status)
 }
     }
@@ -4790,7 +4911,11 @@ internal open class NativeblocksRuntime: Disposable, AutoCloseable, Nativeblocks
     uniffiRustCallWithError(NbException) { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(
     
-        FfiConverterTypeNativeblocksEnvironment.lower(`environment`),FfiConverterTypeSdkConfig.lower(`config`),FfiConverterTypeHttpClient.lower(`http`),FfiConverterString.lower(`cacheDir`),_status)
+        
+        FfiConverterTypeNativeblocksEnvironment.lower(`environment`),
+        FfiConverterTypeSdkConfig.lower(`config`),
+        FfiConverterTypeHttpClient.lower(`http`),
+        FfiConverterString.lower(`cacheDir`),_status)
 }
     )
 
@@ -4799,6 +4924,11 @@ internal open class NativeblocksRuntime: Disposable, AutoCloseable, Nativeblocks
 
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
+
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
 
     override fun destroy() {
         // Only allow a single call to this method.
@@ -5066,7 +5196,9 @@ internal object FfiConverterTypeNativeblocksRuntime: FfiConverter<NativeblocksRu
 
 internal interface ScaffoldClientInterface {
     
-    suspend fun `getScaffold`(): ScaffoldModel
+    suspend fun `clear`()
+    
+    suspend fun `getScaffold`(`forceFetch`: kotlin.Boolean): ScaffoldModel
     
     companion object
 }
@@ -5101,6 +5233,11 @@ internal open class ScaffoldClient: Disposable, AutoCloseable, ScaffoldClientInt
 
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
+
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
 
     override fun destroy() {
         // Only allow a single call to this method.
@@ -5170,12 +5307,35 @@ internal open class ScaffoldClient: Disposable, AutoCloseable, ScaffoldClientInt
     
     @Throws(NbException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `getScaffold`() : ScaffoldModel {
+    override suspend fun `clear`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_nativeblocks_runtime_fn_method_scaffoldclient_clear(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        NbException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(NbException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getScaffold`(`forceFetch`: kotlin.Boolean) : ScaffoldModel {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_nativeblocks_runtime_fn_method_scaffoldclient_get_scaffold(
                 uniffiHandle,
                 
+        FfiConverterBoolean.lower(`forceFetch`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -5362,6 +5522,11 @@ internal open class ScriptBridgeImpl: Disposable, AutoCloseable, ScriptBridge
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
     override fun destroy() {
         // Only allow a single call to this method.
         // TODO: maybe we should log a warning if called more than once?
@@ -5433,6 +5598,7 @@ internal open class ScriptBridgeImpl: Disposable, AutoCloseable, ScriptBridge
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_scriptbridge_get_variable(
         it,
+        
         FfiConverterString.lower(`key`),_status)
 }
     }
@@ -5446,7 +5612,9 @@ internal open class ScriptBridgeImpl: Disposable, AutoCloseable, ScriptBridge
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_scriptbridge_update_variable(
         it,
-        FfiConverterString.lower(`key`),FfiConverterString.lower(`value`),_status)
+        
+        FfiConverterString.lower(`key`),
+        FfiConverterString.lower(`value`),_status)
 }
     }
     
@@ -5702,6 +5870,11 @@ internal open class ScriptEngine: Disposable, AutoCloseable, ScriptEngineInterfa
     private val wasDestroyed = AtomicBoolean(false)
     private val callCounter = AtomicLong(1)
 
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
     override fun destroy() {
         // Only allow a single call to this method.
         // TODO: maybe we should log a warning if called more than once?
@@ -5773,7 +5946,10 @@ internal open class ScriptEngine: Disposable, AutoCloseable, ScriptEngineInterfa
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_scriptengine_evaluate(
         it,
-        FfiConverterString.lower(`script`),FfiConverterTypeScriptBridge.lower(`bridge`),FfiConverterULong.lower(`timeoutMs`),_status)
+        
+        FfiConverterString.lower(`script`),
+        FfiConverterTypeScriptBridge.lower(`bridge`),
+        FfiConverterULong.lower(`timeoutMs`),_status)
 }
     }
     )
@@ -6970,7 +7146,7 @@ internal object FfiConverterTypeActionLogEvent : FfiConverterRustBuffer<ActionLo
         }
     }
 
-    override fun allocationSize(value: ActionLogEvent) = when(value) {
+    override fun allocationSize(value: ActionLogEvent): ULong = when(value) {
         is ActionLogEvent.EventIgnored -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
@@ -7165,7 +7341,7 @@ internal object FfiConverterTypeBlockLogEvent : FfiConverterRustBuffer<BlockLogE
         }
     }
 
-    override fun allocationSize(value: BlockLogEvent) = when(value) {
+    override fun allocationSize(value: BlockLogEvent): ULong = when(value) {
         is BlockLogEvent.BlockFallback -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
@@ -7327,7 +7503,7 @@ internal object FfiConverterTypeFrameChangeType : FfiConverterRustBuffer<FrameCh
         }
     }
 
-    override fun allocationSize(value: FrameChangeType) = when(value) {
+    override fun allocationSize(value: FrameChangeType): ULong = when(value) {
         is FrameChangeType.Full -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
@@ -7441,7 +7617,7 @@ internal object FfiConverterTypeLocalizationState : FfiConverterRustBuffer<Local
         }
     }
 
-    override fun allocationSize(value: LocalizationState) = when(value) {
+    override fun allocationSize(value: LocalizationState): ULong = when(value) {
         is LocalizationState.Loading -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
@@ -7634,7 +7810,7 @@ internal object FfiConverterTypeRenderingState : FfiConverterRustBuffer<Renderin
         }
     }
 
-    override fun allocationSize(value: RenderingState) = when(value) {
+    override fun allocationSize(value: RenderingState): ULong = when(value) {
         is RenderingState.Loading -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
@@ -8515,6 +8691,7 @@ internal object FfiConverterMapStringSequenceTypeNativeActionModel: FfiConverter
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_func_dispose_instance(
     
+        
         FfiConverterString.lower(`instanceName`),_status)
 }
     
@@ -8524,6 +8701,7 @@ internal object FfiConverterMapStringSequenceTypeNativeActionModel: FfiConverter
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_func_is_valid_instance_name(
     
+        
         FfiConverterString.lower(`name`),_status)
 }
     )
@@ -8534,7 +8712,10 @@ internal object FfiConverterMapStringSequenceTypeNativeActionModel: FfiConverter
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_func_provide_logger(
     
-        FfiConverterString.lower(`instanceName`),FfiConverterString.lower(`loggerType`),FfiConverterTypeLogger.lower(`logger`),_status)
+        
+        FfiConverterString.lower(`instanceName`),
+        FfiConverterString.lower(`loggerType`),
+        FfiConverterTypeLogger.lower(`logger`),_status)
 }
     
     
@@ -8543,7 +8724,9 @@ internal object FfiConverterMapStringSequenceTypeNativeActionModel: FfiConverter
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_func_remove_logger(
     
-        FfiConverterString.lower(`instanceName`),FfiConverterString.lower(`loggerType`),_status)
+        
+        FfiConverterString.lower(`instanceName`),
+        FfiConverterString.lower(`loggerType`),_status)
 }
     
     

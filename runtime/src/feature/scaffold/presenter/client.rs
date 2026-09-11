@@ -17,7 +17,11 @@ impl ScaffoldClient {
 
 #[uniffi::export(async_runtime = "tokio")]
 impl ScaffoldClient {
-    pub async fn get_scaffold(&self) -> Result<ScaffoldModel, NBError> {
-        return self.repository.fetch().await.map_err(NBError::from);
+    pub async fn get_scaffold(&self, force_fetch: bool) -> Result<ScaffoldModel, NBError> {
+        return self.repository.fetch(force_fetch).await.map_err(NBError::from);
+    }
+
+    pub async fn clear(&self) -> Result<(), NBError> {
+        return self.repository.clear().await.map_err(NBError::from);
     }
 }

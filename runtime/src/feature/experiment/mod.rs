@@ -22,7 +22,7 @@ fn build_repository(container: &Container) -> Arc<dyn ExperimentRepository> {
         container.http(),
         container.environment().clone(),
         container.sdk_config().clone(),
-        container.cache(),
+        container.caches().experiments.clone(),
         container.config_client(),
         container.logger(),
     ));

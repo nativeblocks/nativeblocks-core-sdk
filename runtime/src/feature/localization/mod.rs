@@ -20,7 +20,7 @@ fn build_repository(container: &Container) -> Arc<dyn LocalizationRepository> {
         container.http(),
         container.environment().clone(),
         container.sdk_config().clone(),
-        container.cache(),
+        container.caches().localizations.clone(),
         container.config_client(),
         container.logger(),
     ));

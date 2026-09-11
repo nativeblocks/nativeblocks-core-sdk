@@ -14,4 +14,6 @@ pub(crate) trait CacheProvider: Send + Sync {
     async fn remove(&self, key: String) -> Result<(), NBError>;
 
     async fn has(&self, key: String) -> Result<bool, NBError>;
+
+    async fn clear(&self) -> Result<(), NBError>;
 }

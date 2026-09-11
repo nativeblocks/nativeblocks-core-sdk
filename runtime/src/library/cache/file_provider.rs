@@ -18,11 +18,12 @@ pub(crate) struct FileCacheProvider {
 }
 
 impl FileCacheProvider {
-    pub(crate) fn new(cache_dir: &str, instance_name: &str) -> NBResult<Self> {
+    pub(crate) fn new(cache_dir: &str, instance_name: &str, namespace: &str) -> NBResult<Self> {
         let cache_root_dir = Path::new(cache_dir)
             .join(ROOT_DIR)
             .join(FORMAT_DIR)
-            .join(instance_name);
+            .join(instance_name)
+            .join(namespace);
 
         fs::create_dir_all(&cache_root_dir)
             .map_err(|error| ErrorModel::cache(error.to_string()))?;
@@ -160,6 +161,23 @@ impl CacheProvider for FileCacheProvider {
                 return Ok(false);
             }
             return Ok(true);
+        })
+        .await
+        .map_err(NBError::from);
+    }
+
+    async fn clear(&self) -> Result<(), NBError> {
+        let dir = self.cache_root_dir.clone();
+        return offload(move || {
+            let Ok(entries) = fs::read_dir(&dir) else {
+                return Ok(());
+            };
+            for entry in entries.flatten() {
+                if entry.path().is_file() {
+                    let _ = fs::remove_file(entry.path());
+                }
+            }
+            return Ok(());
         })
         .await
         .map_err(NBError::from);

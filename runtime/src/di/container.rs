@@ -2,7 +2,7 @@ use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use crate::library::cache::CacheProvider;
+use crate::library::cache::Caches;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::library::net::network::HttpClient;
 use crate::plugin::config::build_client;
@@ -14,7 +14,7 @@ pub(crate) struct Container {
     environment: NativeblocksEnvironment,
     sdk_config: SdkConfig,
     http: Arc<dyn HttpClient>,
-    cache: Arc<dyn CacheProvider>,
+    caches: Caches,
     logger: Arc<Mutex<NativeLoggerProvider>>,
     global_parameters: Arc<GlobalParameterProvider>,
     config_client: Mutex<Option<Arc<config::Client>>>,
@@ -26,14 +26,14 @@ impl Container {
         environment: NativeblocksEnvironment,
         sdk_config: SdkConfig,
         http: Arc<dyn HttpClient>,
-        cache: Arc<dyn CacheProvider>,
+        caches: Caches,
     ) -> Self {
         let logger = logger::get_or_create(environment.instance_name());
         return Self {
             environment,
             sdk_config,
             http,
-            cache,
+            caches,
             logger,
             global_parameters: global_parameter::build_provider(),
             config_client: Mutex::new(None),
@@ -53,8 +53,8 @@ impl Container {
         return self.http.clone();
     }
 
-    pub(crate) fn cache(&self) -> Arc<dyn CacheProvider> {
-        return self.cache.clone();
+    pub(crate) fn caches(&self) -> &Caches {
+        return &self.caches;
     }
 
     pub(crate) fn logger(&self) -> Arc<Mutex<NativeLoggerProvider>> {
@@ -74,7 +74,7 @@ impl Container {
             self.environment.clone(),
             self.sdk_config.clone(),
             self.http.clone(),
-            self.cache.clone(),
+            self.caches.config.clone(),
         );
         *guard = Some(client.clone());
         return client;

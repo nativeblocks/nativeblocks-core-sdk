@@ -18,5 +18,5 @@ pub(crate) trait FrameRepository: Send + Sync {
 
     async fn clear(&self, route: &str) -> NBResult<()>;
 
-    async fn clear_all(&self, routes: &[String]) -> NBResult<()>;
+    async fn clear_all(&self) -> NBResult<()>;
 }

@@ -26,10 +26,7 @@ impl MemoryFrameSource {
         self.frames.lock().unwrap().remove(route);
     }
 
-    pub(crate) fn clear_all(&self, routes: &[String]) {
-        let mut frames = self.frames.lock().unwrap();
-        for route in routes {
-            frames.remove(route);
-        }
+    pub(crate) fn clear_all(&self) {
+        self.frames.lock().unwrap().clear();
     }
 }
