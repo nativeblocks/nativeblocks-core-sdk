@@ -18,20 +18,18 @@ path = "src/bin/uniffi-bindgen.rs"
 required-features = ["uniffi-cli"]
 
 [features]
-default = ["script-quickjs"]
 uniffi-cli = ["uniffi/cli"]
-script-quickjs = ["dep:rquickjs"]
-script-quickjs-bindgen = ["script-quickjs", "rquickjs/bindgen"]
+script-quickjs-bindgen = ["rquickjs/bindgen"]
 
 [dependencies]
 uniffi = { version = "0.32.1", features = ["tokio"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rkyv = { version = "0.8.17" }
+rkyv = { version = "0.8.18" }
 async-trait = "0.1"
 tokio = { version = "1", default-features = false, features = ["sync", "rt-multi-thread"] }
 uuid = { version = "1", features = ["v7"] }
-rquickjs = { version = "0.12.1", optional = true }
+rquickjs = { version = "0.13.0" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
