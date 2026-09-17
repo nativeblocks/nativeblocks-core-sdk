@@ -3,26 +3,26 @@ import NativeblocksRuntime
 import SwiftUI
 
 @Block(
-    name: "Box",
-    keyType: "nativeblocks/box",
+    name: "ZStack",
+    keyType: "nativeblocks/zstack",
     description: "Stacking layout container; style it by attaching modifiers.",
     version: 1,
     versionName: "1"
 )
-struct Box<Content: View>: View {
+struct ZStack<Content: View>: View {
     var blockContext: BlockContext? = nil
 
     @BlockData(
-        description: "Children alignment (topStart, topCenter, topEnd, centerStart, center, centerEnd, bottomStart, bottomCenter, bottomEnd).",
-        defaultValue: "topStart"
+        description: "Children alignment (topLeading, top, topTrailing, leading, center, trailing, bottomLeading, bottom, bottomTrailing).",
+        defaultValue: "topLeading"
     )
     var contentAlignment: Alignment = .topLeading
 
-    @BlockSlot(description: "Slot for composing child content within the box.")
+    @BlockSlot(description: "Slot for composing child content within the stack.")
     var content: (BlockIndex) -> Content
 
     var body: some View {
-        ZStack(alignment: contentAlignment) {
+        SwiftUI.ZStack(alignment: contentAlignment) {
             content(-1)
         }
         .modifier(blockContext?.modifier ?? .none)

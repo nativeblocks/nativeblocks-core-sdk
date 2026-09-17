@@ -3,13 +3,13 @@ import NativeblocksRuntime
 import SwiftUI
 
 @Modifier(
-    name: "Alpha",
-    keyType: "nativeblocks/alpha",
+    name: "Opacity",
+    keyType: "nativeblocks/opacity",
     description: "Sets the opacity of the block.",
     version: 1,
     versionName: "1"
 )
-struct Alpha: ViewModifier {
+struct Opacity: ViewModifier {
 
     @ModifierData(description: "Opacity between 0.0 (transparent) and 1.0 (opaque).", defaultValue: "1.0")
     var value: Double = 1

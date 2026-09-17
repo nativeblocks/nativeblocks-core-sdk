@@ -34,7 +34,7 @@ func parseColor(_ value: String) -> Color? {
 }
 
 /// Builds a gradient style of the given type. Linear gradients honor `angleDegrees`,
-/// where 0 flows start-to-end and 90 flows top-to-bottom.
+/// where 0 flows leading-to-trailing and 90 flows top-to-bottom.
 func gradientStyle(_ type: String, _ colors: [Color], _ angleDegrees: Double) -> AnyShapeStyle {
     switch type {
     case GRADIENT_RADIAL:

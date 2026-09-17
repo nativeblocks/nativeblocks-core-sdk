@@ -3,17 +3,17 @@ import NativeblocksRuntime
 import SwiftUI
 
 @Block(
-    name: "Lazy Row",
-    keyType: "nativeblocks/lazy_row",
+    name: "Lazy HStack",
+    keyType: "nativeblocks/lazy_hstack",
     description: "Scrollable horizontal list; style it by attaching modifiers.",
     version: 1,
     versionName: "1"
 )
-struct LazyRow<Content: View>: View {
+struct LazyHStack<Content: View>: View {
     var blockContext: BlockContext? = nil
 
     @BlockData(
-        description: "Vertical alignment of children (top, bottom, center).",
+        description: "Vertical alignment of children (top, center, bottom).",
         defaultValue: "top"
     )
     var verticalAlignment: VerticalAlignment = .top
@@ -26,7 +26,7 @@ struct LazyRow<Content: View>: View {
 
     var body: some View {
         ScrollView(.horizontal) {
-            LazyHStack(alignment: verticalAlignment, spacing: spacing) {
+            SwiftUI.LazyHStack(alignment: verticalAlignment, spacing: spacing) {
                 content(blockContext?.scope ?? ())
             }
         }

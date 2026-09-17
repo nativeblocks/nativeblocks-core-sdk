@@ -13,7 +13,7 @@ koinBom = "4.1.1"
 datastore = "1.2.1"
 zxingCore = "3.5.4"
 zxingEmbedded = "4.3.0"
-nativeblocksRuntime = "0.1.0"
+nativeblocksRuntime = "0.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

@@ -66,6 +66,23 @@ PY
     wrote=$((wrote + 1))
 done
 
+nb_step "ios SDKConfig"
+ios_version="$(nb_version ios)"
+sdk_config="$NB_ROOT/platforms/ios/runtime/Sources/NativeblocksRuntime/api/util/SDKConfig.swift"
+rel="${sdk_config#"$NB_ROOT"/}"
+ios_have="$(sed -nE 's/.*SDK_VERSION: String = "([^"]*)".*/\1/p' "$sdk_config")"
+
+if [ "$ios_have" = "$ios_version" ]; then
+    nb_info "  $rel — $ios_version"
+elif $CHECK_ONLY; then
+    nb_warn "$rel: '$ios_have' (expected $ios_version)"
+    drift=$((drift + 1))
+else
+    sed -i '' -E "s/(SDK_VERSION: String = )\"[^\"]*\"/\1\"$ios_version\"/" "$sdk_config"
+    nb_info "  $rel — $ios_have -> $ios_version"
+    wrote=$((wrote + 1))
+fi
+
 # The Rust core is versioned by Cargo.toml, which we assert against rather than
 # rewrite — editing a Cargo manifest from a shell script invites a bad day.
 nb_step "core"

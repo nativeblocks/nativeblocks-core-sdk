@@ -9,10 +9,10 @@ let SHAPE_CIRCLE = "circle"
 /// apply to `SHAPE_RECTANGLE`; all-zero radii resolve to a plain rectangle.
 struct CornerShape: Shape {
     var shape: String = SHAPE_RECTANGLE
-    var topStart: CGFloat = 0
-    var topEnd: CGFloat = 0
-    var bottomStart: CGFloat = 0
-    var bottomEnd: CGFloat = 0
+    var topLeading: CGFloat = 0
+    var topTrailing: CGFloat = 0
+    var bottomLeading: CGFloat = 0
+    var bottomTrailing: CGFloat = 0
     var layoutDirection: LayoutDirection = .leftToRight
 
     func path(in rect: CGRect) -> Path {
@@ -31,10 +31,10 @@ struct CornerShape: Shape {
         let limit = min(rect.width, rect.height) / 2
         let clamp = { (radius: CGFloat) in min(max(radius, 0), limit) }
         let mirrored = layoutDirection == .rightToLeft
-        let tl = clamp(mirrored ? topEnd : topStart)
-        let tr = clamp(mirrored ? topStart : topEnd)
-        let bl = clamp(mirrored ? bottomEnd : bottomStart)
-        let br = clamp(mirrored ? bottomStart : bottomEnd)
+        let tl = clamp(mirrored ? topTrailing : topLeading)
+        let tr = clamp(mirrored ? topLeading : topTrailing)
+        let bl = clamp(mirrored ? bottomTrailing : bottomLeading)
+        let br = clamp(mirrored ? bottomLeading : bottomTrailing)
 
         if tl == 0 && tr == 0 && bl == 0 && br == 0 {
             return Path(rect)

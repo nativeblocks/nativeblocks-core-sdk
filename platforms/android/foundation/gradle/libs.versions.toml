@@ -13,9 +13,9 @@ compose = "1.7.4"
 coil = "2.6.0"
 junit = "4.13.2"
 robolectric = "4.14.1"
-nativeblocksRuntime = "0.1.0"
-nativeblocksCompiler = "0.1.0"
-nativeblocksGradlePlugin = "0.1.0"
+nativeblocksRuntime = "0.2.0"
+nativeblocksCompiler = "0.2.0"
+nativeblocksGradlePlugin = "0.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

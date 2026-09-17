@@ -7,6 +7,6 @@
 # Tags: android/v<android>  ios/v<ios>  core/v<core>
 
 [versions]
-android = "0.1.0"
-ios = "0.1.0"
+android = "0.2.0"
+ios = "0.2.0"
 core = "0.1.0"

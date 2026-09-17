@@ -31,7 +31,7 @@ internal class NativeBlockProvider {
      * @return A map of block types to their implementations.
      */
     fun getProvidedBlocks(): Map<String, NativeBlock> {
-        return blocks.toMap()
+        return blocks
     }
 
     /**

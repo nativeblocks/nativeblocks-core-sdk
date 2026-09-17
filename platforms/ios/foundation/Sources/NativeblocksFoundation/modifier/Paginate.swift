@@ -5,7 +5,7 @@ import SwiftUI
 @Modifier(
     name: "Paginate",
     keyType: "nativeblocks/paginate",
-    description: "Fires an event when the list nears its end; attach it to the content of a lazy row/column.",
+    description: "Fires an event when the list nears its end; attach it to the content of a lazy vstack/hstack.",
     version: 1,
     versionName: "1"
 )

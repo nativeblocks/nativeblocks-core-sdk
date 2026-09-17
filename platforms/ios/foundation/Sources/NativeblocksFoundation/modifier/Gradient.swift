@@ -17,23 +17,23 @@ struct Gradient: ViewModifier {
     @ModifierData(description: "Gradient type (linear, radial, sweep).", defaultValue: "linear")
     var type: String = GRADIENT_LINEAR
 
-    @ModifierData(description: "Angle in degrees for linear gradients; 0 flows start-to-end, 90 top-to-bottom.", defaultValue: "0.0")
+    @ModifierData(description: "Angle in degrees for linear gradients; 0 flows leading-to-trailing, 90 top-to-bottom.", defaultValue: "0.0")
     var angle: Double = 0
 
     @ModifierData(description: "Shape of the background (rectangle, circle).", defaultValue: "rectangle")
     var shape: String = SHAPE_RECTANGLE
 
-    @ModifierData(description: "Top-start corner radius.", defaultValue: "0.0")
-    var radiusTopStart: CGFloat = 0
+    @ModifierData(description: "Top-leading corner radius.", defaultValue: "0.0")
+    var radiusTopLeading: CGFloat = 0
 
-    @ModifierData(description: "Top-end corner radius.", defaultValue: "0.0")
-    var radiusTopEnd: CGFloat = 0
+    @ModifierData(description: "Top-trailing corner radius.", defaultValue: "0.0")
+    var radiusTopTrailing: CGFloat = 0
 
-    @ModifierData(description: "Bottom-start corner radius.", defaultValue: "0.0")
-    var radiusBottomStart: CGFloat = 0
+    @ModifierData(description: "Bottom-leading corner radius.", defaultValue: "0.0")
+    var radiusBottomLeading: CGFloat = 0
 
-    @ModifierData(description: "Bottom-end corner radius.", defaultValue: "0.0")
-    var radiusBottomEnd: CGFloat = 0
+    @ModifierData(description: "Bottom-trailing corner radius.", defaultValue: "0.0")
+    var radiusBottomTrailing: CGFloat = 0
 
     @Environment(\.layoutDirection) var layoutDirection
 
@@ -42,10 +42,10 @@ struct Gradient: ViewModifier {
         let colorList = parseColors(colors)
         let outline = CornerShape(
             shape: shape,
-            topStart: radiusTopStart,
-            topEnd: radiusTopEnd,
-            bottomStart: radiusBottomStart,
-            bottomEnd: radiusBottomEnd,
+            topLeading: radiusTopLeading,
+            topTrailing: radiusTopTrailing,
+            bottomLeading: radiusBottomLeading,
+            bottomTrailing: radiusBottomTrailing,
             layoutDirection: layoutDirection
         )
         if colorList.isEmpty {

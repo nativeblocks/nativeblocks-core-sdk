@@ -16,8 +16,8 @@ import androidx.compose.foundation.lazy.LazyColumn as ComposeLazyColumn
     keyType = "nativeblocks/lazy_column",
     name = "Lazy Column",
     description = "Scrollable vertical list; style it by attaching modifiers.",
-    version = 3,
-    versionName = "3",
+    version = 1,
+    versionName = "1",
 )
 @Composable
 internal fun LazyColumn(

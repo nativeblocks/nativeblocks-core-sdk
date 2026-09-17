@@ -3,18 +3,18 @@ import NativeblocksRuntime
 import SwiftUI
 
 @Block(
-    name: "Lazy Column",
-    keyType: "nativeblocks/lazy_column",
+    name: "Lazy VStack",
+    keyType: "nativeblocks/lazy_vstack",
     description: "Scrollable vertical list; style it by attaching modifiers.",
     version: 1,
     versionName: "1"
 )
-struct LazyColumn<Content: View>: View {
+struct LazyVStack<Content: View>: View {
     var blockContext: BlockContext? = nil
 
     @BlockData(
-        description: "Horizontal alignment of children (start, end, centerHorizontally).",
-        defaultValue: "start"
+        description: "Horizontal alignment of children (leading, center, trailing).",
+        defaultValue: "leading"
     )
     var horizontalAlignment: HorizontalAlignment = .leading
 
@@ -26,7 +26,7 @@ struct LazyColumn<Content: View>: View {
 
     var body: some View {
         ScrollView(.vertical) {
-            LazyVStack(alignment: horizontalAlignment, spacing: spacing) {
+            SwiftUI.LazyVStack(alignment: horizontalAlignment, spacing: spacing) {
                 content(blockContext?.scope ?? ())
             }
         }

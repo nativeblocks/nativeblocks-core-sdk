@@ -15,7 +15,7 @@ struct Text: View {
     @BlockData(description: "The text content to display.")
     var text: String = ""
 
-    @BlockData(description: "Font size in SP.", defaultValue: "14.0")
+    @BlockData(description: "Font size in points.", defaultValue: "14.0")
     var fontSize: CGFloat = 14
 
     @BlockData(description: "Text color in hexadecimal format.", defaultValue: "#ff000000")
@@ -27,18 +27,18 @@ struct Text: View {
     )
     var fontWeight: Font.Weight = .regular
 
-    @BlockData(description: "Text alignment (start, center, end, justify).", defaultValue: "start")
+    @BlockData(description: "Text alignment (leading, center, trailing).", defaultValue: "leading")
     var textAlign: TextAlignment = .leading
 
     @BlockData(description: "Maximum number of lines to display.", defaultValue: "9999")
-    var maxLines: Int = 9999
+    var lineLimit: Int = 9999
 
     var body: some View {
         SwiftUI.Text(text)
             .font(.system(size: fontSize, weight: fontWeight))
             .foregroundColor(color)
             .multilineTextAlignment(textAlign)
-            .lineLimit(maxLines)
+            .lineLimit(lineLimit)
             .modifier(blockContext?.modifier ?? .none)
     }
 }

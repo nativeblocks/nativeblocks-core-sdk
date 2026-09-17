@@ -23,6 +23,6 @@ internal class NativeModifierProvider {
      * Retrieves all registered modifier implementations.
      */
     fun getProvidedModifiers(): Map<String, ModifierComposable> {
-        return modifiers.toMap()
+        return modifiers
     }
 }

@@ -29,8 +29,8 @@ public class NativeblocksFoundationModifierProvider {
         NativeblocksManager.getInstance(name: name).provideModifier(modifierType: "nativeblocks/paginate") { content, modifierContext in
             AnyView(content.modifier(PaginateModifier(modifierContext: modifierContext)))
         }
-        NativeblocksManager.getInstance(name: name).provideModifier(modifierType: "nativeblocks/alpha") { content, modifierContext in
-            AnyView(content.modifier(AlphaModifier(modifierContext: modifierContext)))
+        NativeblocksManager.getInstance(name: name).provideModifier(modifierType: "nativeblocks/opacity") { content, modifierContext in
+            AnyView(content.modifier(OpacityModifier(modifierContext: modifierContext)))
         }
         NativeblocksManager.getInstance(name: name).provideModifier(modifierType: "nativeblocks/border") { content, modifierContext in
             AnyView(content.modifier(BorderModifier(modifierContext: modifierContext)))

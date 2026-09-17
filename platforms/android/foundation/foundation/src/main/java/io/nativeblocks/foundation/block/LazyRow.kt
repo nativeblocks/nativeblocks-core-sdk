@@ -16,8 +16,8 @@ import androidx.compose.foundation.lazy.LazyRow as ComposeLazyRow
     keyType = "nativeblocks/lazy_row",
     name = "Lazy Row",
     description = "Scrollable horizontal list; style it by attaching modifiers.",
-    version = 3,
-    versionName = "3",
+    version = 1,
+    versionName = "1",
 )
 @Composable
 internal fun LazyRow(

@@ -20,33 +20,33 @@ public class NativeblocksFoundationBlockProvider {
             }
         )
         NativeblocksManager.getInstance(name: name).provideBlock(
-            blockType: "nativeblocks/lazy_column",
+            blockType: "nativeblocks/lazy_vstack",
             block: .rendering { blockContext in
-                LazyColumnBlock(blockContext: blockContext)
+                LazyVStackBlock(blockContext: blockContext)
             }
         )
         NativeblocksManager.getInstance(name: name).provideBlock(
-            blockType: "nativeblocks/column",
+            blockType: "nativeblocks/vstack",
             block: .rendering { blockContext in
-                ColumnBlock(blockContext: blockContext)
+                VStackBlock(blockContext: blockContext)
             }
         )
         NativeblocksManager.getInstance(name: name).provideBlock(
-            blockType: "nativeblocks/box",
+            blockType: "nativeblocks/zstack",
             block: .rendering { blockContext in
-                BoxBlock(blockContext: blockContext)
+                ZStackBlock(blockContext: blockContext)
             }
         )
         NativeblocksManager.getInstance(name: name).provideBlock(
-            blockType: "nativeblocks/lazy_row",
+            blockType: "nativeblocks/lazy_hstack",
             block: .rendering { blockContext in
-                LazyRowBlock(blockContext: blockContext)
+                LazyHStackBlock(blockContext: blockContext)
             }
         )
         NativeblocksManager.getInstance(name: name).provideBlock(
-            blockType: "nativeblocks/row",
+            blockType: "nativeblocks/hstack",
             block: .rendering { blockContext in
-                RowBlock(blockContext: blockContext)
+                HStackBlock(blockContext: blockContext)
             }
         )
         NativeblocksManager.getInstance(name: name).provideBlock(

@@ -11,15 +11,15 @@ import SwiftUI
 )
 struct Width: ViewModifier {
 
-    @ModifierData(description: "The width of the block ('match', 'wrap' or a number).", defaultValue: "wrap")
-    var value: String = "wrap"
+    @ModifierData(description: "The width of the block ('infinity', 'fit' or a number).", defaultValue: "fit")
+    var value: String = "fit"
 
     @ViewBuilder
     func body(content: Content) -> some View {
         switch value {
-        case "match":
+        case "infinity":
             content.frame(maxWidth: .infinity)
-        case "wrap":
+        case "fit":
             content
         default:
             if let width = Double(value) {

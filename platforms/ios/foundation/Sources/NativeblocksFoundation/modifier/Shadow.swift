@@ -11,23 +11,23 @@ import SwiftUI
 )
 struct Shadow: ViewModifier {
 
-    @ModifierData(description: "Shadow elevation.", defaultValue: "0.0")
-    var elevation: CGFloat = 0
+    @ModifierData(description: "Shadow blur radius.", defaultValue: "0.0")
+    var radius: CGFloat = 0
 
     @ModifierData(description: "Shape of the shadow (rectangle, circle).", defaultValue: "rectangle")
     var shape: String = SHAPE_RECTANGLE
 
-    @ModifierData(description: "Top-start corner radius.", defaultValue: "0.0")
-    var radiusTopStart: CGFloat = 0
+    @ModifierData(description: "Top-leading corner radius.", defaultValue: "0.0")
+    var radiusTopLeading: CGFloat = 0
 
-    @ModifierData(description: "Top-end corner radius.", defaultValue: "0.0")
-    var radiusTopEnd: CGFloat = 0
+    @ModifierData(description: "Top-trailing corner radius.", defaultValue: "0.0")
+    var radiusTopTrailing: CGFloat = 0
 
-    @ModifierData(description: "Bottom-start corner radius.", defaultValue: "0.0")
-    var radiusBottomStart: CGFloat = 0
+    @ModifierData(description: "Bottom-leading corner radius.", defaultValue: "0.0")
+    var radiusBottomLeading: CGFloat = 0
 
-    @ModifierData(description: "Bottom-end corner radius.", defaultValue: "0.0")
-    var radiusBottomEnd: CGFloat = 0
+    @ModifierData(description: "Bottom-trailing corner radius.", defaultValue: "0.0")
+    var radiusBottomTrailing: CGFloat = 0
 
     @ModifierData(description: "Whether the content is also clipped to the shape.", defaultValue: "true")
     var clipToShape: Bool = true
@@ -41,16 +41,16 @@ struct Shadow: ViewModifier {
                 .clipShape(
                     CornerShape(
                         shape: shape,
-                        topStart: radiusTopStart,
-                        topEnd: radiusTopEnd,
-                        bottomStart: radiusBottomStart,
-                        bottomEnd: radiusBottomEnd,
+                        topLeading: radiusTopLeading,
+                        topTrailing: radiusTopTrailing,
+                        bottomLeading: radiusBottomLeading,
+                        bottomTrailing: radiusBottomTrailing,
                         layoutDirection: layoutDirection
                     )
                 )
-                .shadow(radius: elevation, y: elevation / 2)
+                .shadow(radius: radius, y: radius / 2)
         } else {
-            content.shadow(radius: elevation, y: elevation / 2)
+            content.shadow(radius: radius, y: radius / 2)
         }
     }
 }

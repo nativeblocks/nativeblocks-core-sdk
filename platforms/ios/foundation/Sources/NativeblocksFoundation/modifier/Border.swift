@@ -20,27 +20,27 @@ struct Border: ViewModifier {
     @ModifierData(description: "Shape of the border (rectangle, circle).", defaultValue: "rectangle")
     var shape: String = SHAPE_RECTANGLE
 
-    @ModifierData(description: "Top-start corner radius.", defaultValue: "0.0")
-    var radiusTopStart: CGFloat = 0
+    @ModifierData(description: "Top-leading corner radius.", defaultValue: "0.0")
+    var radiusTopLeading: CGFloat = 0
 
-    @ModifierData(description: "Top-end corner radius.", defaultValue: "0.0")
-    var radiusTopEnd: CGFloat = 0
+    @ModifierData(description: "Top-trailing corner radius.", defaultValue: "0.0")
+    var radiusTopTrailing: CGFloat = 0
 
-    @ModifierData(description: "Bottom-start corner radius.", defaultValue: "0.0")
-    var radiusBottomStart: CGFloat = 0
+    @ModifierData(description: "Bottom-leading corner radius.", defaultValue: "0.0")
+    var radiusBottomLeading: CGFloat = 0
 
-    @ModifierData(description: "Bottom-end corner radius.", defaultValue: "0.0")
-    var radiusBottomEnd: CGFloat = 0
+    @ModifierData(description: "Bottom-trailing corner radius.", defaultValue: "0.0")
+    var radiusBottomTrailing: CGFloat = 0
 
     @Environment(\.layoutDirection) var layoutDirection
 
     func body(content: Content) -> some View {
         let outline = CornerShape(
             shape: shape,
-            topStart: radiusTopStart,
-            topEnd: radiusTopEnd,
-            bottomStart: radiusBottomStart,
-            bottomEnd: radiusBottomEnd,
+            topLeading: radiusTopLeading,
+            topTrailing: radiusTopTrailing,
+            bottomLeading: radiusBottomLeading,
+            bottomTrailing: radiusBottomTrailing,
             layoutDirection: layoutDirection
         )
         // a stroke straddles the path, so draw it double width and clip the outer half away

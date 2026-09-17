@@ -34,7 +34,7 @@ internal class NativeActionProvider {
      * @return A map of action types to their handlers.
      */
     fun getProvidedActions(): Map<String, INativeAction> {
-        return actions.toMap()
+        return actions
     }
 
     /**

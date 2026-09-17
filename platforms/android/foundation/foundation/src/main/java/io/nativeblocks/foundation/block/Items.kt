@@ -14,8 +14,8 @@ import io.nativeblocks.runtime.api.provider.block.BlockContext
     name = "Items",
     description = "One row per element of a list.",
     scope = "LIST",
-    version = 3,
-    versionName = "3",
+    version = 1,
+    versionName = "1",
 )
 internal fun items(
     blockContext: BlockContext,
