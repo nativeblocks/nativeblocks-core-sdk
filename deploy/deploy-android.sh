@@ -21,6 +21,18 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/r2.sh"
 # in. Real environment variables win over the file, so CI needs no edits.
 nb_load_env
 
+nb_require_env MAVEN_PUBLIC_URL
+
+DRY_RUN=0
+NB_FORCE=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --dry-run) DRY_RUN=1; shift ;;
+        --force)   NB_FORCE=1; shift ;;
+        *)         nb_die "unknown argument: $1" ;;
+    esac
+done
+
 VERSION="$(nb_version android)"
 STAGING="$NB_ROOT/deploy/build/maven"
 
@@ -78,12 +90,12 @@ fi
 # breaks the consumer's plugins {} block rather than a dependency.
 
 nb_step "checking the public domain"
-nb_http_check "$PUBLIC_URL/io/nativeblocks/runtime-android/$VERSION/runtime-android-$VERSION.aar" "runtime aar"
-nb_http_check "$PUBLIC_URL/io/nativeblocks/foundation-android/$VERSION/foundation-android-$VERSION.aar" "foundation aar"
-nb_http_check "$PUBLIC_URL/io/nativeblocks/devkit-android/$VERSION/devkit-android-$VERSION.aar" "devkit aar"
-nb_http_check "$PUBLIC_URL/io/nativeblocks/compiler-android/$VERSION/compiler-android-$VERSION.jar" "compiler jar"
-nb_http_check "$PUBLIC_URL/io/nativeblocks/bom-android/$VERSION/bom-android-$VERSION.pom" "bom pom"
-nb_http_check "$PUBLIC_URL/io/nativeblocks/gradle-plugin-android/io.nativeblocks.gradle-plugin-android.gradle.plugin/$VERSION/io.nativeblocks.gradle-plugin-android.gradle.plugin-$VERSION.pom" "plugin marker"
+nb_http_check "$MAVEN_PUBLIC_URL/io/nativeblocks/runtime-android/$VERSION/runtime-android-$VERSION.aar" "runtime aar"
+nb_http_check "$MAVEN_PUBLIC_URL/io/nativeblocks/foundation-android/$VERSION/foundation-android-$VERSION.aar" "foundation aar"
+nb_http_check "$MAVEN_PUBLIC_URL/io/nativeblocks/devkit-android/$VERSION/devkit-android-$VERSION.aar" "devkit aar"
+nb_http_check "$MAVEN_PUBLIC_URL/io/nativeblocks/compiler-android/$VERSION/compiler-android-$VERSION.jar" "compiler jar"
+nb_http_check "$MAVEN_PUBLIC_URL/io/nativeblocks/bom-android/$VERSION/bom-android-$VERSION.pom" "bom pom"
+nb_http_check "$MAVEN_PUBLIC_URL/io/nativeblocks/gradle-plugin-android/io.nativeblocks.gradle-plugin-android.gradle.plugin/$VERSION/io.nativeblocks.gradle-plugin-android.gradle.plugin-$VERSION.pom" "plugin marker"
 
 [ "$NB_CHECK_FAILED" -eq 0 ] || \
     nb_die "$NB_CHECK_FAILED object(s) not reachable — check the bucket's public custom domain"
@@ -103,7 +115,7 @@ io.nativeblocks.gradle-plugin-android, not io.nativeblocks.
 pluginManagement {
     repositories {
         maven {
-            url = uri("$PUBLIC_URL")
+            url = uri("$MAVEN_PUBLIC_URL")
             content { includeGroupByRegex("io\\\\.nativeblocks.*") }
         }
         gradlePluginPortal()
@@ -115,7 +127,7 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         maven {
-            url = uri("$PUBLIC_URL")
+            url = uri("$MAVEN_PUBLIC_URL")
             content { includeGroupByRegex("io\\\\.nativeblocks.*") }
         }
         google()

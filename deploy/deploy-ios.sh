@@ -16,8 +16,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/r2.sh"
 nb_load_env
 
-SWIFT_PUBLIC_URL="${SWIFT_PUBLIC_URL:-https://spm.nativeblocks.io}"
-DIST_PUBLIC_URL="${DIST_PUBLIC_URL:-https://dist.nativeblocks.io}"
+nb_require_env SWIFT_PUBLIC_URL DIST_PUBLIC_URL
 
 # Package identity. Scope and name split on the first dot, which is what
 # decides the registry URL path.
@@ -173,7 +172,7 @@ nb_http_check "$SWIFT_PUBLIC_URL/$REGISTRY_PREFIX/$VERSION"            "release 
 nb_http_check "$SWIFT_PUBLIC_URL/$REGISTRY_PREFIX/$VERSION/Package.swift" "manifest"      "text/x-swift"
 nb_http_check "$SWIFT_PUBLIC_URL/$REGISTRY_PREFIX/$VERSION.zip"        "source archive"   "application/zip"
 for zipfile in "$OUT"/*.xcframework.zip; do
-    check "$DIST_PUBLIC_URL/$BINARY_PREFIX/$(basename "$zipfile")" "$(basename "$zipfile")" "application/zip"
+    nb_http_check "$DIST_PUBLIC_URL/$BINARY_PREFIX/$(basename "$zipfile")" "$(basename "$zipfile")" "application/zip"
 done
 
 version_header="$(curl -sI "$SWIFT_PUBLIC_URL/$REGISTRY_PREFIX" | awk -F': ' 'tolower($1)=="content-version"{print $2}' | tr -d '\r')"

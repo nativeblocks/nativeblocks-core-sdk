@@ -81,6 +81,15 @@ nb_load_env() {
     done < "$envfile"
 }
 
+# nb_require_env <var>...  — fail listing every unset variable, not just the first.
+nb_require_env() {
+    local missing=() var
+    for var in "$@"; do
+        [ -n "${!var:-}" ] || missing+=("$var")
+    done
+    [ ${#missing[@]} -eq 0 ] || nb_die "unset in deploy/.env: ${missing[*]}"
+}
+
 # ---------------------------------------------------------------------------
 # versions.toml
 # ---------------------------------------------------------------------------
