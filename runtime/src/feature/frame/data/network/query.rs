@@ -15,13 +15,6 @@ pub(in crate::feature::frame::data) const FRAME_QUERY: &str = r#"query frame($ro
             scope
             visibilityKey
             position
-            properties {
-                key
-                valueDesktop
-                valueMobile
-                valueTablet
-                type
-            }
             data {
                 key
                 value
@@ -54,11 +47,6 @@ pub(in crate::feature::frame::data) const FRAME_QUERY: &str = r#"query frame($ro
                 keyType
                 then
                 scope
-                properties {
-                    key
-                    value
-                    type
-                }
                 data {
                     key
                     value
@@ -91,13 +79,6 @@ pub(in crate::feature::frame::data) const FRAME_PRODUCTION_QUERY: &str = r#"quer
             scope
             visibilityKey
             position
-            properties {
-                key
-                valueDesktop
-                valueMobile
-                valueTablet
-                type
-            }
             data {
                 key
                 value
@@ -129,11 +110,6 @@ pub(in crate::feature::frame::data) const FRAME_PRODUCTION_QUERY: &str = r#"quer
                 keyType
                 then
                 integrationVersion
-                properties {
-                    key
-                    value
-                    type
-                }
                 data {
                     key
                     value

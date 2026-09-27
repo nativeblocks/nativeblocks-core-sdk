@@ -4,15 +4,13 @@ use std::collections::HashMap;
 
 use crate::feature::frame::data::network::dto::{
     NativeActionDto, NativeActionTriggerDataDto, NativeActionTriggerDto,
-    NativeActionTriggerEventDto, NativeActionTriggerPropertyDto, NativeBlockDataDto,
-    NativeBlockDto, NativeBlockModifierDataDto, NativeBlockModifierDto, NativeBlockPropertyDto,
-    NativeBlockSlotDto, NativeFrameDto, NativeVariableDto,
+    NativeActionTriggerEventDto, NativeBlockDataDto, NativeBlockDto, NativeBlockModifierDataDto,
+    NativeBlockModifierDto, NativeBlockSlotDto, NativeFrameDto, NativeVariableDto,
 };
 use crate::feature::frame::domain::model::{
     NativeActionModel, NativeActionTriggerDataModel, NativeActionTriggerEventModel,
-    NativeActionTriggerModel, NativeActionTriggerPropertyModel, NativeBlockDataModel,
-    NativeBlockModel, NativeBlockModifierDataModel, NativeBlockModifierModel,
-    NativeBlockPropertyModel, NativeBlockSlotModel, NativeFrameModel, NativeVariableModel,
+    NativeActionTriggerModel, NativeBlockDataModel, NativeBlockModel, NativeBlockModifierDataModel,
+    NativeBlockModifierModel, NativeBlockSlotModel, NativeFrameModel, NativeVariableModel,
 };
 
 const ROOT_KEY_TYPE: &str = "ROOT";
@@ -131,7 +129,7 @@ fn map_block(dto: NativeBlockDto, key_by_id: &HashMap<String, String>) -> Native
         visibility: text(dto.visibility_key),
         position: dto.position.unwrap_or(0),
         data: keyed(dto.data, map_block_data, |model| &model.key),
-        properties: keyed(dto.properties, map_block_property, |model| &model.key),
+        properties: HashMap::new(),
         slots: keyed(dto.slots, map_block_slot, |model| &model.slot),
         modifiers: dto
             .modifiers
@@ -148,16 +146,6 @@ fn map_block_data(dto: NativeBlockDataDto) -> NativeBlockDataModel {
         key: text(dto.key),
         value: text(dto.value),
         data_type: text(dto.data_type),
-    };
-}
-
-fn map_block_property(dto: NativeBlockPropertyDto) -> NativeBlockPropertyModel {
-    return NativeBlockPropertyModel {
-        key: text(dto.key),
-        value_mobile: text(dto.value_mobile),
-        value_tablet: text(dto.value_tablet),
-        value_desktop: text(dto.value_desktop),
-        property_type: text(dto.property_type),
     };
 }
 
@@ -208,7 +196,7 @@ fn map_trigger(dto: NativeActionTriggerDto) -> NativeActionTriggerModel {
         parent_id: text(dto.parent_id),
         version: dto.integration_version.unwrap_or(-1),
         key_type: text(dto.key_type),
-        properties: keyed(dto.properties, map_trigger_property, |model| &model.key),
+        properties: HashMap::new(),
         data: keyed(dto.data, map_trigger_data, |model| &model.key),
         events: keyed(dto.events, map_trigger_event, |model| &model.event),
     };
@@ -218,14 +206,6 @@ fn map_trigger_event(dto: NativeActionTriggerEventDto) -> NativeActionTriggerEve
     return NativeActionTriggerEventModel {
         event: text(dto.event),
         scope: dto.scope,
-    };
-}
-
-fn map_trigger_property(dto: NativeActionTriggerPropertyDto) -> NativeActionTriggerPropertyModel {
-    return NativeActionTriggerPropertyModel {
-        key: text(dto.key),
-        value: text(dto.value),
-        property_type: text(dto.property_type),
     };
 }
 
