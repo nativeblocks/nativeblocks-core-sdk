@@ -49,11 +49,5 @@ public class NativeblocksFoundationBlockProvider {
                 HStackBlock(blockContext: blockContext)
             }
         )
-        NativeblocksManager.getInstance(name: name).provideBlock(
-            blockType: "nativeblocks/text",
-            block: .rendering { blockContext in
-                TextBlock(blockContext: blockContext)
-            }
-        )
     }
 }

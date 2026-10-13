@@ -93,11 +93,37 @@ nb_check_sources() {
   fi
 }
 
+# Swift 6.4 made swiftbuild the default `swift build` backend, which writes
+# objects under .build/out/Intermediates.noindex. xccache only looks in the
+# native layout (.build/<triple>/release/<Module>.build/*.o), finds nothing and
+# fails with "Detected no object files". xccache has no way to pass extra
+# `swift build` flags, so put a shim first on PATH that adds
+# `--build-system native` to `swift build` and passes everything else through.
+nb_swift_shim() {
+  local real_swift shim_dir
+  real_swift="$(command -v swift)"
+  "$real_swift" build --help 2>/dev/null | grep -q -- '--build-system' || return 0
+
+  shim_dir="$(mktemp -d)"
+  cat > "$shim_dir/swift" <<EOF
+#!/usr/bin/env bash
+if [ "\${1:-}" = "build" ]; then
+  shift
+  exec "$real_swift" build --build-system native "\$@"
+fi
+exec "$real_swift" "\$@"
+EOF
+  chmod +x "$shim_dir/swift"
+  echo "$shim_dir"
+}
+
 nb_build() {
   # nb_build <output-dir> <target> [target...]
   local out="$1"; shift
+  local shim_dir
+  shim_dir="$(nb_swift_shim)"
   echo "⚙️  Building $* (release, library evolution)..."
-  xccache pkg build "$@" \
+  PATH="${shim_dir:+$shim_dir:}$PATH" xccache pkg build "$@" \
     --sdk=iphoneos,iphonesimulator \
     --config=release \
     --library-evolution \
