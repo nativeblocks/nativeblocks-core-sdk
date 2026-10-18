@@ -9,12 +9,14 @@ pub(super) struct Observer {
 
 struct Active {
     observer: Arc<dyn FrameStateObserver>,
-    task: JoinHandle<()>,
+    task: Option<JoinHandle<()>>,
 }
 
 impl Drop for Active {
     fn drop(&mut self) {
-        self.task.abort();
+        if let Some(task) = &self.task {
+            task.abort();
+        }
     }
 }
 
@@ -25,8 +27,18 @@ impl Observer {
         };
     }
 
-    pub(super) fn set(&self, observer: Arc<dyn FrameStateObserver>, task: JoinHandle<()>) {
-        *self.active.lock().unwrap() = Some(Active { observer, task });
+    pub(super) fn set(&self, observer: Arc<dyn FrameStateObserver>) {
+        *self.active.lock().unwrap() = Some(Active {
+            observer,
+            task: None,
+        });
+    }
+
+    pub(super) fn attach(&self, task: JoinHandle<()>) {
+        match self.active.lock().unwrap().as_mut() {
+            Some(active) => active.task = Some(task),
+            None => task.abort(),
+        }
     }
 
     pub(super) fn clear(&self) {

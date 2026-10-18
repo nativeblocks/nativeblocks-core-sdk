@@ -53,16 +53,16 @@ internal final class FrameViewModel: ObservableObject {
     func setupFrame(route: String, args: [String: String], stateKey: String?) {
         setupTask?.cancel()
         isStateful = stateKey != nil
-        setupTask = Task { [frameStateBridge] in
+        setupTask = Task { [weak self, frameStateBridge] in
             await frameStateBridge.observeFrame(
                 route: route,
                 args: args,
                 stateKey: stateKey,
-                onFull: { [weak self] frame in
-                    Task { @MainActor in self?.applyFull(frame) }
+                onFull: { frame in
+                    DispatchQueue.main.async { self?.applyFull(frame) }
                 },
-                onDiff: { [weak self] diff in
-                    Task { @MainActor in self?.applyDiff(diff) }
+                onDiff: { diff in
+                    DispatchQueue.main.async { self?.applyDiff(diff) }
                 }
             )
         }

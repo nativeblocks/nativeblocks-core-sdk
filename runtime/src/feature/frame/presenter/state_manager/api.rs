@@ -8,6 +8,7 @@ use crate::feature::frame::presenter::state_manager::model::{
     ActionLogEvent, BlockLogEvent, FrameChangeType, FrameFull,
 };
 use crate::feature::frame::presenter::state_manager::observer::Observer;
+use crate::feature::frame::presenter::state_manager::change_queue::ChangeQueue;
 use crate::feature::frame::presenter::state_manager::snapshot::{FrameSnapshot, SnapshotStore};
 use crate::feature::frame::presenter::state_manager::refs;
 use crate::feature::frame::presenter::state_manager::state::InternalState;
@@ -25,6 +26,7 @@ pub struct FrameStateManager {
     me: Weak<FrameStateManager>,
     internal_state: Mutex<InternalState>,
     subscription: Observer,
+    pending_changes: ChangeQueue,
     snapshots: SnapshotStore,
     repository: Arc<dyn FrameRepository>,
     globals: Arc<GlobalParameterProvider>,
@@ -42,6 +44,7 @@ impl FrameStateManager {
             me: me.clone(),
             internal_state: Mutex::new(InternalState::fresh()),
             subscription: Observer::empty(),
+            pending_changes: ChangeQueue::default(),
             snapshots: SnapshotStore::new(snapshots),
             repository,
             globals,
@@ -64,6 +67,8 @@ impl FrameStateManager {
     ) {
         self.snapshots.open(state_key);
         self.clear_frame();
+        self.pending_changes.clear();
+        self.subscription.set(observer);
 
         let mut subscriber = self.repository.subscribe(&route);
         let weak_manager = self.me.clone();
@@ -80,30 +85,34 @@ impl FrameStateManager {
             }
         });
 
-        self.subscription.set(observer, task);
+        self.subscription.attach(task);
     }
 
     fn release_subscription(&self) {
         self.subscription.clear();
+        self.pending_changes.clear();
         self.clear_frame();
     }
 
+    fn deliver_pending_changes(&self) {
+        self.pending_changes.deliver_pending(|change| self.subscription.emit(change));
+    }
+
     fn change_variable(&self, key: &str, value: String) {
-        let diff = {
+        {
             let mut internal_state = self.internal_state.lock().unwrap();
             if variable::is_host_provided(&internal_state, key) {
                 self.logger.host_variable_write(key);
                 return;
             }
-            variable::change(&mut internal_state, key, value)
-        };
-        let Some(diff) = diff else {
-            return;
-        };
+            let Some(diff) = variable::change(&mut internal_state, key, value) else {
+                return;
+            };
+            self.pending_changes.enqueue(FrameChangeType::Diff { frame: diff });
+        }
         self.snapshots.save(&self.internal_state.lock().unwrap());
         self.logger.variable_changed(key);
-        self.subscription
-            .emit(FrameChangeType::Diff { frame: diff });
+        self.deliver_pending_changes();
     }
 
     fn apply_frame(
@@ -113,7 +122,7 @@ impl FrameStateManager {
         globals: &HashMap<String, String>,
     ) {
         let snapshot = self.snapshots.active();
-        let mut full = {
+        let rendering_state = {
             let mut internal_state = self.internal_state.lock().unwrap();
             *internal_state = match result {
                 Ok(frame) => InternalState::ready(frame, args, globals),
@@ -128,16 +137,17 @@ impl FrameStateManager {
             if let Some(snapshot) = &snapshot {
                 snapshot::restore(&mut internal_state, snapshot);
             }
-            frame_full(
+            let mut full = frame_full(
                 &internal_state,
                 block::render(&internal_state, &self.logger),
                 action::render(&internal_state, &self.logger),
-            )
+            );
+            full.restored = snapshot.is_some();
+            let rendering_state = full.state.clone();
+            self.pending_changes.enqueue(FrameChangeType::Full { frame: full });
+            rendering_state
         };
-        full.restored = snapshot.is_some();
-        let rendering_state = full.state.clone();
-        self.subscription
-            .emit(FrameChangeType::Full { frame: full });
+        self.deliver_pending_changes();
         self.logger.frame_state_changed(&rendering_state);
     }
 }

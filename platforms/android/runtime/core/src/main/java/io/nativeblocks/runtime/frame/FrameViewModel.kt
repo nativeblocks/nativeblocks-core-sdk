@@ -56,9 +56,11 @@ internal class FrameViewModel(
     private var isRestored = false
     private var isStateful = false
 
-    private val blocks = ConcurrentHashMap<String, NativeBlockModel>()
+    @Volatile
+    private var blocks: Map<String, NativeBlockModel> = emptyMap()
     private val variables = ConcurrentHashMap<String, MutableState<NativeVariableModel>>()
-    private val actions = ConcurrentHashMap<String, List<NativeActionModel>>()
+    @Volatile
+    private var actions: Map<String, List<NativeActionModel>> = emptyMap()
 
     val blockProvider = NativeBlockProviderRegistry.getOrCreate(instanceName)
     val modifierProvider = NativeModifierProviderRegistry.getOrCreate(instanceName)
@@ -82,12 +84,8 @@ internal class FrameViewModel(
                 route = route,
                 args = routeArguments,
                 stateKey = stateKey,
-                onFull = {
-                    viewModelScope.launch(Dispatchers.IO) { applyFull(it) }
-                },
-                onDiff = {
-                    viewModelScope.launch(Dispatchers.IO) { applyDiff(it) }
-                }
+                onFull = { frame -> deliver { applyFull(frame) } },
+                onDiff = { diff -> deliver { applyDiff(diff) } }
             )
         }
     }
@@ -138,6 +136,14 @@ internal class FrameViewModel(
         handleAction(NONE_INDEX, actionOf(rootKey, event), event)
     }
 
+    private inline fun deliver(apply: () -> Unit) {
+        try {
+            apply()
+        } catch (error: Throwable) {
+            _renderingState.update { RenderingState.Error(error.message ?: error.toString()) }
+        }
+    }
+
     private fun applyFull(frame: FrameFull) {
         Snapshot.withMutableSnapshot {
             variables.keys.retainAll(frame.variables.keys)
@@ -170,13 +176,11 @@ internal class FrameViewModel(
     }
 
     private fun syncActions(runtimeActions: Map<String, List<RuntimeFFIActionModel>>) {
-        actions.clear()
-        actions.putAll(runtimeActions.mapValues { entry -> entry.value.map { it.toDomain() } })
+        actions = runtimeActions.mapValues { entry -> entry.value.map { it.toDomain() } }
     }
 
     private fun syncBlocks(runtimeBlocks: Map<String, RuntimeFFIBlockModel>) {
-        blocks.clear()
-        runtimeBlocks.forEach { (key, block) -> blocks[key] = block.toDomain() }
+        blocks = runtimeBlocks.mapValues { it.value.toDomain() }
     }
 
     override fun onCleared() {
