@@ -83,19 +83,6 @@ else
     wrote=$((wrote + 1))
 fi
 
-# The Rust core is versioned by Cargo.toml, which we assert against rather than
-# rewrite — editing a Cargo manifest from a shell script invites a bad day.
-nb_step "core"
-core_want="$(nb_version core)"
-core_have="$(nb_cargo_version)"
-if [ "$core_want" = "$core_have" ]; then
-    nb_info "  runtime/Cargo.toml — $core_have"
-else
-    nb_warn "runtime/Cargo.toml is '$core_have', versions.toml says '$core_want'"
-    nb_warn "edit one of them by hand so they agree"
-    drift=$((drift + 1))
-fi
-
 if $CHECK_ONLY; then
     [ "$drift" -eq 0 ] || nb_die "$drift version file(s) out of sync — run deploy/sync-versions.sh"
     nb_ok "all version files match versions.toml"

@@ -51,7 +51,7 @@ Skip this step if the core hasn't changed since the last copy.
 deploy/check-version.sh ios/v0.2.0
 ```
 
-Fails if the tag, `versions.toml`, `SDKConfig.swift` or `Cargo.toml` disagree.
+Fails if the tag, `versions.toml` or `SDKConfig.swift` disagree.
 
 ## 4. Build
 

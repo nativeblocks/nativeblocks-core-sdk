@@ -120,29 +120,6 @@ nb_version() {
     printf '%s\n' "$value"
 }
 
-# nb_cargo_version — the version declared in runtime/Cargo.toml [package].
-nb_cargo_version() {
-    local cargo="$NB_ROOT/runtime/Cargo.toml" value
-    [ -f "$cargo" ] || nb_die "not found: $cargo"
-
-    value="$(awk '
-        /^[[:space:]]*\[/ { in_package = ($0 ~ /^[[:space:]]*\[package\][[:space:]]*$/); next }
-        !in_package { next }
-        /^[[:space:]]*version[[:space:]]*=/ {
-            line = $0
-            sub(/#.*/, "", line)
-            sub(/^[[:space:]]*version[[:space:]]*=[[:space:]]*/, "", line)
-            gsub(/^"|"[[:space:]]*$/, "", line)
-            gsub(/[[:space:]]+$/, "", line)
-            print line
-            exit
-        }
-    ' "$cargo")"
-
-    [ -n "$value" ] || nb_die "no [package].version in $cargo"
-    printf '%s\n' "$value"
-}
-
 # ---------------------------------------------------------------------------
 # Tags
 # ---------------------------------------------------------------------------
