@@ -678,6 +678,9 @@ internal interface UniffiCallbackInterfaceHttpClientMethod0 : com.sun.jna.Callba
 internal interface UniffiCallbackInterfaceHttpClientMethod1 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`url`: RustBuffer.ByValue,`headers`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`uniffiFutureCallback`: UniffiForeignFutureCompleteRustBuffer,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,)
 }
+internal interface UniffiCallbackInterfaceHttpClientMethod2 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`url`: RustBuffer.ByValue,`headers`: RustBuffer.ByValue,`uniffiFutureCallback`: UniffiForeignFutureCompleteRustBuffer,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,)
+}
 internal interface UniffiCallbackInterfaceScriptBridgeMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`key`: RustBuffer.ByValue,`uniffiOutReturn`: RustBuffer,uniffiCallStatus: UniffiRustCallStatus,)
 }
@@ -747,25 +750,28 @@ internal open class UniffiVTableCallbackInterfaceLocalizationStateObserver(
     }
 
 }
-@Structure.FieldOrder("uniffiFree", "uniffiClone", "get", "post")
+@Structure.FieldOrder("uniffiFree", "uniffiClone", "get", "post", "getBytes")
 internal open class UniffiVTableCallbackInterfaceHttpClient(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
     @JvmField internal var `uniffiClone`: UniffiCallbackInterfaceClone? = null,
     @JvmField internal var `get`: UniffiCallbackInterfaceHttpClientMethod0? = null,
     @JvmField internal var `post`: UniffiCallbackInterfaceHttpClientMethod1? = null,
+    @JvmField internal var `getBytes`: UniffiCallbackInterfaceHttpClientMethod2? = null,
 ) : Structure() {
     class UniffiByValue(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
         `get`: UniffiCallbackInterfaceHttpClientMethod0? = null,
         `post`: UniffiCallbackInterfaceHttpClientMethod1? = null,
-    ): UniffiVTableCallbackInterfaceHttpClient(`uniffiFree`,`uniffiClone`,`get`,`post`,), Structure.ByValue
+        `getBytes`: UniffiCallbackInterfaceHttpClientMethod2? = null,
+    ): UniffiVTableCallbackInterfaceHttpClient(`uniffiFree`,`uniffiClone`,`get`,`post`,`getBytes`,), Structure.ByValue
 
    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceHttpClient) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `get` = other.`get`
         `post` = other.`post`
+        `getBytes` = other.`getBytes`
     }
 
 }
@@ -893,6 +899,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_nativeblocks_runtime_checksum_method_httpclient_get(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_httpclient_post(
+    ): Int
+    external fun uniffi_nativeblocks_runtime_checksum_method_httpclient_get_bytes(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_get(
     ): Int
@@ -1052,6 +1060,8 @@ internal object UniffiLib {
     external fun uniffi_nativeblocks_runtime_fn_method_httpclient_get(`ptr`: Long,`url`: RustBuffer.ByValue,`headers`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_nativeblocks_runtime_fn_method_httpclient_post(`ptr`: Long,`url`: RustBuffer.ByValue,`headers`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_nativeblocks_runtime_fn_method_httpclient_get_bytes(`ptr`: Long,`url`: RustBuffer.ByValue,`headers`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_nativeblocks_runtime_fn_clone_globalparameterclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
@@ -1326,6 +1336,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_nativeblocks_runtime_checksum_method_httpclient_post() and 0xFFFF) != 8902) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_httpclient_get_bytes() and 0xFFFF) != 36476) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_get() and 0xFFFF) != 30591) {
@@ -1645,6 +1658,33 @@ private fun UniffiCleaner.Companion.create(): UniffiCleaner = UniffiJnaCleaner()
 /**
  * @suppress
  */
+internal object FfiConverterUShort: FfiConverter<UShort, Short> {
+    override fun lift(value: Short): UShort {
+        return value.toUShort()
+    }
+
+    fun lift(value: Int): UShort {
+        return value.toUShort()
+    }
+
+    override fun read(buf: ByteBuffer): UShort {
+        return lift(buf.getShort())
+    }
+
+    override fun lower(value: UShort): Short {
+        return value.toShort()
+    }
+
+    override fun allocationSize(value: UShort) = 2UL
+
+    override fun write(value: UShort, buf: ByteBuffer) {
+        buf.putShort(value.toShort())
+    }
+}
+
+/**
+ * @suppress
+ */
 internal object FfiConverterInt: FfiConverter<Int, Int> {
     override fun lift(value: Int): Int {
         return value
@@ -1788,6 +1828,25 @@ internal object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
         val byteBuf = toUtf8(value)
         buf.putInt(byteBuf.limit())
         buf.put(byteBuf)
+    }
+}
+
+/**
+ * @suppress
+ */
+internal object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
+    override fun read(buf: ByteBuffer): ByteArray {
+        val len = buf.getInt()
+        val byteArr = ByteArray(len)
+        buf.get(byteArr)
+        return byteArr
+    }
+    override fun allocationSize(value: ByteArray): ULong {
+        return 4UL + value.size.toULong()
+    }
+    override fun write(value: ByteArray, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        buf.put(value)
     }
 }
 
@@ -3425,6 +3484,8 @@ internal interface HttpClient {
     
     suspend fun `post`(`url`: kotlin.String, `headers`: Map<kotlin.String, kotlin.String>, `body`: kotlin.String): kotlin.String
     
+    suspend fun `getBytes`(`url`: kotlin.String, `headers`: Map<kotlin.String, kotlin.String>): HttpBytesResponse
+    
     companion object
 }
 
@@ -3577,6 +3638,29 @@ internal open class HttpClientImpl: Disposable, AutoCloseable, HttpClient
     }
 
     
+    @Throws(NbException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getBytes`(`url`: kotlin.String, `headers`: Map<kotlin.String, kotlin.String>) : HttpBytesResponse {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_nativeblocks_runtime_fn_method_httpclient_get_bytes(
+                uniffiHandle,
+                
+        FfiConverterString.lower(`url`),
+        FfiConverterMapStringString.lower(`headers`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeHttpBytesResponse.lift(it) },
+        // Error FFI converter
+        NbException.ErrorHandler,
+    )
+    }
+
+    
 
     
 
@@ -3665,6 +3749,41 @@ internal object uniffiCallbackInterfaceHttpClient {
             )
         }
     }
+    internal object `getBytes`: UniffiCallbackInterfaceHttpClientMethod2 {
+        override fun callback(`uniffiHandle`: Long,`url`: RustBuffer.ByValue,`headers`: RustBuffer.ByValue,`uniffiFutureCallback`: UniffiForeignFutureCompleteRustBuffer,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,) {
+            val uniffiObj = FfiConverterTypeHttpClient.handleMap.get(uniffiHandle)
+            val makeCall = suspend { ->
+                uniffiObj.`getBytes`(
+                    FfiConverterString.lift(`url`),
+                    FfiConverterMapStringString.lift(`headers`),
+                )
+            }
+            val uniffiHandleSuccess = { returnValue: HttpBytesResponse ->
+                val uniffiResult = UniffiForeignFutureResultRustBuffer.UniffiByValue(
+                    FfiConverterTypeHttpBytesResponse.lower(returnValue),
+                    UniffiRustCallStatus.ByValue()
+                )
+                uniffiResult.write()
+                uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
+            }
+            val uniffiHandleError = { callStatus: UniffiRustCallStatus.ByValue ->
+                uniffiFutureCallback.callback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureResultRustBuffer.UniffiByValue(
+                        RustBuffer.ByValue(),
+                        callStatus,
+                    ),
+                )
+            }
+            uniffiTraitInterfaceCallAsyncWithError(
+                makeCall,
+                uniffiHandleSuccess,
+                uniffiHandleError,
+                { e: NbException -> FfiConverterTypeNBError.lower(e) },
+                uniffiOutDroppedCallback
+            )
+        }
+    }
 
     internal object uniffiFree: UniffiCallbackInterfaceFree {
         override fun callback(handle: Long) {
@@ -3683,6 +3802,7 @@ internal object uniffiCallbackInterfaceHttpClient {
         uniffiClone,
         `get`,
         `post`,
+        `getBytes`,
     )
 
     // Registers the foreign callback with the Rust side.
@@ -6140,6 +6260,44 @@ internal object FfiConverterTypeFrameRouteModel: FfiConverterRustBuffer<FrameRou
             FfiConverterOptionalString.write(value.`route`, buf)
             FfiConverterOptionalString.write(value.`platform`, buf)
             FfiConverterOptionalSequenceTypeRouteArgumentsModel.write(value.`routeArguments`, buf)
+    }
+}
+
+
+
+internal data class HttpBytesResponse (
+    val `status`: kotlin.UShort
+    , 
+    val `body`: kotlin.ByteArray
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+internal object FfiConverterTypeHttpBytesResponse: FfiConverterRustBuffer<HttpBytesResponse> {
+    override fun read(buf: ByteBuffer): HttpBytesResponse {
+        return HttpBytesResponse(
+            FfiConverterUShort.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HttpBytesResponse) = (
+            FfiConverterUShort.allocationSize(value.`status`) +
+            FfiConverterByteArray.allocationSize(value.`body`)
+    )
+
+    override fun write(value: HttpBytesResponse, buf: ByteBuffer) {
+            FfiConverterUShort.write(value.`status`, buf)
+            FfiConverterByteArray.write(value.`body`, buf)
     }
 }
 

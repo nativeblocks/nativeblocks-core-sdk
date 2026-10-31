@@ -109,6 +109,7 @@ pub(in crate::feature::frame::data) const FRAME_PRODUCTION_QUERY: &str = r#"quer
                 name
                 keyType
                 then
+                scope
                 integrationVersion
                 data {
                     key

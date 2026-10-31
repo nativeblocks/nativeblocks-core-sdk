@@ -46,6 +46,27 @@ pub(super) fn log_sync_failure(
     );
 }
 
+pub(super) fn log_binary_fallback(
+    logger: &Mutex<NativeLoggerProvider>,
+    sdk_config: &SdkConfig,
+    route: &str,
+    error: &ErrorModel,
+) {
+    let mut params = crate::plugin::logger::error_parameters(error);
+    params.insert(
+        keys::parameter::STATE.to_string(),
+        keys::state::FRAME_BINARY_FALLBACK.to_string(),
+    );
+    params.insert(keys::parameter::FRAME_ROUTE.to_string(), route.to_string());
+    dispatch(
+        logger,
+        sdk_config,
+        LoggerEventLevel::Error,
+        "Binary frame request failed, using GraphQL",
+        params,
+    );
+}
+
 fn dispatch(
     logger: &Mutex<NativeLoggerProvider>,
     sdk_config: &SdkConfig,

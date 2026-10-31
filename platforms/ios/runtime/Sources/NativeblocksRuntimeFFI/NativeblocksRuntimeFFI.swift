@@ -475,6 +475,22 @@ private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterUInt16: FfiConverterPrimitive {
+    typealias FfiType = UInt16
+    typealias SwiftType = UInt16
+
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt16 {
+        return try lift(readInt(&buf))
+    }
+
+    package static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
     typealias FfiType = Int32
     typealias SwiftType = Int32
@@ -587,6 +603,24 @@ fileprivate struct FfiConverterString: FfiConverter {
         let len = Int32(value.utf8.count)
         writeInt(&buf, len)
         writeBytes(&buf, value.utf8)
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterData: FfiConverterRustBuffer {
+    typealias SwiftType = Data
+
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Data {
+        let len: Int32 = try readInt(&buf)
+        return Data(try readBytes(&buf, count: Int(len)))
+    }
+
+    package static func write(_ value: Data, into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        writeBytes(&buf, value)
     }
 }
 
@@ -1410,6 +1444,8 @@ package protocol HttpClient: AnyObject, Sendable {
     
     func post(url: String, headers: [String: String], body: String) async throws  -> String
     
+    func getBytes(url: String, headers: [String: String]) async throws  -> HttpBytesResponse
+    
 }
 package class HttpClientImpl: HttpClient, @unchecked Sendable {
     fileprivate let handle: UInt64
@@ -1492,6 +1528,22 @@ package func post(url: String, headers: [String: String], body: String)async thr
             completeFunc: ffi_nativeblocks_runtime_rust_future_complete_rust_buffer,
             freeFunc: ffi_nativeblocks_runtime_rust_future_free_rust_buffer,
             liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeNBError_lift
+        )
+}
+    
+package func getBytes(url: String, headers: [String: String])async throws  -> HttpBytesResponse  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_nativeblocks_runtime_fn_method_httpclient_get_bytes(
+                        self.uniffiCloneHandle(),FfiConverterString.lower(url),FfiConverterDictionaryStringString.lower(headers)
+                )
+            },
+            pollFunc: ffi_nativeblocks_runtime_rust_future_poll_rust_buffer,
+            completeFunc: ffi_nativeblocks_runtime_rust_future_complete_rust_buffer,
+            freeFunc: ffi_nativeblocks_runtime_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeHttpBytesResponse_lift,
             errorHandler: FfiConverterTypeNBError_lift
         )
 }
@@ -1595,6 +1647,51 @@ fileprivate struct UniffiCallbackInterfaceHttpClient {
                     uniffiCallbackData,
                     UniffiForeignFutureResultRustBuffer(
                         returnValue: FfiConverterString.lower(returnValue),
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { (statusCode, errorBuf) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureResultRustBuffer(
+                        returnValue: RustBuffer.empty(),
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            uniffiTraitInterfaceCallAsyncWithError(
+                makeCall: makeCall,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
+                lowerError: FfiConverterTypeNBError_lower,
+                droppedCallback: uniffiOutDroppedCallback
+            )
+        },
+        getBytes: { (
+            uniffiHandle: UInt64,
+            url: RustBuffer,
+            headers: RustBuffer,
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteRustBuffer,
+            uniffiCallbackData: UInt64,
+            uniffiOutDroppedCallback: UnsafeMutablePointer<UniffiForeignFutureDroppedCallbackStruct>
+        ) in
+            let makeCall = {
+                () async throws -> HttpBytesResponse in
+                guard let uniffiObj = try? FfiConverterTypeHttpClient.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return try await uniffiObj.getBytes(
+                     url: try FfiConverterString.lift(url),
+                     headers: try FfiConverterDictionaryStringString.lift(headers)
+                )
+            }
+
+            let uniffiHandleSuccess = { (returnValue: HttpBytesResponse) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureResultRustBuffer(
+                        returnValue: FfiConverterTypeHttpBytesResponse_lower(returnValue),
                         callStatus: RustCallStatus()
                     )
                 )
@@ -3184,6 +3281,60 @@ package func FfiConverterTypeFrameRouteModel_lift(_ buf: RustBuffer) throws -> F
 #endif
 package func FfiConverterTypeFrameRouteModel_lower(_ value: FrameRouteModel) -> RustBuffer {
     return FfiConverterTypeFrameRouteModel.lower(value)
+}
+
+
+package struct HttpBytesResponse: Equatable, Hashable {
+    package let status: UInt16
+    package let body: Data
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    package init(status: UInt16, body: Data) {
+        self.status = status
+        self.body = body
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension HttpBytesResponse: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package struct FfiConverterTypeHttpBytesResponse: FfiConverterRustBuffer {
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HttpBytesResponse {
+        return
+            try HttpBytesResponse(
+                status: FfiConverterUInt16.read(from: &buf), 
+                body: FfiConverterData.read(from: &buf)
+        )
+    }
+
+    package static func write(_ value: HttpBytesResponse, into buf: inout [UInt8]) {
+        FfiConverterUInt16.write(value.status, into: &buf)
+        FfiConverterData.write(value.body, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeHttpBytesResponse_lift(_ buf: RustBuffer) throws -> HttpBytesResponse {
+    return try FfiConverterTypeHttpBytesResponse.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeHttpBytesResponse_lower(_ value: HttpBytesResponse) -> RustBuffer {
+    return FfiConverterTypeHttpBytesResponse.lower(value)
 }
 
 
@@ -6085,6 +6236,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_httpclient_post() != 8902) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nativeblocks_runtime_checksum_method_httpclient_get_bytes() != 36476) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_globalparameterclient_get() != 30591) {

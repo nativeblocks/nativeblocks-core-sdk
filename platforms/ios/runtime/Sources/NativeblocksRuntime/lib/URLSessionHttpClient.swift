@@ -34,6 +34,26 @@ internal final class URLSessionHttpClient: HttpClient, @unchecked Sendable {
         return try await execute(request)
     }
 
+    func getBytes(url: String, headers: [String: String]) async throws -> HttpBytesResponse {
+        var request = try makeRequest(url: url, headers: headers)
+        request.httpMethod = "GET"
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        return try await uniffiCallbackGuard(.network) {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                throw NbError.Failure(
+                    reason: "Not an HTTP response for \(url)",
+                    errorType: .network,
+                    errorCode: nil
+                )
+            }
+            return HttpBytesResponse(
+                status: UInt16(clamping: http.statusCode),
+                body: data
+            )
+        }
+    }
+
     private func makeRequest(url: String, headers: [String: String]) throws -> URLRequest {
         guard let parsed = URL(string: url) else {
             throw NbError.Failure(reason: "Invalid URL: \(url)", errorType: .network, errorCode: nil)

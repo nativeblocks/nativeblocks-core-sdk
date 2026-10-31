@@ -1,6 +1,7 @@
 package io.nativeblocks.runtime.lib
 
 import io.nativeblocks.runtime.ffi.ErrorType
+import io.nativeblocks.runtime.ffi.HttpBytesResponse
 import io.nativeblocks.runtime.ffi.HttpClient
 import io.nativeblocks.runtime.ffi.NbException
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +32,23 @@ internal class OkHttpHttpClient(
                 .post(body.toRequestBody(JSON_MEDIA_TYPE))
                 .build()
         )
+
+    override suspend fun getBytes(url: String, headers: Map<String, String>): HttpBytesResponse =
+        uniffiCallbackGuard(ErrorType.NETWORK) {
+            val request = Request.Builder()
+                .url(url)
+                .applyHeaders(headers)
+                .get()
+                .build()
+            withContext(Dispatchers.IO) {
+                client.newCall(request).execute().use { response ->
+                    HttpBytesResponse(
+                        status = response.code.toUShort(),
+                        body = response.body?.bytes() ?: ByteArray(0),
+                    )
+                }
+            }
+        }
 
     private suspend fun execute(request: Request): String = uniffiCallbackGuard(ErrorType.NETWORK) {
         withContext(Dispatchers.IO) {

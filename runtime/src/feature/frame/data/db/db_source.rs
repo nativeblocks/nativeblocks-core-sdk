@@ -10,12 +10,7 @@ pub(in crate::feature::frame::data) async fn get_frame(
     route: &str,
     development_mode: bool,
 ) -> NBResult<NativeFrameModel> {
-    let cache_key = if development_mode {
-        key::dev_key(route)
-    } else {
-        key::prod_key(route)
-    };
-    return match read_frame(cache, cache_key).await? {
+    return match read_frame(cache, route, development_mode).await? {
         Some(frame) => Ok(frame),
         None => Err(not_cached()),
     };
@@ -62,8 +57,12 @@ pub(in crate::feature::frame::data) async fn cached_checksum(
         .filter(|checksum| !checksum.is_empty()));
 }
 
-async fn read_frame(cache: &dyn CacheProvider, key: String) -> NBResult<Option<NativeFrameModel>> {
-    let Some(bytes) = cache.get(key.clone()).await? else {
+async fn read_frame(
+    cache: &dyn CacheProvider,
+    route: &str,
+    development_mode: bool,
+) -> NBResult<Option<NativeFrameModel>> {
+    let Some(bytes) = cache.get(frame_key(route, development_mode)).await? else {
         return Ok(None);
     };
     let mut aligned = rkyv::util::AlignedVec::<16>::new();
@@ -72,10 +71,26 @@ async fn read_frame(cache: &dyn CacheProvider, key: String) -> NBResult<Option<N
     return match rkyv::from_bytes::<NativeFrameModel, RkyvError>(aligned.as_slice()) {
         Ok(frame) => Ok(Some(frame)),
         Err(_) => {
-            let _ = cache.remove(key).await;
+            remove_frame(cache, route, development_mode).await;
             Ok(None)
         }
     };
+}
+
+async fn remove_frame(cache: &dyn CacheProvider, route: &str, development_mode: bool) {
+    if development_mode {
+        let _ = cache.remove(key::dev_key(route)).await;
+        return;
+    }
+    let _ = cache.remove(key::prod_key(route)).await;
+    let _ = cache.remove(key::prod_checksum_key(route)).await;
+}
+
+fn frame_key(route: &str, development_mode: bool) -> String {
+    if development_mode {
+        return key::dev_key(route);
+    }
+    return key::prod_key(route);
 }
 
 pub(in crate::feature::frame::data) async fn clear(

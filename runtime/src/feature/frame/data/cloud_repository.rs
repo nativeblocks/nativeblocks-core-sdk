@@ -6,19 +6,24 @@ use tokio::sync::watch;
 use crate::feature::frame::data::channels::FrameChannels;
 use crate::feature::frame::data::db::db_source;
 use crate::feature::frame::data::key::{
-    GATEWAY_FRAME, GATEWAY_FRAME_PRODUCTION, GATEWAY_FRAME_PRODUCTION_CHECKSUM,
+    GATEWAY_FRAME, GATEWAY_FRAME_PRODUCTION, GATEWAY_FRAME_PRODUCTION_CHECKSUM, error_code,
 };
 use crate::feature::frame::data::logging;
 use crate::feature::frame::data::memory::memory_source::MemoryFrameSource;
-use crate::feature::frame::data::network::cloud_source::{self, SyncOutcome};
+use crate::feature::frame::data::network::{binary_source, graphql_source};
 use crate::feature::frame::domain::model::NativeFrameModel;
 use crate::feature::frame::domain::repository::{FrameRepository, FrameResult};
 use crate::library::cache::CacheProvider;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
-use crate::library::net::network::HttpClient;
+use crate::library::net::{BinaryError, GatewayType, HttpClient, with_headers};
 use crate::library::result::NBResult;
-use crate::plugin::config;
+use crate::plugin::config::{self, ResolvedGatewayModel};
 use crate::plugin::logger::NativeLoggerProvider;
+
+pub(crate) enum SyncOutcome {
+    Updated(NativeFrameModel),
+    Unchanged,
+}
 
 pub(crate) struct CloudFrameRepository {
     http: Arc<dyn HttpClient>,
@@ -92,26 +97,167 @@ impl CloudFrameRepository {
         route: &str,
         parameters: &HashMap<String, String>,
     ) -> NBResult<SyncOutcome> {
-        let frame = self.config_client.gateway(GATEWAY_FRAME).await?;
-        let production = self.config_client.gateway(GATEWAY_FRAME_PRODUCTION).await?;
-        let checksum = self
-            .config_client
-            .gateway(GATEWAY_FRAME_PRODUCTION_CHECKSUM)
-            .await?;
-        return cloud_source::sync_cloud(
+        if self.environment.development_mode() {
+            let gateway = self.config_client.gateway(GATEWAY_FRAME).await?;
+            let frame = self
+                .development_frame(&gateway, route, parameters)
+                .await
+                .map_err(|error| error.or_code(error_code::FRAME_DEV_SYNC))?;
+            db_source::save_frame(self.cache.as_ref(), route, &frame, false).await?;
+            return Ok(SyncOutcome::Updated(frame));
+        }
+
+        let gateway = self.config_client.gateway(GATEWAY_FRAME_PRODUCTION).await?;
+        let cached_checksum = db_source::cached_checksum(self.cache.as_ref(), route).await?;
+        return match GatewayType::of(&gateway.gateway.gateway_type) {
+            GatewayType::Binary => {
+                self.binary_production_frame(&gateway, route, parameters, cached_checksum)
+                    .await
+            }
+            GatewayType::GraphQl | GatewayType::Rest => {
+                self.graphql_production_frame(&gateway, route, parameters, cached_checksum)
+                    .await
+            }
+        };
+    }
+
+    async fn development_frame(
+        &self,
+        gateway: &ResolvedGatewayModel,
+        route: &str,
+        parameters: &HashMap<String, String>,
+    ) -> NBResult<NativeFrameModel> {
+        return match GatewayType::of(&gateway.gateway.gateway_type) {
+            GatewayType::Binary => {
+                self.binary_development_frame(gateway, route, parameters)
+                    .await
+            }
+            GatewayType::GraphQl | GatewayType::Rest => {
+                self.graphql_development_frame(gateway, route, parameters)
+                    .await
+            }
+        };
+    }
+
+    async fn binary_development_frame(
+        &self,
+        gateway: &ResolvedGatewayModel,
+        route: &str,
+        parameters: &HashMap<String, String>,
+    ) -> NBResult<NativeFrameModel> {
+        let result = binary_source::frame(
             self.http.as_ref(),
-            &self.environment,
-            &self.sdk_config,
-            self.cache.as_ref(),
-            frame.gateway,
-            production.gateway,
-            checksum.gateway,
-            &frame.endpoint,
-            &frame.install_id,
+            self.headers(gateway),
+            &gateway.gateway.value,
+            route,
+        )
+        .await;
+        return match result {
+            Ok(frame) => Ok(frame),
+            Err(error) => {
+                self.fallback(route, error)?;
+                self.graphql_development_frame(gateway, route, parameters)
+                    .await
+            }
+        };
+    }
+
+    async fn graphql_development_frame(
+        &self,
+        gateway: &ResolvedGatewayModel,
+        route: &str,
+        parameters: &HashMap<String, String>,
+    ) -> NBResult<NativeFrameModel> {
+        return graphql_source::frame(
+            self.http.as_ref(),
+            self.headers(gateway),
+            &gateway.endpoint,
             route,
             parameters,
         )
         .await;
+    }
+
+    async fn binary_production_frame(
+        &self,
+        gateway: &ResolvedGatewayModel,
+        route: &str,
+        parameters: &HashMap<String, String>,
+        cached_checksum: Option<String>,
+    ) -> NBResult<SyncOutcome> {
+        let result = binary_source::frame_production(
+            self.http.as_ref(),
+            self.headers(gateway),
+            &gateway.gateway.value,
+            route,
+            parameters,
+            cached_checksum.as_deref(),
+        )
+        .await;
+        return match result {
+            Ok(Some(frame)) => {
+                db_source::save_frame(self.cache.as_ref(), route, &frame, true).await?;
+                Ok(SyncOutcome::Updated(frame))
+            }
+            Ok(None) => Ok(SyncOutcome::Unchanged),
+            Err(error) => {
+                self.fallback(route, error)
+                    .map_err(|error| error.or_code(error_code::FRAME_PRODUCTION_SYNC))?;
+                self.graphql_production_frame(gateway, route, parameters, cached_checksum)
+                    .await
+            }
+        };
+    }
+
+    async fn graphql_production_frame(
+        &self,
+        gateway: &ResolvedGatewayModel,
+        route: &str,
+        parameters: &HashMap<String, String>,
+        cached_checksum: Option<String>,
+    ) -> NBResult<SyncOutcome> {
+        if let Some(cached) = cached_checksum {
+            let checksum_gateway = self
+                .config_client
+                .gateway(GATEWAY_FRAME_PRODUCTION_CHECKSUM)
+                .await?;
+            let remote = graphql_source::frame_production_checksum(
+                self.http.as_ref(),
+                self.headers(&checksum_gateway),
+                &checksum_gateway.endpoint,
+                route,
+                parameters,
+            )
+            .await
+            .map_err(|error| error.or_code(error_code::FRAME_CHECKSUM))?;
+            if remote == cached {
+                return Ok(SyncOutcome::Unchanged);
+            }
+        }
+        let frame = graphql_source::frame_production(
+            self.http.as_ref(),
+            self.headers(gateway),
+            &gateway.endpoint,
+            route,
+            parameters,
+        )
+        .await
+        .map_err(|error| error.or_code(error_code::FRAME_PRODUCTION_SYNC))?;
+        db_source::save_frame(self.cache.as_ref(), route, &frame, true).await?;
+        return Ok(SyncOutcome::Updated(frame));
+    }
+
+    fn fallback(&self, route: &str, error: BinaryError) -> NBResult<()> {
+        let error = match error {
+            BinaryError::Failed(error) => return Err(error),
+            BinaryError::Fallback(error) => error,
+        };
+        logging::log_binary_fallback(&self.logger, &self.sdk_config, route, &error);
+        return Ok(());
+    }
+
+    fn headers(&self, gateway: &ResolvedGatewayModel) -> HashMap<String, String> {
+        return with_headers(&self.environment, &self.sdk_config, &gateway.install_id);
     }
 }
 
