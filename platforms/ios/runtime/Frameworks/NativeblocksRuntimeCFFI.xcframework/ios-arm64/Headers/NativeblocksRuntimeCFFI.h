@@ -290,6 +290,12 @@ typedef void (*UniffiCallbackInterfaceHttpClientMethod1)(uint64_t, RustBuffer, R
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_HTTP_CLIENT_METHOD2
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_HTTP_CLIENT_METHOD2
+typedef void (*UniffiCallbackInterfaceHttpClientMethod2)(uint64_t, RustBuffer, RustBuffer, UniffiForeignFutureCompleteRustBuffer _Nonnull, uint64_t, UniffiForeignFutureDroppedCallbackStruct* _Nonnull
+    );
+
+#endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_SCRIPT_BRIDGE_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_SCRIPT_BRIDGE_METHOD0
 typedef void (*UniffiCallbackInterfaceScriptBridgeMethod0)(uint64_t, RustBuffer, RustBuffer* _Nonnull, 
@@ -340,6 +346,7 @@ typedef struct UniffiVTableCallbackInterfaceHttpClient {
     UniffiCallbackInterfaceClone _Nonnull uniffiClone;
     UniffiCallbackInterfaceHttpClientMethod0 _Nonnull get;
     UniffiCallbackInterfaceHttpClientMethod1 _Nonnull post;
+    UniffiCallbackInterfaceHttpClientMethod2 _Nonnull getBytes;
 } UniffiVTableCallbackInterfaceHttpClient;
 
 #endif
@@ -651,6 +658,11 @@ uint64_t uniffi_nativeblocks_runtime_fn_method_httpclient_get(uint64_t ptr, Rust
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_HTTPCLIENT_POST
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_HTTPCLIENT_POST
 uint64_t uniffi_nativeblocks_runtime_fn_method_httpclient_post(uint64_t ptr, RustBuffer url, RustBuffer headers, RustBuffer body
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_HTTPCLIENT_GET_BYTES
+#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_HTTPCLIENT_GET_BYTES
+uint64_t uniffi_nativeblocks_runtime_fn_method_httpclient_get_bytes(uint64_t ptr, RustBuffer url, RustBuffer headers
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CLONE_GLOBALPARAMETERCLIENT
@@ -1241,6 +1253,12 @@ uint16_t uniffi_nativeblocks_runtime_checksum_method_httpclient_get(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_HTTPCLIENT_POST
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_HTTPCLIENT_POST
 uint16_t uniffi_nativeblocks_runtime_checksum_method_httpclient_post(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_HTTPCLIENT_GET_BYTES
+#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_HTTPCLIENT_GET_BYTES
+uint16_t uniffi_nativeblocks_runtime_checksum_method_httpclient_get_bytes(void
     
 );
 #endif

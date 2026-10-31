@@ -1,7 +1,7 @@
 [package]
 name = "nativeblocks-runtime"
-version = "0.1.0"
 edition = "2024"
+publish = false
 
 [lib]
 name = "nativeblocks_runtime"
@@ -30,6 +30,7 @@ async-trait = "0.1"
 tokio = { version = "1", default-features = false, features = ["sync", "rt-multi-thread"] }
 uuid = { version = "1", features = ["v7"] }
 rquickjs = { version = "0.13.0" }
+base64 = "0.23"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

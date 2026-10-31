@@ -1,21 +1,23 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use tokio::sync::watch;
 
-use crate::feature::localization::data::cloud_source;
 use crate::feature::localization::data::db_source;
 use crate::feature::localization::data::key::{
-    GATEWAY_LOCALIZATION, GATEWAY_LOCALIZATION_PRODUCTION, GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM,
+    GATEWAY_LOCALIZATION, GATEWAY_LOCALIZATION_PRODUCTION,
+    GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM, error_code,
 };
 use crate::feature::localization::data::logging;
 use crate::feature::localization::data::memory_source::MemoryLocalizationSource;
+use crate::feature::localization::data::{binary_source, graphql_source};
 use crate::feature::localization::domain::model::NativeLocalizationModel;
 use crate::feature::localization::domain::repository::LocalizationRepository;
 use crate::library::cache::CacheProvider;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
-use crate::library::net::network::HttpClient;
+use crate::library::net::{BinaryError, GatewayType, HttpClient, with_headers};
 use crate::library::result::NBResult;
-use crate::plugin::config;
+use crate::plugin::config::{self, ResolvedGatewayModel};
 use crate::plugin::logger::NativeLoggerProvider;
 
 pub(crate) struct CloudLocalizationRepository {
@@ -92,28 +94,173 @@ impl CloudLocalizationRepository {
         &self,
         language_code: &str,
     ) -> NBResult<NativeLocalizationModel> {
-        let localization_gateway = self.config_client.gateway(GATEWAY_LOCALIZATION).await?;
-        let production_gateway = self
+        if self.environment.development_mode() {
+            let gateway = self.config_client.gateway(GATEWAY_LOCALIZATION).await?;
+            let localization = self
+                .development_localization(&gateway, language_code)
+                .await
+                .map_err(|error| error.or_code(error_code::LOCALIZATION_DEV_SYNC))?;
+            db_source::save_localization(self.cache.as_ref(), language_code, &localization, false)
+                .await?;
+            return Ok(localization);
+        }
+
+        let gateway = self
             .config_client
             .gateway(GATEWAY_LOCALIZATION_PRODUCTION)
             .await?;
-        let checksum_gateway = self
-            .config_client
-            .gateway(GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM)
-            .await?;
-        return cloud_source::sync_cloud(
+        let cached_checksum =
+            db_source::cached_checksum(self.cache.as_ref(), language_code).await?;
+        return match GatewayType::of(&gateway.gateway.gateway_type) {
+            GatewayType::Binary => {
+                self.binary_production_localization(&gateway, language_code, cached_checksum)
+                    .await
+            }
+            GatewayType::GraphQl | GatewayType::Rest => {
+                self.graphql_production_localization(&gateway, language_code, cached_checksum)
+                    .await
+            }
+        };
+    }
+
+    async fn development_localization(
+        &self,
+        gateway: &ResolvedGatewayModel,
+        language_code: &str,
+    ) -> NBResult<NativeLocalizationModel> {
+        return match GatewayType::of(&gateway.gateway.gateway_type) {
+            GatewayType::Binary => {
+                self.binary_development_localization(gateway, language_code)
+                    .await
+            }
+            GatewayType::GraphQl | GatewayType::Rest => {
+                self.graphql_development_localization(gateway, language_code)
+                    .await
+            }
+        };
+    }
+
+    async fn binary_development_localization(
+        &self,
+        gateway: &ResolvedGatewayModel,
+        language_code: &str,
+    ) -> NBResult<NativeLocalizationModel> {
+        let result = binary_source::localization(
             self.http.as_ref(),
-            &self.environment,
-            &self.sdk_config,
-            self.cache.as_ref(),
-            localization_gateway.gateway,
-            production_gateway.gateway,
-            checksum_gateway.gateway,
-            &localization_gateway.endpoint,
-            &localization_gateway.install_id,
+            self.headers(gateway),
+            &gateway.gateway.value,
             language_code,
         )
         .await;
+        return match result {
+            Ok(localization) => Ok(localization),
+            Err(error) => {
+                self.fallback(language_code, error)?;
+                self.graphql_development_localization(gateway, language_code)
+                    .await
+            }
+        };
+    }
+
+    async fn graphql_development_localization(
+        &self,
+        gateway: &ResolvedGatewayModel,
+        language_code: &str,
+    ) -> NBResult<NativeLocalizationModel> {
+        return graphql_source::localization(
+            self.http.as_ref(),
+            self.headers(gateway),
+            &gateway.endpoint,
+            language_code,
+        )
+        .await;
+    }
+
+    async fn binary_production_localization(
+        &self,
+        gateway: &ResolvedGatewayModel,
+        language_code: &str,
+        cached_checksum: Option<String>,
+    ) -> NBResult<NativeLocalizationModel> {
+        let result = binary_source::localization_production(
+            self.http.as_ref(),
+            self.headers(gateway),
+            &gateway.gateway.value,
+            language_code,
+            cached_checksum.as_deref(),
+        )
+        .await;
+        return match result {
+            Ok(Some(localization)) => {
+                db_source::save_localization(
+                    self.cache.as_ref(),
+                    language_code,
+                    &localization,
+                    true,
+                )
+                .await?;
+                Ok(localization)
+            }
+            Ok(None) => {
+                db_source::get_localization(self.cache.as_ref(), language_code, false).await
+            }
+            Err(error) => {
+                self.fallback(language_code, error)
+                    .map_err(|error| error.or_code(error_code::LOCALIZATION_PRODUCTION_SYNC))?;
+                self.graphql_production_localization(gateway, language_code, cached_checksum)
+                    .await
+            }
+        };
+    }
+
+    async fn graphql_production_localization(
+        &self,
+        gateway: &ResolvedGatewayModel,
+        language_code: &str,
+        cached_checksum: Option<String>,
+    ) -> NBResult<NativeLocalizationModel> {
+        if let Some(cached) = cached_checksum {
+            let checksum_gateway = self
+                .config_client
+                .gateway(GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM)
+                .await?;
+            let remote = graphql_source::localization_production_checksum(
+                self.http.as_ref(),
+                self.headers(&checksum_gateway),
+                &checksum_gateway.endpoint,
+                language_code,
+            )
+            .await
+            .map_err(|error| error.or_code(error_code::LOCALIZATION_CHECKSUM))?;
+            if remote == cached {
+                return db_source::get_localization(self.cache.as_ref(), language_code, false)
+                    .await;
+            }
+        }
+        let localization = graphql_source::localization_production(
+            self.http.as_ref(),
+            self.headers(gateway),
+            &gateway.endpoint,
+            language_code,
+        )
+        .await
+        .map_err(|error| error.or_code(error_code::LOCALIZATION_PRODUCTION_SYNC))?;
+        db_source::save_localization(self.cache.as_ref(), language_code, &localization, true)
+            .await?;
+        return Ok(localization);
+    }
+
+    fn fallback(&self, language_code: &str, error: BinaryError) -> NBResult<()> {
+        let error = match error {
+            BinaryError::Failed(error) => return Err(error),
+            BinaryError::Fallback(error) => error,
+        };
+        logging::log_binary_fallback(&self.logger, &self.sdk_config, language_code, &error);
+        return Ok(());
+    }
+
+    fn headers(&self, gateway: &ResolvedGatewayModel) -> HashMap<String, String> {
+        return with_headers(&self.environment, &self.sdk_config, &gateway.install_id);
     }
 }
 

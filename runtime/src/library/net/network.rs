@@ -9,6 +9,12 @@ const INSTALL_ID_HEADER: &str = "Install-Id";
 const SDK_PLATFORM_HEADER: &str = "SDK-Platform";
 const SDK_VERSION_HEADER: &str = "SDK-Version";
 
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct HttpBytesResponse {
+    pub status: u16,
+    pub body: Vec<u8>,
+}
+
 #[uniffi::export(with_foreign)]
 #[async_trait::async_trait]
 pub trait HttpClient: Send + Sync {
@@ -19,6 +25,11 @@ pub trait HttpClient: Send + Sync {
         headers: HashMap<String, String>,
         body: String,
     ) -> Result<String, NBError>;
+    async fn get_bytes(
+        &self,
+        url: String,
+        headers: HashMap<String, String>,
+    ) -> Result<HttpBytesResponse, NBError>;
 }
 
 pub(crate) fn with_headers(

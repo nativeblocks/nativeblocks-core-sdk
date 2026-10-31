@@ -1,8 +1,9 @@
 pub(crate) mod cloud_repository;
 
-mod cloud_source;
+mod binary_source;
 mod db_source;
 mod dto;
+mod graphql_source;
 mod key;
 mod logging;
 mod mapper;

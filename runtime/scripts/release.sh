@@ -4,10 +4,11 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+source "../deploy/lib/common.sh"
 
 DIST="dist"
 PLATFORMS="../platforms"
-VERSION="$(grep -m1 '^version' Cargo.toml | sed -E 's/.*"(.*)".*/\1/')"
+VERSION="$(nb_version core)"
 OS="$(uname -s)"
 
 SYNC=0

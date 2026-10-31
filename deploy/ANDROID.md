@@ -44,7 +44,7 @@ Skip this step if the core hasn't changed since the last copy.
 deploy/check-version.sh android/v0.2.0
 ```
 
-Fails if the tag, `versions.toml`, the Gradle catalogs or `Cargo.toml` disagree.
+Fails if the tag, `versions.toml` or the Gradle catalogs disagree.
 
 ## 4. Build
 

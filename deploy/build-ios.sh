@@ -321,7 +321,7 @@ fi
     echo "{"
     echo "  \"version\": \"$VERSION\","
     echo "  \"builtAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
-    echo "  \"coreVersion\": \"$(nb_cargo_version)\","
+    echo "  \"coreVersion\": \"$(nb_version core)\","
     echo "  \"swift\": \"$(swift --version 2>/dev/null | head -1 | tr -d '"')\","
     echo "  \"xcode\": \"$(xcodebuild -version 2>/dev/null | head -1)\","
     echo "  \"flavour\": \"$([ -n "$REGISTRY_BASE" ] && echo registry || echo local)\","

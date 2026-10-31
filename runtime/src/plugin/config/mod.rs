@@ -8,7 +8,7 @@ use crate::library::cache::CacheProvider;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::library::net::network::HttpClient;
 pub(crate) use client::Client;
-pub(crate) use model::ProjectConfigGatewayModel;
+pub(crate) use model::{ProjectConfigGatewayModel, ResolvedGatewayModel};
 use std::sync::Arc;
 
 pub(crate) fn build_client(

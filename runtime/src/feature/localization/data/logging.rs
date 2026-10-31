@@ -127,6 +127,31 @@ pub(super) fn log_language_set(
     );
 }
 
+pub(super) fn log_binary_fallback(
+    logger: &Mutex<NativeLoggerProvider>,
+    sdk_config: &SdkConfig,
+    language_code: &str,
+    error: &ErrorModel,
+) {
+    let mut params = crate::plugin::logger::error_parameters(error);
+    params.insert(
+        keys::parameter::STATE.to_string(),
+        keys::state::LOCALIZATION_BINARY_FALLBACK.to_string(),
+    );
+    params.insert(
+        keys::parameter::LANGUAGE_CODE.to_string(),
+        language_code.to_string(),
+    );
+    dispatch(
+        logger,
+        sdk_config,
+        LoggerEventLevel::Error,
+        keys::tag::LOCALIZATION_SYNC_STATE,
+        "Binary localization request failed, using GraphQL",
+        params,
+    );
+}
+
 fn dispatch(
     logger: &Mutex<NativeLoggerProvider>,
     sdk_config: &SdkConfig,

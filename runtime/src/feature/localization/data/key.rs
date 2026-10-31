@@ -1,8 +1,15 @@
+use crate::library::net::BinaryFormat;
+
 pub(super) const GATEWAY_LOCALIZATION: &str = "localizations";
 pub(super) const GATEWAY_LOCALIZATION_PRODUCTION: &str = "localizationsProduction";
 pub(super) const GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM: &str = "localizationProductionChecksum";
 
 pub(super) const PARAM_LANGUAGE_CODE: &str = "languageCode";
+
+pub(super) const BINARY_FORMAT: BinaryFormat = BinaryFormat {
+    magic: *b"NBXL",
+    version: 1,
+};
 
 pub(super) fn dev_key(language_code: &str) -> String {
     return format!("LOCALIZATION_DEV::{language_code}");
