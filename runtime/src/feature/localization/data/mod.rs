@@ -1,4 +1,5 @@
 pub(crate) mod cloud_repository;
+pub(crate) mod embedded_source;
 
 mod binary_source;
 mod db_source;

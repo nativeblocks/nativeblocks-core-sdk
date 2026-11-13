@@ -250,6 +250,13 @@ typedef void (*UniffiCallbackInterfaceLoggerMethod0)(uint64_t, RustBuffer, RustB
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_EMBEDDED_READER_METHOD0
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_EMBEDDED_READER_METHOD0
+typedef void (*UniffiCallbackInterfaceEmbeddedReaderMethod0)(uint64_t, RustBuffer, RustBuffer* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_FRAME_STATE_OBSERVER_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_FRAME_STATE_OBSERVER_METHOD0
 typedef void (*UniffiCallbackInterfaceFrameStateObserverMethod0)(uint64_t, RustBuffer, void* _Nonnull, 
@@ -319,6 +326,15 @@ typedef struct UniffiVTableCallbackInterfaceLogger {
 } UniffiVTableCallbackInterfaceLogger;
 
 #endif
+#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_EMBEDDED_READER
+#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_EMBEDDED_READER
+typedef struct UniffiVTableCallbackInterfaceEmbeddedReader {
+    UniffiCallbackInterfaceFree _Nonnull uniffiFree;
+    UniffiCallbackInterfaceClone _Nonnull uniffiClone;
+    UniffiCallbackInterfaceEmbeddedReaderMethod0 _Nonnull read;
+} UniffiVTableCallbackInterfaceEmbeddedReader;
+
+#endif
 #ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_FRAME_STATE_OBSERVER
 #define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_FRAME_STATE_OBSERVER
 typedef struct UniffiVTableCallbackInterfaceFrameStateObserver {
@@ -372,7 +388,7 @@ void uniffi_nativeblocks_runtime_fn_free_nativeblocksruntime(uint64_t handle, Ru
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CONSTRUCTOR_NATIVEBLOCKSRUNTIME_NEW
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CONSTRUCTOR_NATIVEBLOCKSRUNTIME_NEW
-uint64_t uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(RustBuffer environment, RustBuffer config, uint64_t http, RustBuffer cache_dir, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_nativeblocks_runtime_fn_constructor_nativeblocksruntime_new(RustBuffer environment, RustBuffer config, uint64_t http, RustBuffer cache_dir, uint64_t embedded, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_NATIVEBLOCKSRUNTIME_EXPERIMENT_CLIENT
@@ -398,6 +414,26 @@ uint64_t uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_localization_
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_NATIVEBLOCKSRUNTIME_SCAFFOLD_CLIENT
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_NATIVEBLOCKSRUNTIME_SCAFFOLD_CLIENT
 uint64_t uniffi_nativeblocks_runtime_fn_method_nativeblocksruntime_scaffold_client(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CLONE_EMBEDDEDREADER
+#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CLONE_EMBEDDEDREADER
+uint64_t uniffi_nativeblocks_runtime_fn_clone_embeddedreader(uint64_t handle, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_FREE_EMBEDDEDREADER
+#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_FREE_EMBEDDEDREADER
+void uniffi_nativeblocks_runtime_fn_free_embeddedreader(uint64_t handle, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_INIT_CALLBACK_VTABLE_EMBEDDEDREADER
+#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_INIT_CALLBACK_VTABLE_EMBEDDEDREADER
+void uniffi_nativeblocks_runtime_fn_init_callback_vtable_embeddedreader(const UniffiVTableCallbackInterfaceEmbeddedReader* _Nonnull vtable
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_EMBEDDEDREADER_READ
+#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_METHOD_EMBEDDEDREADER_READ
+RustBuffer uniffi_nativeblocks_runtime_fn_method_embeddedreader_read(uint64_t ptr, RustBuffer path, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_FN_CLONE_EXPERIMENTCLIENT
@@ -1067,6 +1103,12 @@ uint16_t uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_localiz
 #ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_NATIVEBLOCKSRUNTIME_SCAFFOLD_CLIENT
 #define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_NATIVEBLOCKSRUNTIME_SCAFFOLD_CLIENT
 uint16_t uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_scaffold_client(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_EMBEDDEDREADER_READ
+#define UNIFFI_FFIDEF_UNIFFI_NATIVEBLOCKS_RUNTIME_CHECKSUM_METHOD_EMBEDDEDREADER_READ
+uint16_t uniffi_nativeblocks_runtime_checksum_method_embeddedreader_read(void
     
 );
 #endif

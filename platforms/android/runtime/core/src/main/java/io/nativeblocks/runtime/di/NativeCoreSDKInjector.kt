@@ -7,6 +7,7 @@ import io.nativeblocks.runtime.ffi.HttpClient
 import io.nativeblocks.runtime.ffi.NativeRuntimeClientManager
 import io.nativeblocks.runtime.frame.FrameStateBridgeImpl
 import io.nativeblocks.runtime.frame.FrameViewModel
+import io.nativeblocks.runtime.lib.AssetEmbeddedReader
 import io.nativeblocks.runtime.lib.OkHttpHttpClient
 import io.nativeblocks.runtime.localization.LocalizationUseCase
 import okhttp3.OkHttpClient
@@ -92,6 +93,7 @@ internal fun ffiModule(instanceName: String, edition: NativeblocksEdition) = mod
             edition = edition,
             http = get(named(instanceName)),
             cacheDir = androidContext().cacheDir.absolutePath,
+            embeddedReader = AssetEmbeddedReader(androidContext().assets),
         )
     }
 }

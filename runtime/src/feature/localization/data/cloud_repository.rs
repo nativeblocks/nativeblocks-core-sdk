@@ -3,9 +3,10 @@ use std::sync::{Arc, Mutex};
 
 use tokio::sync::watch;
 
+use crate::feature::embedded::Embedded;
 use crate::feature::localization::data::db_source;
 use crate::feature::localization::data::key::{
-    GATEWAY_LOCALIZATION, GATEWAY_LOCALIZATION_PRODUCTION,
+    self, GATEWAY_LOCALIZATION, GATEWAY_LOCALIZATION_PRODUCTION,
     GATEWAY_LOCALIZATION_PRODUCTION_CHECKSUM, error_code,
 };
 use crate::feature::localization::data::logging;
@@ -27,6 +28,7 @@ pub(crate) struct CloudLocalizationRepository {
     cache: Arc<dyn CacheProvider>,
     config_client: Arc<config::Client>,
     logger: Arc<Mutex<NativeLoggerProvider>>,
+    embedded: Arc<Embedded>,
     language_code: watch::Sender<Option<String>>,
     memory: MemoryLocalizationSource,
 }
@@ -39,6 +41,7 @@ impl CloudLocalizationRepository {
         cache: Arc<dyn CacheProvider>,
         config_client: Arc<config::Client>,
         logger: Arc<Mutex<NativeLoggerProvider>>,
+        embedded: Arc<Embedded>,
     ) -> Self {
         return Self {
             http,
@@ -47,6 +50,7 @@ impl CloudLocalizationRepository {
             cache,
             config_client,
             logger,
+            embedded,
             language_code: watch::channel(None).0,
             memory: MemoryLocalizationSource::new(),
         };
@@ -267,23 +271,27 @@ impl CloudLocalizationRepository {
 #[async_trait::async_trait]
 impl LocalizationRepository for CloudLocalizationRepository {
     async fn load(&self, language_code: &str) -> NBResult<NativeLocalizationModel> {
-        if let Some(localization) = self.from_cache(language_code).await {
+        self.embedded.ready().await;
+        let language_code = key::normalize(language_code);
+        if let Some(localization) = self.from_cache(&language_code).await {
             return Ok(localization);
         }
-        return self.from_network(language_code).await;
+        return self.from_network(&language_code).await;
     }
 
     async fn sync(&self, language_code: &str) -> NBResult<()> {
-        return self.from_network(language_code).await.map(|_| ());
+        self.embedded.ready().await;
+        let language_code = key::normalize(language_code);
+        return self.from_network(&language_code).await.map(|_| ());
     }
 
     fn set_language_code(&self, language_code: &str) {
         let changed = {
             let current = self.language_code.borrow();
-            current.as_deref() != Some(language_code)
+            current.as_deref().map(key::normalize) != Some(key::normalize(language_code))
         };
         if changed {
-            let _ = self.language_code.send(Some(language_code.to_string()));
+            self.language_code.send_replace(Some(language_code.to_string()));
             logging::log_language_set(&self.logger, &self.sdk_config, language_code);
         }
     }
@@ -293,7 +301,7 @@ impl LocalizationRepository for CloudLocalizationRepository {
     }
 
     fn translate(&self, key: &str) -> Option<String> {
-        let language_code = self.language_code.borrow().clone()?;
+        let language_code = key::normalize(self.language_code.borrow().as_deref()?);
         return self.memory.translate(&language_code, key);
     }
 }

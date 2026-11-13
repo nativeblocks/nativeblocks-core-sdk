@@ -16,6 +16,7 @@ pub mod tag {
     pub const BLOCK_SCOPE: &str = "BLOCK_SCOPE";
     pub const ACTION_SCOPE: &str = "ACTION_SCOPE";
     pub const MODIFIER_SCOPE: &str = "MODIFIER_SCOPE";
+    pub const EMBEDDED_SEED: &str = "EMBEDDED_SEED";
 }
 
 pub mod state {
@@ -47,6 +48,9 @@ pub mod state {
     pub const ACTION_EVENT_IGNORED: &str = "ACTION_EVENT_IGNORED";
     pub const ACTION_EVENT_AMBIGUOUS: &str = "ACTION_EVENT_AMBIGUOUS";
     pub const TRIGGER_EXECUTED: &str = "TRIGGER_EXECUTED";
+    pub const EMBEDDED_SEEDED: &str = "EMBEDDED_SEEDED";
+    pub const EMBEDDED_ENTRY_SKIPPED: &str = "EMBEDDED_ENTRY_SKIPPED";
+    pub const EMBEDDED_SEED_FAILED: &str = "EMBEDDED_SEED_FAILED";
 }
 
 pub mod parameter {
@@ -63,6 +67,7 @@ pub mod parameter {
     pub const KEY: &str = "key";
     pub const MATCH_COUNT: &str = "match_count";
     pub const FRAMES_COUNT: &str = "frames_count";
+    pub const LOCALIZATIONS_COUNT: &str = "localizations_count";
     pub const EXPERIMENT_KEY: &str = "experiment_key";
     pub const EXPERIMENT_VALUE: &str = "experiment_value";
     pub const EXPERIMENT_TYPE: &str = "experiment_type";

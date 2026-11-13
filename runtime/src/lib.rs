@@ -13,6 +13,7 @@ pub mod library;
 pub mod plugin;
 
 use crate::di::Container;
+use crate::feature::embedded::EmbeddedReader;
 use crate::feature::experiment::ExperimentClient;
 use crate::feature::frame::FrameClient;
 use crate::feature::localization::LocalizationClient;
@@ -40,6 +41,7 @@ impl NativeblocksRuntime {
         config: SdkConfig,
         http: Arc<dyn HttpClient>,
         cache_dir: String,
+        embedded: Arc<dyn EmbeddedReader>,
     ) -> Result<Arc<Self>, NBError> {
         if let Err(error) = environment.validate() {
             return Err(NBError::from(error));
@@ -50,7 +52,7 @@ impl NativeblocksRuntime {
             Err(error) => return Err(NBError::from(error)),
         };
 
-        let container = match di::get_or_create(&environment, &config, http, caches) {
+        let container = match di::get_or_create(&environment, &config, http, caches, embedded) {
             Ok(container) => container,
             Err(error) => return Err(NBError::from(error)),
         };

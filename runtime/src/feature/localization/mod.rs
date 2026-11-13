@@ -11,6 +11,8 @@ use crate::feature::localization::domain::repository::LocalizationRepository;
 pub use domain::model::NativeLocalizationModel;
 pub use presenter::LocalizationClient;
 
+pub(crate) use data::embedded_source::seed as seed_embedded;
+
 pub(crate) fn get_or_create_client(container: &Container) -> Arc<LocalizationClient> {
     return container.component(|| LocalizationClient::create(build_repository(container)));
 }
@@ -23,5 +25,6 @@ fn build_repository(container: &Container) -> Arc<dyn LocalizationRepository> {
         container.caches().localizations.clone(),
         container.config_client(),
         container.logger(),
+        container.embedded(),
     ));
 }

@@ -1,3 +1,4 @@
+pub(crate) mod embedded_source;
 pub(crate) mod repository_impl;
 
 mod dto;

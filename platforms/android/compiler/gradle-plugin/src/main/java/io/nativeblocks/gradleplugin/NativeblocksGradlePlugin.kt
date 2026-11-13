@@ -40,6 +40,7 @@ open class NativeblocksGradlePlugin : Plugin<Project> {
                         NativeblocksEmbedTask::class.java
                     ) {
                         it.workingDir.set(project.layout.projectDirectory)
+                        it.instance.set(extension.embeddingInstance)
                     }
                     variant.sources.assets?.addGeneratedSourceDirectory(embedTask, NativeblocksEmbedTask::outputDir)
                 }

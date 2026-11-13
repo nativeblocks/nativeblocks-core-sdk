@@ -2,6 +2,7 @@ use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use crate::feature::embedded::{Embedded, EmbeddedReader};
 use crate::library::cache::Caches;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::library::net::network::HttpClient;
@@ -15,6 +16,7 @@ pub(crate) struct Container {
     sdk_config: SdkConfig,
     http: Arc<dyn HttpClient>,
     caches: Caches,
+    embedded: Arc<Embedded>,
     logger: Arc<Mutex<NativeLoggerProvider>>,
     global_parameters: Arc<GlobalParameterProvider>,
     config_client: Mutex<Option<Arc<config::Client>>>,
@@ -27,13 +29,22 @@ impl Container {
         sdk_config: SdkConfig,
         http: Arc<dyn HttpClient>,
         caches: Caches,
+        embedded_reader: Arc<dyn EmbeddedReader>,
     ) -> Self {
         let logger = logger::get_or_create(environment.instance_name());
+        let embedded = Arc::new(Embedded::new(
+            embedded_reader,
+            environment.clone(),
+            sdk_config.clone(),
+            &caches,
+            logger.clone(),
+        ));
         return Self {
             environment,
             sdk_config,
             http,
             caches,
+            embedded,
             logger,
             global_parameters: global_parameter::build_provider(),
             config_client: Mutex::new(None),
@@ -55,6 +66,10 @@ impl Container {
 
     pub(crate) fn caches(&self) -> &Caches {
         return &self.caches;
+    }
+
+    pub(crate) fn embedded(&self) -> Arc<Embedded> {
+        return self.embedded.clone();
     }
 
     pub(crate) fn logger(&self) -> Arc<Mutex<NativeLoggerProvider>> {

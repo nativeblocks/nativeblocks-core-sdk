@@ -3,6 +3,8 @@ package io.nativeblocks.gradleplugin.tasks
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
@@ -20,6 +22,9 @@ abstract class NativeblocksEmbedTask : DefaultTask() {
     @get:Internal
     abstract val workingDir: DirectoryProperty
 
+    @get:Input
+    abstract val instance: Property<String>
+
     @get:Inject
     abstract val execOperations: ExecOperations
 
@@ -29,6 +34,13 @@ abstract class NativeblocksEmbedTask : DefaultTask() {
 
     @TaskAction
     fun embed() {
+        val instanceName = instance.get()
+        if (!isValidInstanceName(instanceName)) {
+            throw GradleException(
+                "Invalid nativeblocks.embeddingInstance '$instanceName'. Use the instance name you pass to NativeblocksManager.initialize."
+            )
+        }
+
         val version = runCli("version")
             ?: throw GradleException(
                 """
@@ -39,12 +51,17 @@ abstract class NativeblocksEmbedTask : DefaultTask() {
             )
         if (version.exitCode != 0) throw unsupportedOr("Nativeblocks CLI failed", version)
 
-        val out = outputDir.get().dir("nativeblocksEmbedded").asFile.absolutePath
+        val root = outputDir.get().dir("nativeblocksEmbedded").asFile
+        root.listFiles()?.filter { it.name != instanceName }?.forEach { it.deleteRecursively() }
+        val out = root.resolve(instanceName).absolutePath
         val sync = runCli("embed", "sync", "--platform", "ANDROID", "--out", out)
             ?: throw GradleException("Failed to run the Nativeblocks CLI")
         if (sync.exitCode != 0) throw unsupportedOr("Nativeblocks embed sync failed", sync)
         logger.lifecycle(sync.output.trim())
     }
+
+    private fun isValidInstanceName(name: String): Boolean =
+        name.isNotBlank() && name.all { it.isLetterOrDigit() && it.code < 128 || it == '_' || it == '-' }
 
     private class CliResult(val exitCode: Int, val output: String)
 

@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex, Weak};
 
+use crate::feature::embedded::Embedded;
 use crate::feature::scaffold::data::key::{self, GATEWAY_OPERATION};
 use crate::feature::scaffold::data::logging;
 use crate::feature::scaffold::data::source;
@@ -21,6 +22,7 @@ pub(crate) struct ScaffoldRepositoryImpl {
     cache: Arc<dyn CacheProvider>,
     config_client: Arc<config::Client>,
     logger: Arc<Mutex<NativeLoggerProvider>>,
+    embedded: Arc<Embedded>,
 }
 
 impl ScaffoldRepositoryImpl {
@@ -31,6 +33,7 @@ impl ScaffoldRepositoryImpl {
         cache: Arc<dyn CacheProvider>,
         config_client: Arc<config::Client>,
         logger: Arc<Mutex<NativeLoggerProvider>>,
+        embedded: Arc<Embedded>,
     ) -> Arc<Self> {
         return Arc::new_cyclic(|me| Self {
             me: me.clone(),
@@ -40,6 +43,7 @@ impl ScaffoldRepositoryImpl {
             cache,
             config_client,
             logger,
+            embedded,
         });
     }
 
@@ -99,6 +103,7 @@ impl ScaffoldRepositoryImpl {
 #[async_trait::async_trait]
 impl ScaffoldRepository for ScaffoldRepositoryImpl {
     async fn fetch(&self, force_fetch: bool) -> NBResult<ScaffoldModel> {
+        self.embedded.ready().await;
         if !force_fetch {
             if let Some(scaffold) = self.cached().await {
                 self.refresh_in_background();
@@ -117,6 +122,7 @@ impl ScaffoldRepository for ScaffoldRepositoryImpl {
     }
 
     async fn clear(&self) -> NBResult<()> {
+        self.embedded.ready().await;
         self.cache.clear().await?;
         return Ok(());
     }

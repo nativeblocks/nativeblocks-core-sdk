@@ -24,7 +24,6 @@ final class InstanceManager {
             SampleBlockProvider.provideBlocks(name: instance.instanceKey)
             SampleModifierProvider.provideModifiers(name: instance.instanceKey)
             FoundationProvider.provide(name: instance.instanceKey)
-            FoundationTypeProvider.provideTypes(name: instance.instanceKey)
             _ = manager.provideTypeConverter(ShapeStyleType.self, converter: ShapeStyleNativeType())
             provideKit(manager, for: instance)
         }

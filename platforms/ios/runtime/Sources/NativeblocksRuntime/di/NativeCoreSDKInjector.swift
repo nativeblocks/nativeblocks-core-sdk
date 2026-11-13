@@ -26,7 +26,8 @@ internal final class NativeCoreSDKInjector {
             instanceName: name,
             edition: edition,
             http: http,
-            cacheDir: cacheDir.path
+            cacheDir: cacheDir.path,
+            embeddedReader: BundleEmbeddedReader()
         )
         self.runtimeClient = runtimeClient
 

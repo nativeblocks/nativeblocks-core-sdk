@@ -11,6 +11,8 @@ use crate::feature::scaffold::domain::repository::ScaffoldRepository;
 pub use domain::model::{FrameRouteModel, FrameTypeModel, RouteArgumentsModel, ScaffoldModel};
 pub use presenter::ScaffoldClient;
 
+pub(crate) use data::embedded_source::seed as seed_embedded;
+
 pub(crate) fn get_or_create_client(container: &Container) -> Arc<ScaffoldClient> {
     return container.component(|| ScaffoldClient::create(build_repository(container)));
 }
@@ -23,5 +25,6 @@ fn build_repository(container: &Container) -> Arc<dyn ScaffoldRepository> {
         container.caches().scaffold.clone(),
         container.config_client(),
         container.logger(),
+        container.embedded(),
     );
 }
