@@ -5,6 +5,7 @@ import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.LibraryExtension
 import com.google.devtools.ksp.gradle.KspExtension
+import io.nativeblocks.gradleplugin.tasks.NativeblocksEmbedTask
 import io.nativeblocks.gradleplugin.tasks.NativeblocksPrepareSchemaTask
 import io.nativeblocks.gradleplugin.tasks.NativeblocksSyncTask
 import kotlinx.serialization.json.Json
@@ -19,6 +20,8 @@ open class NativeblocksGradlePlugin : Plugin<Project> {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     override fun apply(project: Project) {
+        val extension = project.extensions.create("nativeblocks", NativeblocksExtension::class.java)
+
         project.plugins.withId("com.google.devtools.ksp") {
             project.afterEvaluate {
                 configureKsp(project)
@@ -31,6 +34,15 @@ open class NativeblocksGradlePlugin : Plugin<Project> {
             component?.onVariants { variant ->
                 val flavor = "${variant.flavorName?.capitalized()}${variant.buildType?.capitalized()}"
                 registerTask(project, flavor)
+                if (extension.enableEmbedding.get()) {
+                    val embedTask = project.tasks.register(
+                        "nativeblocksEmbed${variant.name.capitalized()}",
+                        NativeblocksEmbedTask::class.java
+                    ) {
+                        it.workingDir.set(project.layout.projectDirectory)
+                    }
+                    variant.sources.assets?.addGeneratedSourceDirectory(embedTask, NativeblocksEmbedTask::outputDir)
+                }
             }
         }
     }
