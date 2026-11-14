@@ -12,6 +12,7 @@ let package = Package(
         .plugin(name: "GenerateProvider", targets: ["GenerateProvider"]),
         .plugin(name: "Sync", targets: ["Sync"]),
         .plugin(name: "PrepareSchema", targets: ["PrepareSchema"]),
+        .plugin(name: "EmbedContent", targets: ["EmbedContent"]),
         .executable(name: "NativeblocksTool", targets: ["NativeblocksTool"]),
     ],
     dependencies: [
@@ -77,6 +78,11 @@ let package = Package(
             dependencies: [
                 .target(name: "NativeblocksTool")
             ]
+        ),
+
+        .plugin(
+            name: "EmbedContent",
+            capability: .buildTool()
         ),
 
         .executableTarget(

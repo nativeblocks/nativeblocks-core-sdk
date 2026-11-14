@@ -1,16 +1,16 @@
 use std::sync::{Arc, Mutex};
 
-use tokio::sync::OnceCell;
+use tokio::sync::Mutex as AsyncMutex;
 
+use crate::feature::embedded::logging::SeedLog;
 use crate::feature::embedded::manifest::{self, EmbeddedManifest, MANIFEST_FILE};
-use crate::feature::embedded::logging;
 use crate::feature::embedded::reader::EmbeddedReader;
 use crate::feature::scaffold::ScaffoldModel;
 use crate::feature::{frame, localization, scaffold};
-use crate::library::cache::CacheProvider;
-use crate::library::cache::Caches;
+use crate::library::cache::{CacheProvider, Caches};
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::library::result::ErrorModel;
+use crate::plugin::config;
 use crate::plugin::logger::NativeLoggerProvider;
 
 const MARKER_KEY: &str = "EMBEDDED_SEEDED";
@@ -22,19 +22,15 @@ pub(crate) enum SeedError {
 
 pub(crate) struct Embedded {
     reader: Arc<dyn EmbeddedReader>,
-    environment: NativeblocksEnvironment,
-    sdk_config: SdkConfig,
+    development_mode: bool,
+    platform: String,
     frames: Arc<dyn CacheProvider>,
     localizations: Arc<dyn CacheProvider>,
     scaffold: Arc<dyn CacheProvider>,
     marker: Arc<dyn CacheProvider>,
-    logger: Arc<Mutex<NativeLoggerProvider>>,
-    seeded: OnceCell<()>,
-}
-
-struct Seeded {
-    frames: usize,
-    localizations: usize,
+    config: Arc<config::Client>,
+    log: SeedLog,
+    done: AsyncMutex<bool>,
 }
 
 impl Embedded {
@@ -43,103 +39,108 @@ impl Embedded {
         environment: NativeblocksEnvironment,
         sdk_config: SdkConfig,
         caches: &Caches,
+        config: Arc<config::Client>,
         logger: Arc<Mutex<NativeLoggerProvider>>,
     ) -> Self {
         return Self {
             reader,
-            environment,
-            sdk_config,
+            development_mode: environment.development_mode(),
+            platform: sdk_config.platform.clone(),
             frames: caches.frames.clone(),
             localizations: caches.localizations.clone(),
             scaffold: caches.scaffold.clone(),
             marker: caches.embedded.clone(),
-            logger,
-            seeded: OnceCell::new(),
+            config,
+            log: SeedLog::new(logger, sdk_config),
+            done: AsyncMutex::new(false),
         };
     }
 
     pub(crate) async fn ready(&self) {
-        self.seeded.get_or_init(|| self.seed()).await;
-    }
-
-    async fn seed(&self) {
-        if self.environment.development_mode() {
-            return;
-        }
-        if self.has_marker().await {
-            return;
-        }
-        let seeded = match self.seed_from().await {
-            Ok(seeded) => seeded,
-            Err(error) => {
-                logging::log_failure(&self.logger, &self.sdk_config, &error);
-                return;
-            }
-        };
-        if let Err(error) = self.write_marker().await {
-            logging::log_failure(&self.logger, &self.sdk_config, &error);
-            return;
-        }
-        if let Some(seeded) = seeded {
-            logging::log_seeded(
-                &self.logger,
-                &self.sdk_config,
-                seeded.frames,
-                seeded.localizations,
-            );
+        let mut done = self.done.lock().await;
+        if !*done {
+            *done = self.seed_once().await;
         }
     }
 
-    async fn seed_from(&self) -> Result<Option<Seeded>, ErrorModel> {
-        let Some(bytes) = self.read(MANIFEST_FILE).await else {
-            return Ok(None);
+    async fn seed_once(&self) -> bool {
+        if self.development_mode || self.has_marker().await {
+            return true;
+        }
+        let Ok(project_id) = self.config.project_id().await else {
+            return false;
         };
-        let manifest = match manifest::parse(&bytes, &self.sdk_config.platform) {
-            Ok(manifest) => manifest,
+        if let Err(error) = self.seed(&project_id).await {
+            self.log.failed(&error);
+        }
+        return true;
+    }
+
+    async fn seed(&self, project_id: &str) -> Result<(), ErrorModel> {
+        if let Some(manifest) = self.manifest(project_id).await {
+            let frames = self.seed_frames(project_id, &manifest).await?;
+            let localizations = self.seed_localizations(project_id, &manifest).await?;
+            self.seed_scaffold(&manifest).await?;
+            self.log.seeded(frames, localizations);
+        }
+        return self.write_marker().await;
+    }
+
+    async fn manifest(&self, project_id: &str) -> Option<EmbeddedManifest> {
+        if !manifest::is_safe_name(project_id) {
+            self.log
+                .skipped(MANIFEST_FILE, &format!("invalid project id '{project_id}'"));
+            return None;
+        }
+        let bytes = self.read(project_id, MANIFEST_FILE).await?;
+        return match manifest::parse(&bytes, project_id, &self.platform) {
+            Ok(manifest) => Some(manifest),
             Err(reason) => {
-                self.skip(MANIFEST_FILE, &reason);
-                return Ok(None);
+                self.log.skipped(MANIFEST_FILE, &reason);
+                None
             }
         };
-        let frames = self.seed_frames(&manifest).await?;
-        let localizations = self.seed_localizations(&manifest).await?;
-        self.seed_scaffold(&manifest).await?;
-        return Ok(Some(Seeded {
-            frames,
-            localizations,
-        }));
     }
 
-    async fn seed_frames(&self, manifest: &EmbeddedManifest) -> Result<usize, ErrorModel> {
-        let mut count = 0;
+    async fn seed_frames(
+        &self,
+        project_id: &str,
+        manifest: &EmbeddedManifest,
+    ) -> Result<usize, ErrorModel> {
+        let mut seeded = 0;
         for entry in &manifest.frames {
-            let Some(file) = self.read_entry(&entry.route, &entry.file).await else {
+            let Some(file) = self.read_entry(project_id, &entry.route, &entry.file).await else {
                 continue;
             };
             let result =
                 frame::seed_embedded(self.frames.as_ref(), &entry.route, &file, &entry.checksum)
                     .await;
-            count += self.count(&entry.route, result)?;
+            seeded += self.applied(&entry.route, result)?;
         }
-        return Ok(count);
+        return Ok(seeded);
     }
 
-    async fn seed_localizations(&self, manifest: &EmbeddedManifest) -> Result<usize, ErrorModel> {
-        let mut count = 0;
+    async fn seed_localizations(
+        &self,
+        project_id: &str,
+        manifest: &EmbeddedManifest,
+    ) -> Result<usize, ErrorModel> {
+        let mut seeded = 0;
         for entry in &manifest.localizations {
-            let Some(file) = self.read_entry(&entry.language_code, &entry.file).await else {
+            let key = &entry.language_code;
+            let Some(file) = self.read_entry(project_id, key, &entry.file).await else {
                 continue;
             };
             let result = localization::seed_embedded(
                 self.localizations.as_ref(),
-                &entry.language_code,
+                key,
                 &file,
                 &entry.checksum,
             )
             .await;
-            count += self.count(&entry.language_code, result)?;
+            seeded += self.applied(key, result)?;
         }
-        return Ok(count);
+        return Ok(seeded);
     }
 
     async fn seed_scaffold(&self, manifest: &EmbeddedManifest) -> Result<(), ErrorModel> {
@@ -147,44 +148,45 @@ impl Embedded {
             return Ok(());
         }
         let scaffold = ScaffoldModel {
-            frames: manifest.frames.iter().map(manifest::to_frame_route).collect(),
+            frames: manifest
+                .frames
+                .iter()
+                .map(manifest::to_frame_route)
+                .collect(),
         };
         let result = scaffold::seed_embedded(self.scaffold.as_ref(), &scaffold).await;
-        self.count("scaffold", result)?;
+        self.applied("scaffold", result)?;
         return Ok(());
     }
 
-    async fn read_entry(&self, key: &str, path: &str) -> Option<Vec<u8>> {
-        if !manifest::is_safe_path(path) {
-            self.skip(key, &format!("invalid file path '{path}'"));
-            return None;
-        }
-        let file = self.read(path).await;
-        if file.is_none() {
-            self.skip(key, &format!("file '{path}' is not in the app"));
-        }
-        return file;
-    }
-
-    fn count(&self, key: &str, result: Result<bool, SeedError>) -> Result<usize, ErrorModel> {
+    fn applied(&self, key: &str, result: Result<bool, SeedError>) -> Result<usize, ErrorModel> {
         return match result {
-            Ok(true) => Ok(1),
-            Ok(false) => Ok(0),
+            Ok(written) => Ok(written as usize),
             Err(SeedError::Invalid(reason)) => {
-                self.skip(key, &reason);
+                self.log.skipped(key, &reason);
                 Ok(0)
             }
             Err(SeedError::Cache(error)) => Err(error),
         };
     }
 
-    fn skip(&self, key: &str, reason: &str) {
-        logging::log_skipped(&self.logger, &self.sdk_config, key, reason);
+    async fn read_entry(&self, project_id: &str, key: &str, path: &str) -> Option<Vec<u8>> {
+        if !manifest::is_safe_path(path) {
+            self.log
+                .skipped(key, &format!("invalid file path '{path}'"));
+            return None;
+        }
+        let file = self.read(project_id, path).await;
+        if file.is_none() {
+            self.log
+                .skipped(key, &format!("file '{path}' is not in the app"));
+        }
+        return file;
     }
 
-    async fn read(&self, path: &str) -> Option<Vec<u8>> {
+    async fn read(&self, project_id: &str, path: &str) -> Option<Vec<u8>> {
         let reader = self.reader.clone();
-        let path = format!("{}/{path}", self.environment.instance_name());
+        let path = format!("{project_id}/{path}");
         return tokio::task::spawn_blocking(move || reader.read(path))
             .await
             .ok()

@@ -92,6 +92,7 @@ pub(crate) fn resolve_gateway(
 fn to_model(dto: &ProjectConfigDataDto) -> NativeProjectConfigModel {
     let inner = dto.project_config.as_ref();
     return NativeProjectConfigModel {
+        project_id: inner.and_then(|c| c.project_id.clone()).unwrap_or_default(),
         gateway: inner
             .and_then(|c| c.gateway.clone())
             .unwrap_or_else(|| DEFAULT_GATEWAY_TYPE.to_string()),

@@ -5,7 +5,7 @@ use tokio::sync::Mutex as AsyncMutex;
 use crate::library::cache::CacheProvider;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::library::net::network::HttpClient;
-use crate::library::result::NBResult;
+use crate::library::result::{ErrorModel, NBResult};
 use crate::plugin::config::model::{NativeProjectConfigModel, ResolvedGatewayModel};
 use crate::plugin::config::repository;
 
@@ -44,6 +44,15 @@ impl Client {
             endpoint: config.endpoint,
             install_id,
         });
+    }
+
+    pub(crate) async fn project_id(&self) -> NBResult<String> {
+        let install_id = self.install_id().await?;
+        let config = self.project_config(&install_id).await?;
+        if config.project_id.is_empty() {
+            return Err(ErrorModel::support("project config has no project id"));
+        }
+        return Ok(config.project_id);
     }
 
     async fn install_id(&self) -> NBResult<String> {

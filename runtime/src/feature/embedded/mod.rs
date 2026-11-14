@@ -1,5 +1,5 @@
-mod manifest;
 mod logging;
+mod manifest;
 mod reader;
 mod seeder;
 

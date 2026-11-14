@@ -10,6 +10,8 @@ pub(crate) struct ProjectConfigGatewayModel {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct NativeProjectConfigModel {
+    #[serde(default)]
+    pub project_id: String,
     pub gateway: String,
     pub endpoint: String,
     pub endpoints: Vec<ProjectConfigGatewayModel>,

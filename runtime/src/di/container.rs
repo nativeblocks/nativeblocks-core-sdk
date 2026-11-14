@@ -19,7 +19,7 @@ pub(crate) struct Container {
     embedded: Arc<Embedded>,
     logger: Arc<Mutex<NativeLoggerProvider>>,
     global_parameters: Arc<GlobalParameterProvider>,
-    config_client: Mutex<Option<Arc<config::Client>>>,
+    config_client: Arc<config::Client>,
     components: Mutex<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
 }
 
@@ -32,11 +32,18 @@ impl Container {
         embedded_reader: Arc<dyn EmbeddedReader>,
     ) -> Self {
         let logger = logger::get_or_create(environment.instance_name());
+        let config_client = build_client(
+            environment.clone(),
+            sdk_config.clone(),
+            http.clone(),
+            caches.config.clone(),
+        );
         let embedded = Arc::new(Embedded::new(
             embedded_reader,
             environment.clone(),
             sdk_config.clone(),
             &caches,
+            config_client.clone(),
             logger.clone(),
         ));
         return Self {
@@ -47,7 +54,7 @@ impl Container {
             embedded,
             logger,
             global_parameters: global_parameter::build_provider(),
-            config_client: Mutex::new(None),
+            config_client,
             components: Mutex::new(HashMap::new()),
         };
     }
@@ -81,18 +88,7 @@ impl Container {
     }
 
     pub(crate) fn config_client(&self) -> Arc<config::Client> {
-        let mut guard = self.config_client.lock().unwrap();
-        if let Some(existing) = guard.as_ref() {
-            return existing.clone();
-        }
-        let client = build_client(
-            self.environment.clone(),
-            self.sdk_config.clone(),
-            self.http.clone(),
-            self.caches.config.clone(),
-        );
-        *guard = Some(client.clone());
-        return client;
+        return self.config_client.clone();
     }
 
     pub(crate) fn component<T>(&self, build: impl FnOnce() -> Arc<T>) -> Arc<T>

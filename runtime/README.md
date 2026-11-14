@@ -1,6 +1,6 @@
 # nativeblocks-core-sdk
 
-The Rust core of the NativeBlocks runtime. It ships inside the Android and iOS host SDKs over UniFFI bindings that are
+The Rust core of the Nativeblocks runtime. It ships inside the Android and iOS host SDKs over UniFFI bindings that are
 generated, never committed.
 
 ## Setup

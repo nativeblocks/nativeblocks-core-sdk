@@ -2,17 +2,17 @@ package io.nativeblocks.gradleplugin
 
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
+import com.android.build.api.variant.Variant
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.LibraryExtension
 import com.google.devtools.ksp.gradle.KspExtension
-import io.nativeblocks.gradleplugin.tasks.NativeblocksEmbedTask
+import io.nativeblocks.gradleplugin.tasks.NativeblocksEmbeddedAssetsTask
 import io.nativeblocks.gradleplugin.tasks.NativeblocksPrepareSchemaTask
 import io.nativeblocks.gradleplugin.tasks.NativeblocksSyncTask
 import kotlinx.serialization.json.Json
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.configurationcache.extensions.capitalized
 import java.io.File
 
 open class NativeblocksGradlePlugin : Plugin<Project> {
@@ -20,32 +20,32 @@ open class NativeblocksGradlePlugin : Plugin<Project> {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     override fun apply(project: Project) {
-        val extension = project.extensions.create("nativeblocks", NativeblocksExtension::class.java)
-
         project.plugins.withId("com.google.devtools.ksp") {
             project.afterEvaluate {
                 configureKsp(project)
             }
         }
 
-        val supportedComponents =
-            listOf(project.androidAppComponent(), project.androidLibraryComponent())
-        supportedComponents.forEach { component ->
-            component?.onVariants { variant ->
-                val flavor = "${variant.flavorName?.capitalized()}${variant.buildType?.capitalized()}"
-                registerTask(project, flavor)
-                if (extension.enableEmbedding.get()) {
-                    val embedTask = project.tasks.register(
-                        "nativeblocksEmbed${variant.name.capitalized()}",
-                        NativeblocksEmbedTask::class.java
-                    ) {
-                        it.workingDir.set(project.layout.projectDirectory)
-                        it.instance.set(extension.embeddingInstance)
-                    }
-                    variant.sources.assets?.addGeneratedSourceDirectory(embedTask, NativeblocksEmbedTask::outputDir)
-                }
-            }
+        project.androidAppComponent()?.onVariants { variant ->
+            registerTask(project, variant.flavor())
+            registerEmbeddedAssets(project, variant)
         }
+        project.androidLibraryComponent()?.onVariants { variant ->
+            registerTask(project, variant.flavor())
+        }
+    }
+
+    private fun Variant.flavor(): String =
+        "${flavorName.orEmpty().upperFirst()}${buildType.orEmpty().upperFirst()}"
+
+    private fun registerEmbeddedAssets(project: Project, variant: Variant) {
+        val task = project.tasks.register(
+            "nativeblocksEmbeddedAssets${variant.name.upperFirst()}",
+            NativeblocksEmbeddedAssetsTask::class.java
+        ) {
+            it.embedded.from(project.layout.buildDirectory.dir(EMBEDDED_BUILD_DIR))
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(task, NativeblocksEmbeddedAssetsTask::outputDir)
     }
 
     private fun readConfig(project: Project): NativeblocksConfig {
@@ -78,7 +78,7 @@ open class NativeblocksGradlePlugin : Plugin<Project> {
 
         project.extensions.findByType(KspExtension::class.java)?.apply {
             arg("basePackageName", GlobalState.basePackageName ?: "")
-            arg("moduleName", GlobalState.moduleName?.capitalized() ?: "")
+            arg("moduleName", GlobalState.moduleName.orEmpty().upperFirst())
         }
     }
 
@@ -110,6 +110,10 @@ open class NativeblocksGradlePlugin : Plugin<Project> {
         }
     }
 }
+
+private const val EMBEDDED_BUILD_DIR = "nativeblocks/embedded"
+
+private fun String.upperFirst(): String = replaceFirstChar { it.uppercase() }
 
 private fun Project.androidAppComponent(): ApplicationAndroidComponentsExtension? =
     extensions.findByType(ApplicationAndroidComponentsExtension::class.java)
