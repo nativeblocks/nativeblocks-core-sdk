@@ -13,7 +13,7 @@ public class JsonGenerator {
 
     public init() {}
 
-    public func generate(from files: [String], organizationId: String = "") throws {
+    public func generate(from files: [String]) throws {
         print("Generate jsons...")
         (blocks, actions, modifiers) = NativeItemVisitor.extractNatives(from: files)
 
@@ -26,7 +26,6 @@ public class JsonGenerator {
             let (meta, _) = BlockExtractor.extractVariable(from: block.syntaxStruct!)
             var copy = block
             copy.meta = meta
-            copy.organizationId = organizationId
             return copy
         }
 
@@ -34,7 +33,6 @@ public class JsonGenerator {
             let (meta, _) = ModifierExtractor.extractVariable(from: modifier.syntaxStruct!)
             var copy = modifier
             copy.meta = meta
-            copy.organizationId = organizationId
             return copy
         }
 
@@ -42,7 +40,6 @@ public class JsonGenerator {
             let (meta, _) = ActionExtractor.extractVariable(from: action.syntaxClass!)
             var copy = action
             copy.meta = meta
-            copy.organizationId = organizationId
             return copy
         }
 
@@ -73,8 +70,7 @@ public class JsonGenerator {
 
     public func save(
         to directory: String,
-        with fileManager: FileManager,
-        prefix: String = "/.nativeblocks"
+        with fileManager: FileManager
     ) throws {
         print("Save jsons...")
 
@@ -83,7 +79,7 @@ public class JsonGenerator {
             return
         }
 
-        let baseDirectory = "\(directory)\(prefix)"
+        let baseDirectory = directory
         try? fileManager.deleteDirectory(atPath: baseDirectory)
         try fileManager.createDirectory(atPath: baseDirectory)
 

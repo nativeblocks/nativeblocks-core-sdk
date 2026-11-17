@@ -4,6 +4,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=$HOME=~"
+export CFLAGS="${CFLAGS:-} -ffile-prefix-map=$HOME=~"
+
 OUT="dist/android"
 JNILIBS="$OUT/jniLibs"
 KT_PKG="io/nativeblocks/runtime/ffi"

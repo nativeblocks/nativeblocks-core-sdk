@@ -2,13 +2,10 @@ import Foundation
 
 public class NativeblocksToolExecutor {
     let GenerateProviderCommand = "generate-provider"
-    let SyncCommand = "sync"
     let PrepareSchemaCommand = "prepare-schema"
     let TargetArgumentKey = "--target"
     let DirectoryArgumentKey = "--directory"
-    let EndpointArgumentKey = "--endpoint"
-    let AuthTokenArgumentKey = "--authToken"
-    let OrganizationIdArgumentKey = "--organizationId"
+    let OutputArgumentKey = "--output"
 
     var parsedArgs: [String: String] = [:]
     var commands: [String] = []
@@ -38,23 +35,10 @@ public class NativeblocksToolExecutor {
         if commands.contains(where: { command in command == PrepareSchemaCommand }) {
             let generator = JsonGenerator()
             try generator.generate(from: files)
-            try generator.save(to: output, with: fileManager, prefix: "/.nativeblocks/integrations")
-        }
-
-        if commands.contains(where: { command in command == SyncCommand }) {
-            let endpoint = parsedArgs[EndpointArgumentKey]!
-            let authToken = parsedArgs[AuthTokenArgumentKey]!
-            let organizationId = parsedArgs[OrganizationIdArgumentKey]!
-
-            let generator = JsonGenerator()
-            try generator.generate(from: files, organizationId: organizationId)
-
-            let uploader = JsonUploader(
-                endpoint: endpoint,
-                authToken: authToken,
-                organizationId: organizationId
-            )
-            try uploader.upload(blocks: generator.blocks, actions: generator.actions, modifiers: generator.modifiers)
+            guard let schemaOutput = parsedArgs[OutputArgumentKey], !schemaOutput.isEmpty else {
+                throw ArgumentError.missingOutput
+            }
+            try generator.save(to: schemaOutput, with: fileManager)
         }
     }
 
@@ -69,9 +53,6 @@ public class NativeblocksToolExecutor {
                 parsedArgs[currentKey] = argument
                 currentArgKey = nil
             } else if argument == GenerateProviderCommand {
-                commands.append(argument)
-                currentArgKey = nil
-            } else if argument == SyncCommand {
                 commands.append(argument)
                 currentArgKey = nil
             } else if argument == PrepareSchemaCommand {
@@ -97,33 +78,10 @@ public class NativeblocksToolExecutor {
         if !FileManager.default.fileExists(atPath: directoryURL.path, isDirectory: &isDirectory) || !isDirectory.boolValue {
             throw ArgumentError.invalidDirectory(directoryPath)
         }
-
-        if commands.contains(where: { command in command == SyncCommand }) {
-            guard let endpoint = parsedArgs[EndpointArgumentKey] else {
-                throw ArgumentError.missingEndpoint
-            }
-            guard let authToken = parsedArgs[AuthTokenArgumentKey] else {
-                throw ArgumentError.missingAuthToken
-            }
-            guard let organizationId = parsedArgs[OrganizationIdArgumentKey] else {
-                throw ArgumentError.missingOrganizationId
-            }
-            if endpoint.isEmpty {
-                throw ArgumentError.missingEndpoint
-            }
-            if authToken.isEmpty {
-                throw ArgumentError.missingAuthToken
-            }
-            if organizationId.isEmpty {
-                throw ArgumentError.missingOrganizationId
-            }
-        }
         let validArgs = Set([
             TargetArgumentKey,
             DirectoryArgumentKey,
-            EndpointArgumentKey,
-            AuthTokenArgumentKey,
-            OrganizationIdArgumentKey,
+            OutputArgumentKey,
         ])
         let extraArgs = parsedArgs.keys.filter { !validArgs.contains($0) }
         if !extraArgs.isEmpty {

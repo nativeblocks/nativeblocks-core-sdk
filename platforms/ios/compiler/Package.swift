@@ -11,8 +11,8 @@ let package = Package(
         .library(name: "NativeblocksCompiler", targets: ["NativeblocksCompiler"]),
         .plugin(name: "GenerateProvider", targets: ["GenerateProvider"]),
         .plugin(name: "Sync", targets: ["Sync"]),
-        .plugin(name: "PrepareSchema", targets: ["PrepareSchema"]),
         .plugin(name: "EmbedContent", targets: ["EmbedContent"]),
+        .plugin(name: "Embed", targets: ["Embed"]),
         .executable(name: "NativeblocksTool", targets: ["NativeblocksTool"]),
     ],
     dependencies: [
@@ -49,30 +49,11 @@ let package = Package(
             capability: .command(
                 intent: .custom(
                     verb: "Sync",
-                    description: "Synchronize JSON blocks and actions with the Nativeblocks Studio."),
+                    description: "Upload blocks, actions and modifiers to Nativeblocks with the Nativeblocks CLI."),
                 permissions: [
-                    .writeToPackageDirectory(
-                        reason: "This command writes the new JSON files to the source root."),
                     .allowNetworkConnections(
                         scope: PluginNetworkPermissionScope.all(),
-                        reason: "This command synchronizes JSONs with the Nativeblocks server."),
-                ]
-            ),
-            dependencies: [
-                .target(name: "NativeblocksTool")
-            ]
-        ),
-
-        .plugin(
-            name: "PrepareSchema",
-            capability: .command(
-                intent: .custom(
-                    verb: "PrepareSchema",
-                    description: "Generate local JSON schemas for Blocks and Actions in the `.nativeblocks` directory."
-                ),
-                permissions: [
-                    .writeToPackageDirectory(
-                        reason: "This command write the new json blocks to the source root.")
+                        reason: "This command uploads the integrations with the Nativeblocks CLI.")
                 ]
             ),
             dependencies: [
@@ -83,6 +64,22 @@ let package = Package(
         .plugin(
             name: "EmbedContent",
             capability: .buildTool()
+        ),
+
+        .plugin(
+            name: "Embed",
+            capability: .command(
+                intent: .custom(
+                    verb: "Embed",
+                    description: "Download the embeddable frames and localizations into this app with the Nativeblocks CLI."),
+                permissions: [
+                    .writeToPackageDirectory(
+                        reason: "This command writes the embedded content into the project's build folder."),
+                    .allowNetworkConnections(
+                        scope: PluginNetworkPermissionScope.all(),
+                        reason: "This command downloads the embedded content with the Nativeblocks CLI."),
+                ]
+            )
         ),
 
         .executableTarget(
