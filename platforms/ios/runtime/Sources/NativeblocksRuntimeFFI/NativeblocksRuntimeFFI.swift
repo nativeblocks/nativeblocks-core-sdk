@@ -627,6 +627,205 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 
 
+package protocol EmbeddedReader: AnyObject, Sendable {
+    
+    func read(path: String)  -> Data?
+    
+}
+package class EmbeddedReaderImpl: EmbeddedReader, @unchecked Sendable {
+    fileprivate let handle: UInt64
+
+    /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    package struct NoHandle {
+        package init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required package init(unsafeFromHandle handle: UInt64) {
+        self.handle = handle
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noHandle: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing handle the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    package init(noHandle: NoHandle) {
+        self.handle = 0
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    package func uniffiCloneHandle() -> UInt64 {
+        return try! rustCall { uniffi_nativeblocks_runtime_fn_clone_embeddedreader(self.handle, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        if handle == 0 {
+            // Mock objects have handle=0 don't try to free them
+            return
+        }
+
+        try! rustCall { uniffi_nativeblocks_runtime_fn_free_embeddedreader(handle, $0) }
+    }
+
+    
+
+    
+package func read(path: String) -> Data?  {
+    return try!  FfiConverterOptionData.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_nativeblocks_runtime_fn_method_embeddedreader_read(
+            self.uniffiCloneHandle(),
+        FfiConverterString.lower(path),uniffiCallStatus
+    )
+})
+}
+    
+
+    
+}
+
+
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+fileprivate struct UniffiCallbackInterfaceEmbeddedReader {
+
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    //
+    // Store the vtable directly.
+    static let vtable: UniffiVTableCallbackInterfaceEmbeddedReader = UniffiVTableCallbackInterfaceEmbeddedReader(
+        uniffiFree: { (uniffiHandle: UInt64) -> () in
+            do {
+                try FfiConverterTypeEmbeddedReader.handleMap.remove(handle: uniffiHandle)
+            } catch {
+                print("Uniffi callback interface EmbeddedReader: handle missing in uniffiFree")
+            }
+        },
+        uniffiClone: { (uniffiHandle: UInt64) -> UInt64 in
+            do {
+                return try FfiConverterTypeEmbeddedReader.handleMap.clone(handle: uniffiHandle)
+            } catch {
+                fatalError("Uniffi callback interface EmbeddedReader: handle missing in uniffiClone")
+            }
+        },
+        read: { (
+            uniffiHandle: UInt64,
+            path: RustBuffer,
+            uniffiOutReturn: UnsafeMutablePointer<RustBuffer>,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> Data? in
+                guard let uniffiObj = try? FfiConverterTypeEmbeddedReader.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.read(
+                     path: try FfiConverterString.lift(path)
+                )
+            }
+
+            
+            let writeReturn = { uniffiOutReturn.pointee = FfiConverterOptionData.lower($0) }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        }
+    )
+
+    // Rust stores this pointer for future callback invocations, so it must live
+    // for the process lifetime (not just for the init function call).
+    //
+    // `nonisolated(unsafe)` is needed under Swift 6 strict concurrency.
+    // This is safe because the pointee is initialized once during static init
+    // and never mutated by either side of the FFI.  Its fields are C function pointers.
+    nonisolated(unsafe) static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceEmbeddedReader> = {
+        let ptr = UnsafeMutablePointer<UniffiVTableCallbackInterfaceEmbeddedReader>.allocate(capacity: 1)
+        ptr.initialize(to: vtable)
+        return UnsafePointer(ptr)
+    }()
+}
+
+private func uniffiCallbackInitEmbeddedReader() {
+    uniffi_nativeblocks_runtime_fn_init_callback_vtable_embeddedreader(UniffiCallbackInterfaceEmbeddedReader.vtablePtr)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package struct FfiConverterTypeEmbeddedReader: FfiConverter {
+    fileprivate static let handleMap = UniffiHandleMap<EmbeddedReader>()
+
+    typealias FfiType = UInt64
+    typealias SwiftType = EmbeddedReader
+
+    package static func lift(_ handle: UInt64) throws -> EmbeddedReader {
+        if ((handle & 1) == 0) {
+            // Rust-generated handle, construct a new class that uses the handle to implement the
+            // interface
+            return EmbeddedReaderImpl(unsafeFromHandle: handle)
+        } else {
+            // Swift-generated handle, get the object from the handle map
+            return try handleMap.remove(handle: handle)
+        }
+    }
+
+    package static func lower(_ value: EmbeddedReader) -> UInt64 {
+         if let rustImpl = value as? EmbeddedReaderImpl {
+             // Rust-implemented object.  Clone the handle and return it
+            return rustImpl.uniffiCloneHandle()
+         } else {
+            // Swift object, generate a new vtable handle and return that.
+            return handleMap.insert(obj: value)
+         }
+    }
+
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EmbeddedReader {
+        let handle: UInt64 = try readInt(&buf)
+        return try lift(handle)
+    }
+
+    package static func write(_ value: EmbeddedReader, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeEmbeddedReader_lift(_ handle: UInt64) throws -> EmbeddedReader {
+    return try FfiConverterTypeEmbeddedReader.lift(handle)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+package func FfiConverterTypeEmbeddedReader_lower(_ value: EmbeddedReader) -> UInt64 {
+    return FfiConverterTypeEmbeddedReader.lower(value)
+}
+
+
+
+
+
+
 package protocol ExperimentClientProtocol: AnyObject, Sendable {
     
     func getExperiment(key: String, cacheTtl: Int64?) async throws  -> NativeExperimentModel
@@ -2468,7 +2667,7 @@ package class NativeblocksRuntime: NativeblocksRuntimeProtocol, @unchecked Senda
     package func uniffiCloneHandle() -> UInt64 {
         return try! rustCall { uniffi_nativeblocks_runtime_fn_clone_nativeblocksruntime(self.handle, $0) }
     }
-package convenience init(environment: NativeblocksEnvironment, config: SdkConfig, http: HttpClient, cacheDir: String)throws  {
+package convenience init(environment: NativeblocksEnvironment, config: SdkConfig, http: HttpClient, cacheDir: String, embedded: EmbeddedReader)throws  {
     let handle =
         try rustCallWithError(FfiConverterTypeNBError_lift) {
         uniffiCallStatus in
@@ -2476,7 +2675,8 @@ package convenience init(environment: NativeblocksEnvironment, config: SdkConfig
         FfiConverterTypeNativeblocksEnvironment_lower(environment),
         FfiConverterTypeSdkConfig_lower(config),
         FfiConverterTypeHttpClient_lower(http),
-        FfiConverterString.lower(cacheDir),uniffiCallStatus
+        FfiConverterString.lower(cacheDir),
+        FfiConverterTypeEmbeddedReader_lower(embedded),uniffiCallStatus
     )
 }
     self.init(unsafeFromHandle: handle)
@@ -5426,6 +5626,30 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionData: FfiConverterRustBuffer {
+    typealias SwiftType = Data?
+
+    package static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterData.write(value, into: &buf)
+    }
+
+    package static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterData.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeFrameTypeModel: FfiConverterRustBuffer {
     typealias SwiftType = FrameTypeModel?
 
@@ -6145,6 +6369,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_nativeblocksruntime_scaffold_client() != 56494) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_nativeblocks_runtime_checksum_method_embeddedreader_read() != 58865) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_nativeblocks_runtime_checksum_method_experimentclient_get_experiment() != 8941) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -6256,7 +6483,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_scriptbridge_update_variable() != 51465) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() != 40008) {
+    if (uniffi_nativeblocks_runtime_checksum_constructor_nativeblocksruntime_new() != 7049) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_constructor_scriptengine_new() != 40155) {
@@ -6266,6 +6493,7 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
 
+    uniffiCallbackInitEmbeddedReader()
     uniffiCallbackInitFrameStateObserver()
     uniffiCallbackInitHttpClient()
     uniffiCallbackInitLocalizationStateObserver()

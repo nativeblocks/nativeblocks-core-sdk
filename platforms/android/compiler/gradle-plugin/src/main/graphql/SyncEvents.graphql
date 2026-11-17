@@ -1,5 +1,0 @@
-mutation syncIntegrationEvents($input: SyncIntegrationEventsInput!) {
-    syncIntegrationEvents(input: $input) {
-        event
-    }
-}

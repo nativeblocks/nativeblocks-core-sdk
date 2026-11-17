@@ -161,12 +161,11 @@ cp "$WRAPPER" "$WORK/"
 
 # Realizing the whole task graph is what an IDE sync does, and it is a stricter
 # gate than assembling: a task whose configuration reads a file eagerly builds
-# fine but breaks Android Studio for anyone without that file. The scratch
-# project deliberately has no nativeblocks.json.
+# fine but breaks Android Studio for anyone without that file.
 nb_step "realizing the task graph (stands in for an IDE sync)"
 ( cd "$WORK" && ./gradlew :app:tasks --all --no-daemon --console=plain -q >/dev/null ) \
     || nb_die "task realization failed — the plugin reads config too eagerly"
-nb_ok "task graph realizes without a nativeblocks.json"
+nb_ok "task graph realizes"
 
 nb_step "assembling debug + release"
 ( cd "$WORK" && ./gradlew assembleDebug assembleRelease \

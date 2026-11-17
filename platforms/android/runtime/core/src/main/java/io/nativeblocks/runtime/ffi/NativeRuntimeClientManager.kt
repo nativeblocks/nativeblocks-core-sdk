@@ -9,6 +9,7 @@ internal class NativeRuntimeClientManager(
     edition: NativeblocksEdition,
     http: HttpClient,
     cacheDir: String,
+    embeddedReader: EmbeddedReader,
 ) {
     val environment = edition.toEngineEnvironment(instanceName)
 
@@ -18,7 +19,7 @@ internal class NativeRuntimeClientManager(
     )
 
     private val runtime: NativeblocksRuntime =
-        NativeblocksRuntime(environment, config, http, cacheDir)
+        NativeblocksRuntime(environment, config, http, cacheDir, embeddedReader)
 
     val frameClient: FrameClient = runtime.frameClient()
     val scaffoldClient: ScaffoldClient = runtime.scaffoldClient()

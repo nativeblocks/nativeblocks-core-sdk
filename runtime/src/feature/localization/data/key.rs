@@ -11,12 +11,16 @@ pub(super) const BINARY_FORMAT: BinaryFormat = BinaryFormat {
     version: 1,
 };
 
+pub(super) fn normalize(language_code: &str) -> String {
+    return language_code.to_ascii_uppercase();
+}
+
 pub(super) fn dev_key(language_code: &str) -> String {
-    return format!("LOCALIZATION_DEV::{language_code}");
+    return format!("LOCALIZATION_DEV::{}", normalize(language_code));
 }
 
 pub(super) fn prod_key(language_code: &str) -> String {
-    return format!("LOCALIZATION_PROD::{language_code}");
+    return format!("LOCALIZATION_PROD::{}", normalize(language_code));
 }
 
 pub(in crate::feature::localization) mod error_code {

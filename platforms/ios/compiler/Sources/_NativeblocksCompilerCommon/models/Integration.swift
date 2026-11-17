@@ -18,7 +18,6 @@ public struct Integration: Encodable {
     public let platformSupport = "IOS"
     public let imageIcon = ""
     public let documentation = ""
-    public var organizationId = ""
     public var `public` = false
 
     public var describing: Bool {
@@ -39,7 +38,6 @@ public struct Integration: Encodable {
             kind,
             platformSupport,
             price,
-            organizationId,
             `public`
     }
 }

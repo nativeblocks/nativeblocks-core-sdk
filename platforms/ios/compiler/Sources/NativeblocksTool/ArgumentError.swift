@@ -3,9 +3,7 @@ import Foundation
 enum ArgumentError: Error, CustomStringConvertible {
     case missingTarget
     case missingDirectory
-    case missingEndpoint
-    case missingAuthToken
-    case missingOrganizationId
+    case missingOutput
     case missingCommand
     case invalidDirectory(String)
     case extraArguments([String])
@@ -18,14 +16,10 @@ enum ArgumentError: Error, CustomStringConvertible {
             return "--target argument is missing."
         case .missingDirectory:
             return "--directory argument is missing."
-        case .missingEndpoint:
-            return "--endpoint argument is missing."
-        case .missingAuthToken:
-            return "--authToken argument is missing."
-        case .missingOrganizationId:
-            return "--organizationId argument is missing."
+        case .missingOutput:
+            return "--output argument is missing."
         case .missingCommand:
-            return "please use commands like: 'generate-provider', 'sync', 'prepare-schema'"
+            return "please use commands like: 'generate-provider', 'prepare-schema'"
         case .invalidDirectory(let path):
             return "The directory \(path) does not exist."
         case .extraArguments(let extraArgs):

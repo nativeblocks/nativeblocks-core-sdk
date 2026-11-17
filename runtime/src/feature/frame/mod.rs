@@ -17,6 +17,8 @@ pub use domain::model::{
 };
 pub use presenter::FrameClient;
 
+pub(crate) use data::embedded_source::seed as seed_embedded;
+
 pub(crate) fn get_or_create_client(container: &Container) -> Arc<FrameClient> {
     return container.component(|| {
         FrameClient::create(
@@ -36,5 +38,6 @@ fn build_repository(container: &Container) -> Arc<dyn FrameRepository> {
         container.caches().frames.clone(),
         container.config_client(),
         container.logger(),
+        container.embedded(),
     ));
 }

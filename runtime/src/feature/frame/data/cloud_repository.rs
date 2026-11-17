@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use tokio::sync::watch;
 
+use crate::feature::embedded::Embedded;
 use crate::feature::frame::data::channels::FrameChannels;
 use crate::feature::frame::data::db::db_source;
 use crate::feature::frame::data::key::{
@@ -32,6 +33,7 @@ pub(crate) struct CloudFrameRepository {
     cache: Arc<dyn CacheProvider>,
     config_client: Arc<config::Client>,
     logger: Arc<Mutex<NativeLoggerProvider>>,
+    embedded: Arc<Embedded>,
     memory: MemoryFrameSource,
     channels: FrameChannels,
 }
@@ -44,6 +46,7 @@ impl CloudFrameRepository {
         cache: Arc<dyn CacheProvider>,
         config_client: Arc<config::Client>,
         logger: Arc<Mutex<NativeLoggerProvider>>,
+        embedded: Arc<Embedded>,
     ) -> Self {
         return Self {
             http,
@@ -52,6 +55,7 @@ impl CloudFrameRepository {
             cache,
             config_client,
             logger,
+            embedded,
             memory: MemoryFrameSource::new(),
             channels: FrameChannels::new(),
         };
@@ -264,6 +268,7 @@ impl CloudFrameRepository {
 #[async_trait::async_trait]
 impl FrameRepository for CloudFrameRepository {
     async fn load(&self, route: &str, parameters: &HashMap<String, String>) -> NBResult<()> {
+        self.embedded.ready().await;
         if let Some(frame) = self.from_cache(route).await {
             self.channels.publish(route, Ok(frame));
             let _ = self.sync(route, parameters).await;
@@ -288,6 +293,7 @@ impl FrameRepository for CloudFrameRepository {
     }
 
     async fn sync(&self, route: &str, parameters: &HashMap<String, String>) -> NBResult<()> {
+        self.embedded.ready().await;
         match self.fetch(route, parameters).await? {
             SyncOutcome::Updated(frame) => {
                 let frame = self.store(route, frame);
@@ -310,11 +316,13 @@ impl FrameRepository for CloudFrameRepository {
     }
 
     async fn clear(&self, route: &str) -> NBResult<()> {
+        self.embedded.ready().await;
         self.memory.clear(route);
         return db_source::clear(self.cache.as_ref(), route).await;
     }
 
     async fn clear_all(&self) -> NBResult<()> {
+        self.embedded.ready().await;
         self.memory.clear_all();
         return db_source::clear_all(self.cache.as_ref()).await;
     }

@@ -16,6 +16,7 @@ pub(crate) struct Caches {
     pub(crate) localizations: Arc<dyn CacheProvider>,
     pub(crate) experiments: Arc<dyn CacheProvider>,
     pub(crate) scaffold: Arc<dyn CacheProvider>,
+    pub(crate) embedded: Arc<dyn CacheProvider>,
 }
 
 pub(crate) fn build_caches(cache_dir: &str, instance_name: &str) -> NBResult<Caches> {
@@ -28,6 +29,7 @@ pub(crate) fn build_caches(cache_dir: &str, instance_name: &str) -> NBResult<Cac
         localizations: provider("localizations")?,
         experiments: provider("experiments")?,
         scaffold: provider("scaffold")?,
+        embedded: provider("embedded")?,
     });
 }
 

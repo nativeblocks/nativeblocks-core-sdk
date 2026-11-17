@@ -4,6 +4,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=$HOME=~"
+
 STATICLIB="libnativeblocks_runtime.a"
 OUT="dist/ios"
 SWIFT_MOD="NativeblocksRuntimeFFI"

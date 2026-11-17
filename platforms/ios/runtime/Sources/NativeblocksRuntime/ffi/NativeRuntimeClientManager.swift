@@ -18,7 +18,8 @@ internal final class NativeRuntimeClientManager {
         instanceName: String,
         edition: NativeblocksEdition,
         http: HttpClient,
-        cacheDir: String
+        cacheDir: String,
+        embeddedReader: EmbeddedReader
     ) throws {
         self.instanceName = instanceName
         self.environment = edition.toEngineEnvironment(instanceName: instanceName)
@@ -32,7 +33,8 @@ internal final class NativeRuntimeClientManager {
             environment: environment,
             config: config,
             http: http,
-            cacheDir: cacheDir
+            cacheDir: cacheDir,
+            embedded: embeddedReader
         )
 
         self.frameClient = runtime.frameClient()

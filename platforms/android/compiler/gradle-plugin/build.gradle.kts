@@ -6,8 +6,6 @@ plugins {
     alias(libs.plugins.java.gradle.plugin)
     alias(libs.plugins.maven.publish)
     alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.apollo)
     alias(libs.plugins.vanniktech.publish)
 }
 
@@ -31,12 +29,6 @@ gradlePlugin {
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-}
-
-apollo {
-    service("service") {
-        packageName.set("io.nativeblocks.network")
-    }
 }
 
 publishing {
@@ -86,11 +78,6 @@ mavenPublishing {
 
 dependencies {
     implementation(gradleApi())
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.coroutines.core)
-    //==========================remote===========================
-    implementation(libs.apollo.runtime)
-    implementation(libs.okhttp)
     compileOnly(libs.android.gradle.plugin)
     //==========================KSP===========================
     compileOnly(libs.ksp.gradle.plugin)

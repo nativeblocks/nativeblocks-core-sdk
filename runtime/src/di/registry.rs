@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
+use crate::feature::embedded::EmbeddedReader;
 use crate::library::cache::Caches;
 use crate::library::environment::model::{NativeblocksEnvironment, SdkConfig};
 use crate::library::net::network::HttpClient;
@@ -18,6 +19,7 @@ pub(crate) fn get_or_create(
     sdk_config: &SdkConfig,
     http: Arc<dyn HttpClient>,
     caches: Caches,
+    embedded_reader: Arc<dyn EmbeddedReader>,
 ) -> NBResult<Arc<Container>> {
     let mut map = registry().lock().expect("di registry poisoned");
     let container = map
@@ -28,6 +30,7 @@ pub(crate) fn get_or_create(
                 sdk_config.clone(),
                 http,
                 caches,
+                embedded_reader,
             ))
         })
         .clone();

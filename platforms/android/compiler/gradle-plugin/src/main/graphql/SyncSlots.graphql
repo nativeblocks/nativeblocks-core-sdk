@@ -1,5 +1,0 @@
-mutation syncIntegrationSlots($input: SyncIntegrationSlotsInput!) {
-    syncIntegrationSlots(input: $input) {
-        slot
-    }
-}

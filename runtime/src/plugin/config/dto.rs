@@ -9,7 +9,10 @@ pub(super) struct ProjectConfigDataDto {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(super) struct ProjectConfigDto {
+    #[serde(default)]
+    pub(super) project_id: Option<String>,
     #[serde(default)]
     pub(super) gateway: Option<String>,
     #[serde(default)]

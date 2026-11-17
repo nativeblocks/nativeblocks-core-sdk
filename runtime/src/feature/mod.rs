@@ -1,3 +1,4 @@
+pub mod embedded;
 pub mod experiment;
 pub mod frame;
 pub mod localization;
