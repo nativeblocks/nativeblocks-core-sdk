@@ -842,6 +842,8 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
+
+    internal fun ensureInitialized() = Unit
     external fun uniffi_nativeblocks_runtime_checksum_func_dispose_instance(
     ): Int
     external fun uniffi_nativeblocks_runtime_checksum_func_is_valid_instance_name(
@@ -966,6 +968,8 @@ internal object UniffiLib {
         uniffiCallbackInterfaceLogger.register(this)
         
     }
+
+    internal fun ensureInitialized() = Unit
     external fun uniffi_nativeblocks_runtime_fn_clone_nativeblocksruntime(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
     external fun uniffi_nativeblocks_runtime_fn_free_nativeblocksruntime(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1407,10 +1411,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
  * @suppress
  */
 internal fun uniffiEnsureInitialized() {
-    IntegrityCheckingUniffiLib
-    // UniffiLib() initialized as objects are used, but we still need to explicitly
-    // reference it so initialization across crates works as expected.
-    UniffiLib
+    // Call arbitrary methods on IntegrityCheckingUniffiLib and UniffiLib to ensure that
+    // their init blocks run. This ensures initialization across crates works as expected.
+    IntegrityCheckingUniffiLib.ensureInitialized()
+    UniffiLib.ensureInitialized()
 }
 
 // Async support
@@ -2693,7 +2697,7 @@ internal open class FrameClient: Disposable, AutoCloseable, FrameClientInterface
         { future, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(future, continuation) },
         { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
         // lift function
-        { Unit },
+        { },
         
         // Error FFI converter
         NbException.ErrorHandler,
@@ -2715,7 +2719,7 @@ internal open class FrameClient: Disposable, AutoCloseable, FrameClientInterface
         { future, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(future, continuation) },
         { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
         // lift function
-        { Unit },
+        { },
         
         // Error FFI converter
         NbException.ErrorHandler,
@@ -2777,7 +2781,7 @@ internal open class FrameClient: Disposable, AutoCloseable, FrameClientInterface
         { future, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(future, continuation) },
         { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
         // lift function
-        { Unit },
+        { },
         
         // Error FFI converter
         NbException.ErrorHandler,
@@ -3090,7 +3094,7 @@ internal open class FrameStateManager: Disposable, AutoCloseable, FrameStateMana
         { future, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(future, continuation) },
         { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
         // lift function
-        { Unit },
+        { },
         
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
@@ -4474,7 +4478,7 @@ internal open class LocalizationClient: Disposable, AutoCloseable, LocalizationC
         { future, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(future, continuation) },
         { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
         // lift function
-        { Unit },
+        { },
         
         // Error FFI converter
         NbException.ErrorHandler,
@@ -4814,7 +4818,7 @@ internal open class LocalizationStateManager: Disposable, AutoCloseable, Localiz
         { future, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(future, continuation) },
         { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
         // lift function
-        { Unit },
+        { },
         
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
@@ -5790,7 +5794,7 @@ internal open class ScaffoldClient: Disposable, AutoCloseable, ScaffoldClientInt
         { future, continuation -> UniffiLib.ffi_nativeblocks_runtime_rust_future_complete_void(future, continuation) },
         { future -> UniffiLib.ffi_nativeblocks_runtime_rust_future_free_void(future) },
         // lift function
-        { Unit },
+        { },
         
         // Error FFI converter
         NbException.ErrorHandler,

@@ -18,7 +18,7 @@ Edit `versions.toml`:
 
 ```toml
 android = "0.2.0"   # the release you are cutting
-core    = "0.1.0"   # must match runtime/Cargo.toml
+core    = "0.2.0"   # bump when runtime/ changed; must match runtime/Cargo.toml
 ```
 
 A published version is immutable, so always bump. Don't overwrite one.

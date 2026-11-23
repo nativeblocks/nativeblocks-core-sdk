@@ -17,6 +17,20 @@ if [ "$NB_VERSION" != "$declared" ]; then
 fi
 nb_ok "versions.toml agrees"
 
+# The core version is only a label, so nothing else fails when it goes stale.
+# Pin it to runtime/Cargo.toml so a forgotten bump stops the release here.
+core="$(nb_version core)"
+cargo_version="$(awk '
+    /^[[:space:]]*\[/ { in_package = ($0 ~ /^[[:space:]]*\[package\][[:space:]]*$/); next }
+    in_package && /^[[:space:]]*version[[:space:]]*=/ {
+        sub(/^[^=]*=[[:space:]]*"/, ""); sub(/".*$/, ""); print; exit
+    }
+' "$NB_ROOT/runtime/Cargo.toml")"
+if [ "$cargo_version" != "$core" ]; then
+    nb_die "versions.toml [versions].core says '$core' but runtime/Cargo.toml says '${cargo_version:-<none>}'"
+fi
+nb_ok "core version agrees with runtime/Cargo.toml"
+
 if [ "$NB_PLATFORM" = "core" ]; then
     exit 0
 fi

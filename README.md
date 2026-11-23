@@ -1,8 +1,8 @@
 # Nativeblocks
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-![Android](https://img.shields.io/badge/android-0.4.0-green.svg)
-![iOS](https://img.shields.io/badge/iOS-0.4.0-orange.svg)
+![Android](https://img.shields.io/badge/android-0.6.1-green.svg)
+![iOS](https://img.shields.io/badge/iOS-0.6.1-orange.svg)
 [![Slack](https://img.shields.io/badge/slack-join-4A154B.svg?logo=slack)](https://join.slack.com/t/nativeblockscommunity/shared_invite/zt-3swrrw99s-zoHYrgE8Lfa07oiiGm49Sw)
 
 Server-driven UI for Android and iOS. Build your app from your own native components, then

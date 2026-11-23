@@ -8,12 +8,12 @@ composeBom = "2026.06.01"
 navigation3 = "1.1.4"
 coil = "2.6.0"
 ksp = "2.2.21-2.0.5"
-nativeblocksBom = "0.6.0"
-nativeblocksRuntime = "0.6.0"
-nativeblocksCompiler = "0.6.0"
-nativeblocksFoundation = "0.6.0"
-nativeblocksDevKit = "0.6.0"
-nativeblocksGradlePlugin = "0.6.0"
+nativeblocksBom = "0.6.1"
+nativeblocksRuntime = "0.6.1"
+nativeblocksCompiler = "0.6.1"
+nativeblocksFoundation = "0.6.1"
+nativeblocksDevKit = "0.6.1"
+nativeblocksGradlePlugin = "0.6.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

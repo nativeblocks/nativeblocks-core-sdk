@@ -60,9 +60,11 @@ impl FrameClient {
         route: String,
         parameters: HashMap<String, String>,
     ) -> Result<(), NBError> {
+        let mut merged = self.globals.get();
+        merged.extend(parameters);
         return self
             .repository
-            .sync(&route, &parameters)
+            .sync(&route, &merged)
             .await
             .map_err(NBError::from);
     }
