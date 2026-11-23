@@ -29,7 +29,7 @@ rkyv = { version = "0.8.18" }
 async-trait = "0.1"
 tokio = { version = "1", default-features = false, features = ["sync", "rt-multi-thread"] }
 uuid = { version = "1", features = ["v7"] }
-rquickjs = { version = "0.13.0" }
+rquickjs = { version = "0.14.0" }
 base64 = "0.23"
 icu_plurals = "2"
 icu_locale_core = "2"
