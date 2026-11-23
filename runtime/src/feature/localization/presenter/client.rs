@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::feature::localization::domain::model::NativeLocalizationModel;
@@ -45,7 +46,7 @@ impl LocalizationClient {
         self.repository.set_language_code(&language_code);
     }
 
-    pub fn translate(&self, key: String) -> Option<String> {
-        return self.repository.translate(&key);
+    pub fn translate(&self, key: String, values: HashMap<String, String>) -> Option<String> {
+        return self.repository.translate(&key, &values);
     }
 }

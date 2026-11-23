@@ -15,14 +15,15 @@ internal class LocalizationUseCase(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val client get() = runtimeClient.localizationClient
 
-    fun setLocalization(languageCode: String) {
+    suspend fun setLocalization(languageCode: String) {
+        runCatching { client.setLanguageCode(languageCode) }
+        runCatching { client.getLocalization(languageCode) }
         scope.launch {
-            runCatching { client.setLanguageCode(languageCode) }
             runCatching { client.syncLocalization(languageCode) }
         }
     }
 
-    fun translate(key: String): Result<String?> {
-        return runCatching { stateManager.translate(key) }
+    fun translate(key: String, values: Map<String, String>): Result<String?> {
+        return runCatching { stateManager.translate(key, values) }
     }
 }

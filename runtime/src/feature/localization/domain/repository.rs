@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use tokio::sync::watch;
 
 use crate::feature::localization::domain::model::NativeLocalizationModel;
@@ -13,5 +15,5 @@ pub(crate) trait LocalizationRepository: Send + Sync {
 
     fn language_code(&self) -> watch::Receiver<Option<String>>;
 
-    fn translate(&self, key: &str) -> Option<String>;
+    fn translate(&self, key: &str, values: &HashMap<String, String>) -> Option<String>;
 }

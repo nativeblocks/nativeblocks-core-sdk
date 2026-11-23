@@ -15,14 +15,15 @@ internal final class LocalizationUseCase {
         return runtimeClient.localizationClient
     }
 
-    func setLocalization(languageCode: String) {
+    func setLocalization(languageCode: String) async {
         client.setLanguageCode(languageCode: languageCode)
+        _ = try? await client.getLocalization(languageCode: languageCode)
         Task.detached { [client] in
             try? await client.syncLocalization(languageCode: languageCode)
         }
     }
 
-    func translate(key: String) -> String? {
-        return stateManager.translate(key: key)
+    func translate(key: String, values: [String: String]) -> String? {
+        return stateManager.translate(key: key, values: values)
     }
 }

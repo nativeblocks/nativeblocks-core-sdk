@@ -1,11 +1,11 @@
 use crate::feature::frame::domain::model::NativeVariableModel;
+use crate::library::template::{self, Template};
 use std::collections::HashMap;
 
-const REF_OPEN: &str = "{{var:";
-const REF_CLOSE: &str = "}}";
+const VAR: &str = "var";
+
 pub(super) fn has_references(value: &str, key: &str) -> bool {
-    let needle = format!("{REF_OPEN}{key}{REF_CLOSE}");
-    return value.contains(&needle);
+    return value.contains(&template::reference(VAR, key));
 }
 
 pub(super) fn resolved_model(
@@ -29,25 +29,12 @@ pub(super) fn resolved_all(
 }
 
 fn resolve(value: &str, variables: &HashMap<String, NativeVariableModel>) -> String {
-    if !value.contains(REF_OPEN) {
+    if !template::has(value, VAR) {
         return value.to_string();
     }
-
-    let mut resolved = String::with_capacity(value.len());
-    let mut rest = value;
-    while let Some(start) = rest.find(REF_OPEN) {
-        let after_open = &rest[start + REF_OPEN.len()..];
-        let Some(end) = after_open.find(REF_CLOSE) else {
-            break;
-        };
-        let key = &after_open[..end];
-        resolved.push_str(&rest[..start]);
-        match variables.get(key) {
-            Some(target) => resolved.push_str(&target.value),
-            None => resolved.push_str(&rest[start..start + REF_OPEN.len() + end + REF_CLOSE.len()]),
-        }
-        rest = &after_open[end + REF_CLOSE.len()..];
-    }
-    resolved.push_str(rest);
-    return resolved;
+    return Template::new()
+        .register(VAR, |key| {
+            variables.get(key).map(|target| target.value.clone())
+        })
+        .resolve(value);
 }

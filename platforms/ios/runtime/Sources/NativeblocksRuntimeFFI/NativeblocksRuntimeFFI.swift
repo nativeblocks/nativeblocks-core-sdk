@@ -2001,7 +2001,7 @@ package protocol LocalizationClientProtocol: AnyObject, Sendable {
     
     func syncLocalization(languageCode: String) async throws 
     
-    func translate(key: String)  -> String?
+    func translate(key: String, values: [String: String])  -> String?
     
 }
 package class LocalizationClient: LocalizationClientProtocol, @unchecked Sendable {
@@ -2107,12 +2107,13 @@ package func syncLocalization(languageCode: String)async throws   {
         )
 }
     
-package func translate(key: String) -> String?  {
+package func translate(key: String, values: [String: String]) -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
         uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationclient_translate(
             self.uniffiCloneHandle(),
-        FfiConverterString.lower(key),uniffiCallStatus
+        FfiConverterString.lower(key),
+        FfiConverterDictionaryStringString.lower(values),uniffiCallStatus
     )
 })
 }
@@ -2179,7 +2180,7 @@ package protocol LocalizationStateManagerProtocol: AnyObject, Sendable {
     
     func setupLocalization(languageCode: String) async 
     
-    func translate(key: String)  -> String?
+    func translate(key: String, values: [String: String])  -> String?
     
 }
 package class LocalizationStateManager: LocalizationStateManagerProtocol, @unchecked Sendable {
@@ -2287,12 +2288,13 @@ package func setupLocalization(languageCode: String)async   {
         )
 }
     
-package func translate(key: String) -> String?  {
+package func translate(key: String, values: [String: String]) -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
         uniffiCallStatus in
     uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_translate(
             self.uniffiCloneHandle(),
-        FfiConverterString.lower(key),uniffiCallStatus
+        FfiConverterString.lower(key),
+        FfiConverterDictionaryStringString.lower(values),uniffiCallStatus
     )
 })
 }
@@ -6423,7 +6425,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_sync_localization() != 48554) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_translate() != 36359) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationclient_translate() != 35214) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_localization_state() != 14811) {
@@ -6441,7 +6443,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_setup_localization() != 20017) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_translate() != 38642) {
+    if (uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_translate() != 11185) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_state_changed() != 13591) {

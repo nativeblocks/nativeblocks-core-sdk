@@ -238,20 +238,23 @@ public class NativeblocksManager {
         }
     }
 
-    /// Sets the language for the frames.
+    /// Sets the language for the frames and waits until its translations are loaded,
+    /// from the cache or the network. A fresh copy keeps syncing in the background.
     /// - Parameter languageCode: The ISO 639-1 language code in uppercase (e.g., "EN" for English, "FR" for French).
     /// - Returns: The current instance of `NativeblocksManager` for method chaining.
     @discardableResult
-    public func setLanguage(languageCode: String) -> NativeblocksManager {
-        injector.localizationUseCase.setLocalization(languageCode: languageCode)
+    public func setLanguage(languageCode: String) async -> NativeblocksManager {
+        await injector.localizationUseCase.setLocalization(languageCode: languageCode)
         return self
     }
 
     /// Translates a key in the currently selected language.
-    /// - Parameter key: The translation key.
+    /// - Parameters:
+    ///   - key: The translation key, or text with `{{local:key(name=value)}}` calls.
+    ///   - values: The values to fill in the translation, by name.
     /// - Returns: The translated value, or `nil` when the key is unknown.
-    public func translate(key: String) -> String? {
-        return injector.localizationUseCase.translate(key: key)
+    public func translate(key: String, values: [String: String] = [:]) -> String? {
+        return injector.localizationUseCase.translate(key: key, values: values)
     }
 
     /// Sets global parameters for the Nativeblocks instance.

@@ -252,11 +252,12 @@ class NativeblocksManager internal constructor(
     }
 
     /**
-     * Sets the language for the frames.
+     * Sets the language for the frames and waits until its translations are loaded,
+     * from the cache or the network. A fresh copy keeps syncing in the background.
      * @param languageCode The ISO language code to set as the current language (e.g. "EN", "FA")
      * @return The NativeblocksManager instance for chaining.
      */
-    fun setLanguage(languageCode: String): NativeblocksManager {
+    suspend fun setLanguage(languageCode: String): NativeblocksManager {
         val localizationUseCase: LocalizationUseCase by getKoin().inject(named(this.name))
         localizationUseCase.setLocalization(languageCode = languageCode)
         return this
@@ -264,12 +265,14 @@ class NativeblocksManager internal constructor(
 
     /**
      * Translate a key in provided language.
-     * @param key The translation key
+     * @param key The translation key, or text with `{{local:key(name=value)}}` calls
+     * @param values The values to fill in the translation, by name
      * @return The translated value or null.
      */
-    fun translate(key: String): String? {
+    @JvmOverloads
+    fun translate(key: String, values: Map<String, String> = emptyMap()): String? {
         val localizationUseCase: LocalizationUseCase by getKoin().inject(named(this.name))
-        return localizationUseCase.translate(key).getOrNull()
+        return localizationUseCase.translate(key, values).getOrNull()
     }
 
     /**

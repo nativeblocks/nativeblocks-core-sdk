@@ -1046,7 +1046,7 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_sync_localization(`ptr`: Long,`languageCode`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_translate(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationclient_translate(`ptr`: Long,`key`: RustBuffer.ByValue,`values`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_nativeblocks_runtime_fn_clone_localizationstatemanager(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
@@ -1062,7 +1062,7 @@ internal object UniffiLib {
     ): Unit
     external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_setup_localization(`ptr`: Long,`languageCode`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_translate(`ptr`: Long,`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_translate(`ptr`: Long,`key`: RustBuffer.ByValue,`values`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_nativeblocks_runtime_fn_clone_localizationstateobserver(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
@@ -1332,7 +1332,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_sync_localization() and 0xFFFF) != 48554) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_translate() and 0xFFFF) != 36359) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationclient_translate() and 0xFFFF) != 35214) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_localization_state() and 0xFFFF) != 14811) {
@@ -1350,7 +1350,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_setup_localization() and 0xFFFF) != 20017) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_translate() and 0xFFFF) != 38642) {
+    if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstatemanager_translate() and 0xFFFF) != 11185) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_nativeblocks_runtime_checksum_method_localizationstateobserver_on_state_changed() and 0xFFFF) != 13591) {
@@ -4304,7 +4304,7 @@ internal interface LocalizationClientInterface {
     
     suspend fun `syncLocalization`(`languageCode`: kotlin.String)
     
-    fun `translate`(`key`: kotlin.String): kotlin.String?
+    fun `translate`(`key`: kotlin.String, `values`: Map<kotlin.String, kotlin.String>): kotlin.String?
     
     companion object
 }
@@ -4481,14 +4481,15 @@ internal open class LocalizationClient: Disposable, AutoCloseable, LocalizationC
     )
     }
 
-    override fun `translate`(`key`: kotlin.String): kotlin.String? {
+    override fun `translate`(`key`: kotlin.String, `values`: Map<kotlin.String, kotlin.String>): kotlin.String? {
             return FfiConverterOptionalString.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationclient_translate(
         it,
         
-        FfiConverterString.lower(`key`),_status)
+        FfiConverterString.lower(`key`),
+        FfiConverterMapStringString.lower(`values`),_status)
 }
     }
     )
@@ -4641,7 +4642,7 @@ internal interface LocalizationStateManagerInterface {
     
     suspend fun `setupLocalization`(`languageCode`: kotlin.String)
     
-    fun `translate`(`key`: kotlin.String): kotlin.String?
+    fun `translate`(`key`: kotlin.String, `values`: Map<kotlin.String, kotlin.String>): kotlin.String?
     
     companion object
 }
@@ -4820,14 +4821,15 @@ internal open class LocalizationStateManager: Disposable, AutoCloseable, Localiz
     )
     }
 
-    override fun `translate`(`key`: kotlin.String): kotlin.String? {
+    override fun `translate`(`key`: kotlin.String, `values`: Map<kotlin.String, kotlin.String>): kotlin.String? {
             return FfiConverterOptionalString.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_nativeblocks_runtime_fn_method_localizationstatemanager_translate(
         it,
         
-        FfiConverterString.lower(`key`),_status)
+        FfiConverterString.lower(`key`),
+        FfiConverterMapStringString.lower(`values`),_status)
 }
     }
     )

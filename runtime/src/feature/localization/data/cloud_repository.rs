@@ -12,6 +12,7 @@ use crate::feature::localization::data::key::{
 use crate::feature::localization::data::logging;
 use crate::feature::localization::data::memory_source::MemoryLocalizationSource;
 use crate::feature::localization::data::{binary_source, graphql_source};
+use crate::feature::localization::domain::{format, localize};
 use crate::feature::localization::domain::model::NativeLocalizationModel;
 use crate::feature::localization::domain::repository::LocalizationRepository;
 use crate::library::cache::CacheProvider;
@@ -282,6 +283,7 @@ impl LocalizationRepository for CloudLocalizationRepository {
     async fn sync(&self, language_code: &str) -> NBResult<()> {
         self.embedded.ready().await;
         let language_code = key::normalize(language_code);
+        let _ = self.from_cache(&language_code).await;
         return self.from_network(&language_code).await.map(|_| ());
     }
 
@@ -300,8 +302,28 @@ impl LocalizationRepository for CloudLocalizationRepository {
         return self.language_code.subscribe();
     }
 
-    fn translate(&self, key: &str) -> Option<String> {
+    fn translate(&self, key: &str, values: &HashMap<String, String>) -> Option<String> {
         let language_code = key::normalize(self.language_code.borrow().as_deref()?);
-        return self.memory.translate(&language_code, key);
+        if localize::has_calls(key) {
+            return Some(localize::localize(key, |key, values| {
+                self.translate_in(&language_code, key, values)
+            }));
+        }
+        return self.translate_in(&language_code, key, values);
+    }
+}
+
+impl CloudLocalizationRepository {
+    fn translate_in(
+        &self,
+        language_code: &str,
+        key: &str,
+        values: &HashMap<String, String>,
+    ) -> Option<String> {
+        let translation = self.memory.translate(language_code, key)?;
+        if translation.is_empty() {
+            return None;
+        }
+        return Some(format::format(&translation, values, language_code));
     }
 }
